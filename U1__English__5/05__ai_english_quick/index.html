@@ -1,0 +1,2732 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>livenotes · U1__English__5</title>
+  <style>/*
+ * style.css — livenotes 响应式样式
+ *
+ * 侧边栏始终 position: fixed 悬浮，不占文档流宽度：
+ *   宽屏（>= 900px）：默认展开，.is-collapsed 收起；右边缘可拖拽调宽；正文相对整个视口居中
+ *   窄屏：默认收起（抽屉），.is-open 滑入；内容单栏铺满，没有拖拽调宽
+ * 热区按钮 >= 44px，不依赖 :hover（用 :active / :focus-visible）
+ * 详见 ARCHITECTURE.md §4「布局」
+ */
+
+:root {
+  --breakpoint: 900px;
+  --hit-size: 44px;
+  --sidebar-width: 288px;
+  --sidebar-min-width: 220px;
+  --sidebar-max-width: 480px;
+  --topbar-h: 56px;
+  --content-max: 760px;
+  --radius: 10px;
+  --gap: 16px;
+
+  /* 配色令牌（浅色为主） */
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-text: #1a1a1a;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-accent: #2563eb;
+  --color-on-accent: #ffffff;
+
+  /* 隐藏侧展开后的背景，与显示侧区分 */
+  --mask-bg: #f3f4f6;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/*
+ * 主题：每个主题只覆盖约 9 个配色令牌，布局规则复用。
+ * 默认（无 data-theme）= 浅色；data-theme="auto" 跟随系统浅 / 深。
+ * 主题 id 与 template/app.js 的 THEMES 列表一一对应。
+ */
+
+/* 跟随系统：仅当系统为深色时套用「石墨深色」令牌 */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --color-bg: #0f1115;
+    --color-surface: #171a21;
+    --color-text: #e6e8eb;
+    --color-muted: #9aa3af;
+    --color-border: #2a2f3a;
+    --color-accent: #60a5fa;
+    --color-on-accent: #0f1115;
+    --mask-bg: #232a36;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* 纸质 Sepia：暖米黄，经典阅读模式 */
+:root[data-theme="sepia"] {
+  --color-bg: #f4ecd8;
+  --color-surface: #faf4e4;
+  --color-text: #5b4636;
+  --color-muted: #8c7a63;
+  --color-border: #e2d6bb;
+  --color-accent: #a3682f;
+  --color-on-accent: #faf4e4;
+  --mask-bg: #ece0c6;
+  --shadow: 0 1px 2px rgba(91, 70, 54, 0.10), 0 4px 12px rgba(91, 70, 54, 0.07);
+}
+
+/* Solarized Light */
+:root[data-theme="solarized-light"] {
+  --color-bg: #fdf6e3;
+  --color-surface: #fdf6e3;
+  --color-text: #586e75;
+  --color-muted: #93a1a1;
+  --color-border: #e6dfc6;
+  --color-accent: #268bd2;
+  --color-on-accent: #fdf6e3;
+  --mask-bg: #eee8d5;
+  --shadow: 0 1px 2px rgba(101, 123, 131, 0.10), 0 4px 12px rgba(101, 123, 131, 0.06);
+}
+
+/* 石墨深色：中性深灰 */
+:root[data-theme="graphite"] {
+  --color-bg: #0f1115;
+  --color-surface: #171a21;
+  --color-text: #e6e8eb;
+  --color-muted: #9aa3af;
+  --color-border: #2a2f3a;
+  --color-accent: #60a5fa;
+  --color-on-accent: #0f1115;
+  --mask-bg: #232a36;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+/* Solarized Dark */
+:root[data-theme="solarized-dark"] {
+  --color-bg: #002b36;
+  --color-surface: #073642;
+  --color-text: #93a1a1;
+  --color-muted: #657b83;
+  --color-border: #0b3f4c;
+  --color-accent: #268bd2;
+  --color-on-accent: #fdf6e3;
+  --mask-bg: #0b4a5a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 16px rgba(0, 0, 0, 0.40);
+}
+
+/* Nord：冷蓝极简 */
+:root[data-theme="nord"] {
+  --color-bg: #2e3440;
+  --color-surface: #343b49;
+  --color-text: #d8dee9;
+  --color-muted: #8b98b0;
+  --color-border: #434c5e;
+  --color-accent: #88c0d0;
+  --color-on-accent: #2e3440;
+  --mask-bg: #3b4252;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.40), 0 6px 16px rgba(0, 0, 0, 0.32);
+}
+
+/* Gruvbox：暖褐复古 */
+:root[data-theme="gruvbox"] {
+  --color-bg: #282828;
+  --color-surface: #32302f;
+  --color-text: #ebdbb2;
+  --color-muted: #a89984;
+  --color-border: #504945;
+  --color-accent: #fe8019;
+  --color-on-accent: #282828;
+  --mask-bg: #3c3836;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.42), 0 6px 16px rgba(0, 0, 0, 0.34);
+}
+
+* { box-sizing: border-box; }
+
+/*
+ * iOS 部分容器 App（比如 Documents by Readdle）内置的网页预览会把"点一下页面"识别成
+ * "切换阅读器顶部工具栏"的手势，点整行揭示/按钮时会跟着一起触发，体验很差。
+ * touch-action: manipulation 去掉双击缩放的判定延迟，让单击更快被网页自己的点击逻辑
+ * 消费掉，减少被宿主 App 误判成"点了空白页面"的概率（如果宿主用的是原生手势识别器，
+ * 这个也不一定完全压得住，是尽力而为的兼容写法）。
+ */
+.item, .doc-link, .btn, .reveal-btn, .fav-btn, .mark-btn, .fav-jump,
+.drawer-toggle, .theme-picker-wrap, .sidebar-resizer {
+  touch-action: manipulation;
+}
+
+body {
+  margin: 0;
+  font-size: clamp(15px, 2.5vw, 17px);
+  line-height: 1.6;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  overflow-x: hidden; /* 禁止横向溢出 */
+}
+
+/* ── 顶部工具条 ───────────────────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--topbar-h);
+  padding: 8px 16px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app-title {
+  margin: 0;
+  font-size: clamp(15px, 3vw, 18px);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.controls {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/*
+ * 宽屏：标题独立留在左边，按钮组居中到工具条正中间。
+ * 用 grid 三列（左 / 中 / 右）而不是 position: absolute——之前用绝对定位时，
+ * 按钮组一旦在中等宽度下换行变成两行，会因为脱离文档流而跟下方正文重叠
+ * （工具条自身高度不会跟着换行长高）。grid 让按钮组留在正常文档流里，
+ * 换行时工具条本身会跟着长高，不会盖住正文。
+ */
+@media (min-width: 901px) {
+  .topbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    column-gap: 12px;
+  }
+
+  .topbar-left { grid-column: 1; }
+
+  .app-title { max-width: min(32vw, 400px); }
+
+  .controls {
+    grid-column: 2;
+    justify-self: center;
+    margin-left: 0;
+    justify-content: center;
+    max-width: min(90vw, 640px);
+  }
+
+  .back-link {
+    grid-column: 3;
+    justify-self: end;
+  }
+}
+
+.btn {
+  min-width: var(--hit-size);
+  min-height: var(--hit-size);
+  padding: 6px 14px;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* EN⇄CN 模式按钮：背景跟「➕/➖」按钮一样用普通 .btn 素色，不用强调色；靠文字区分当前模式 */
+.btn-mode {
+  white-space: nowrap;
+}
+
+/* 「全部展开/收起」合并按钮：➕/➖ 图标本身已经是粗体符号，字号调大一点更醒目 */
+.btn-expand-toggle {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 「★ 收藏」入口按钮：平时浅色底，跟收藏星标的金色呼应但不抢眼；打开收藏列表视图时换成强调色 */
+.btn-favorites {
+  color: #b45f06;
+  background: rgba(245, 165, 36, 0.15);
+  border-color: rgba(245, 165, 36, 0.5);
+}
+
+.btn-favorites.is-active {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* 「📇 测验」入口按钮：打开测验模式时高亮 */
+.btn-quiz.is-active {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/*
+ * 测验模式评分按钮：3 个对号，点第几个就点亮到第几个（类似打分条）。
+ * 用固定的灰 / 黄两色（不用主题令牌），跟收藏星标的金色区分开，避免混淆成同一种标记。
+ */
+.mark-btn {
+  min-width: 32px;
+  min-height: var(--hit-size);
+  padding: 4px 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(128, 128, 128, 0.5);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.mark-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* 点亮态用实心黄底 + 深色对号，比只变文字颜色更醒目，一眼能扫出点亮了几个 */
+.mark-btn.is-filled {
+  color: #78350f;
+  background: #facc15;
+  border-color: #facc15;
+}
+
+/* 收藏星标按钮：侧边栏文档条目 / item 上通用，已收藏用金色区分（跨主题固定色，保持可辨识） */
+.fav-btn {
+  flex: 0 0 auto;
+  min-width: var(--hit-size);
+  min-height: var(--hit-size);
+  padding: 4px 10px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.fav-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* 已收藏：实心金底 + 白色星标，跟评分对号的"点亮=实心底"用同一套视觉语言，一眼能看出已收藏 */
+.fav-btn.is-favorited {
+  color: #ffffff;
+  background: #f5a524;
+  border-color: #f5a524;
+}
+
+/* 「我的收藏」列表里只读展示评分（不可点击），跟评分按钮共用 .mark-btn 样式 */
+.mark-badges {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.mark-badges .mark-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: auto;
+  cursor: default;
+}
+
+/*
+ * 主题选择：收起态只显示一个方形色块（颜色跟当前主题一致），不显示主题名字。
+ * 原生 select 还在，但整个变透明盖在色块上面——点击色块其实点到的是透明的 select，
+ * 照常弹出原生选项列表（列表里的文字正常显示，浏览器原生渲染，不用自己写下拉逻辑）。
+ */
+.theme-picker-wrap {
+  position: relative;
+  display: inline-flex;
+  min-width: var(--hit-size);
+  min-height: var(--hit-size);
+}
+
+/*
+ * 描边用固定的深浅双层（不用 --color-border）：外圈深、内圈浅，不管色块本身是深是浅，
+ * 总有一层能跟它区分开，不会跟当前主题背景糊在一起。再加个 🎨 图标，一眼就能认出是主题按钮，
+ * 不用完全依赖色块本身的对比度。
+ */
+.theme-swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hit-size);
+  height: var(--hit-size);
+  border-radius: var(--radius);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.18);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.theme-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.theme-picker-wrap:focus-within .theme-swatch {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.back-link {
+  color: var(--color-accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.back-link:active { opacity: 0.7; }
+
+/* 汉堡按钮：切换侧边栏，窄屏是抽屉滑入/滑出，宽屏是收起/展开，两种宽度下都常驻显示 */
+.drawer-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit-size);
+  min-height: var(--hit-size);
+  font-size: 18px;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* 拖拽调宽时锁定光标、禁止选中文字 */
+body.is-resizing-sidebar {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* ── 布局：侧边栏 fixed 悬浮，不占文档流宽度 ── */
+.sidebar {
+  position: fixed;
+  top: var(--topbar-h);
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  z-index: 65;
+  overflow-y: auto;
+  padding: 12px;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  transition: transform 0.2s ease;
+}
+
+.content {
+  min-width: 0; /* 允许内容收缩，配合子元素换行避免横向溢出 */
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 20px clamp(16px, 4vw, 32px) 64px;
+}
+
+/* 拖拽调宽分隔条：贴着侧边栏右边缘，只在宽屏出现（见下方媒体查询） */
+.sidebar-resizer { display: none; }
+
+/*
+ * 单篇页面没有章节树数据，侧边栏渲染不出导航内容，连 ☰ 按钮一起隐藏，避免空框和摆设按钮；
+ * 测验模式需要全部文档数据摊平抽取，单篇页面也做不到，一并隐藏
+ */
+body.single-doc .drawer-toggle,
+body.single-doc .sidebar,
+body.single-doc .sidebar-resizer,
+body.single-doc .btn-quiz {
+  display: none;
+}
+
+@media (min-width: 901px) {
+  body.single-doc .content { margin-left: auto; }
+}
+
+/* ── 侧边栏：章节树 ───────────────────────── */
+.chapter { border-bottom: 1px solid var(--color-border); }
+
+.chapter-title {
+  padding: 10px 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.doc-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+/* 文件条目：文件名按钮 + 收藏星标并排 */
+.doc-item {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.doc-link {
+  display: block;
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--hit-size);
+  padding: 8px 10px;
+  font: inherit;
+  text-align: left;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.doc-link:active { background: var(--mask-bg); }
+
+.doc-link.is-active {
+  color: var(--color-accent);
+  background: var(--mask-bg);
+  font-weight: 600;
+}
+
+/* ── 内容区 ───────────────────────────────── */
+.doc-header { margin-bottom: 16px; }
+
+/* 内容区最下面的 EN⇄CN / 全部展开收起，跟顶部一样的按钮，划到底不用翻回顶部就能切换 */
+.bottom-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.doc-title {
+  margin: 0;
+  font-size: clamp(19px, 4vw, 24px);
+}
+
+.section { margin-top: 28px; }
+
+.section-title {
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  font-size: clamp(16px, 3vw, 19px);
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* item：显示侧在左，揭示按钮在右，隐藏侧 / 常驻信息整行排在下方 */
+.item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.shown-side {
+  align-self: center;
+  overflow-wrap: anywhere;
+}
+
+/* 收藏星标 + 揭示按钮的容器，占 item 网格第二列 */
+.item-actions {
+  grid-column: 2;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.reveal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--hit-size);
+  min-width: var(--hit-size);
+  padding: 4px 12px;
+  font: inherit;
+  color: var(--color-accent);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.reveal-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.reveal-arrow {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.item.is-expanded .reveal-arrow { transform: rotate(90deg); }
+
+.hidden-side {
+  display: none;
+  grid-column: 1 / -1;
+  padding: 10px 12px;
+  background: var(--mask-bg);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.item.is-expanded .hidden-side { display: block; }
+
+.resident {
+  grid-column: 1 / -1;
+  color: var(--color-muted);
+  font-size: 0.9em;
+}
+
+/* 词汇表单元格排版：单词加大加粗突出主角，词性/音标进一步弱化拉开主次对比 */
+.cell { margin-right: 10px; }
+
+.cell--word,
+.cell--phrase {
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+/* 句型 & 金句：只稍微加粗，不加大字号——分量比单词/短语轻一点 */
+.cell--text_en { font-weight: 600; }
+
+.cell--pos {
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.cell--ipa {
+  color: var(--color-muted);
+  font-size: 0.85em;
+  font-family: ui-monospace, "SF Mono", "Consolas", monospace;
+}
+
+/*
+ * 释义 / 读法各自一个色块（同一行），用已有的主题变量而不是写死颜色，
+ * 保证深色主题下也有足够对比度：释义用强调色实心块（更显眼，这是核心信息），
+ * 读法用中性浅底块（弱化，只是辅助的拼音读法）
+ */
+.cell--meaning {
+  display: inline-block;
+  margin: 2px 6px 2px 0;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  background: var(--mask-bg);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  font-weight: 600;
+}
+
+.cell--reading {
+  display: inline-block;
+  margin: 2px 0;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  background: var(--mask-bg);
+  color: var(--color-muted);
+}
+
+/* ── 我的收藏视图 ─────────────────────────── */
+.favorites-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.favorites-hint {
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.favorites-empty { color: var(--color-muted); }
+
+/* 收藏列表行：布局仿 .item，但不复用 .item 类名，避免被「点整行揭示」的事件委托误触发 */
+.favorite-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.fav-jump {
+  font: inherit;
+  color: var(--color-accent);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.fav-jump--disabled {
+  color: var(--color-muted);
+  text-decoration: none;
+  cursor: default;
+}
+
+.favorite-meta {
+  margin-bottom: 4px;
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.favorite-both-sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  overflow-wrap: anywhere;
+}
+
+.cell--chapter {
+  margin-right: 8px;
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+/* ── 宽屏：侧边栏收起/展开、拖拽调宽、正文相对整窗居中 ── */
+@media (min-width: 901px) {
+  /* 默认展开，.is-collapsed 时滑出隐藏 */
+  .sidebar.is-collapsed { transform: translateX(-100%); }
+
+  /* 正文按 max(侧边栏宽度, 整窗居中该有的位置) 计算左边距：
+     窗口够宽时严格整窗居中；不够宽时退化成贴着侧边栏右边，避免被遮挡 */
+  .content {
+    margin-left: max(var(--sidebar-width), calc((100% - var(--content-max)) / 2));
+    margin-right: auto;
+  }
+
+  /* 侧边栏收起后，正文完全按整窗居中 */
+  .sidebar.is-collapsed ~ .content { margin-left: auto; }
+
+  .sidebar-resizer {
+    display: block;
+    position: fixed;
+    top: var(--topbar-h);
+    left: var(--sidebar-width);
+    bottom: 0;
+    width: 6px;
+    margin-left: -3px;
+    z-index: 66;
+    cursor: col-resize;
+    background: transparent;
+  }
+
+  .sidebar-resizer:hover,
+  .sidebar-resizer.is-dragging { background: var(--color-accent); opacity: 0.35; }
+
+  /* 侧边栏收起时分隔条也一起隐藏 */
+  .sidebar.is-collapsed ~ .sidebar-resizer { display: none; }
+}
+
+/* ── 窄屏：侧边栏转抽屉 ───────────────────── */
+@media (max-width: 900px) {
+  .sidebar {
+    width: min(84vw, 320px);
+    z-index: 70;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow);
+  }
+
+  .sidebar.is-open { transform: none; }
+
+  .content {
+    max-width: none;
+    padding: 16px 16px 56px;
+  }
+
+  /*
+   * 只让「☰ + 标题」这一条吸顶（position: fixed），按钮那一行（.controls）跟着页面正常滚动，
+   * 不再整个工具条都吸顶——手机屏幕小，两行按钮常驻会占掉很大一块阅读区域
+   */
+  .topbar {
+    position: static;
+    margin-top: var(--topbar-h);
+  }
+
+  .topbar-left {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    min-height: var(--topbar-h);
+    padding: 8px 16px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    transition: transform 0.25s ease;
+  }
+
+  /* 往下滑时收起（滑出屏幕外），往上滑或接近顶部时用 app.js 的滚动监听移除这个类重新露出来 */
+  .topbar-left.is-hidden {
+    transform: translateY(-100%);
+  }
+
+  /* 词条卡片：操作按钮挪到内容下方单独一行，不跟内容抢横向空间；按钮整体缩小一圈 */
+  .item {
+    grid-template-columns: 1fr;
+  }
+
+  .item-actions {
+    grid-column: 1;
+    justify-content: flex-start;
+  }
+
+  .item-actions .fav-btn,
+  .item-actions .mark-btn,
+  .item-actions .reveal-btn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 2px 8px;
+    font-size: 14px;
+  }
+}
+</style>
+</head>
+<body>
+  <!-- 顶部工具条：模式切换 + 全部展开/收起 + 侧边栏开关（窄屏是抽屉，宽屏是收起/展开） -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="drawer-toggle" data-action="toggle-sidebar" aria-label="切换目录">☰</button>
+      <h1 class="app-title">livenotes · U1__English__5</h1>
+    </div>
+    <div class="controls">
+      <button data-action="toggle-mode" class="btn btn-mode">EN → CN</button>
+      <button data-action="toggle-all-expanded" class="btn btn-expand-toggle" title="全部展开" aria-label="全部展开">➕</button>
+      <span class="theme-picker-wrap">
+        <span class="theme-swatch" data-role="theme-swatch" aria-hidden="true">🎨</span>
+        <select class="theme-select" data-role="theme-select" aria-label="主题"></select>
+      </span>
+      <button data-action="toggle-quiz-view" class="btn btn-quiz">📇 测验</button>
+      <button data-action="toggle-favorites-view" class="btn btn-favorites">★ 收藏</button>
+    </div>
+    
+  </header>
+
+  <div class="layout">
+    <!-- 侧边栏：章节树 + 文件列表（单篇模式下隐藏） -->
+    <nav class="sidebar" data-role="sidebar"></nav>
+
+    <!-- 拖拽调宽分隔条：仅宽屏出现，鼠标拖动改 --sidebar-width -->
+    <div class="sidebar-resizer" data-role="sidebar-resizer" aria-hidden="true"></div>
+
+    <!-- 内容区：由 app.js 按当前 NoteDoc 渲染三段表格 -->
+    <main class="content" data-role="content"></main>
+  </div>
+
+  <!-- 构建期内嵌的数据：index 为 { docs, tree }，单篇为 { doc } -->
+  <script type="application/json" data-role="livenotes-data">{"docs":[{"title":"1. An Introduction to this English Course","slug":"_Codex__1. An Introduction to this English Course","chapter":"01 - Introduction","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\01 - Introduction\\_Codex__1. An Introduction to this English Course.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"mastery","pos":"n.","ipa":"/ˈmɑːstəri/"},"cn":{"reading":"【马】-斯-特-瑞","meaning":"精通，熟练掌握"}},{"en":{"word":"instructor","pos":"n.","ipa":"/ɪnˈstrʌktər/"},"cn":{"reading":"【因】-斯-抓-克-特","meaning":"讲师，教员"}},{"en":{"word":"proficiency","pos":"n.","ipa":"/prəˈfɪʃnsi/"},"cn":{"reading":"【普】-若-菲-申-西","meaning":"熟练程度，能力水平"}},{"en":{"word":"pronunciation","pos":"n.","ipa":"/prəˌnʌnsiˈeɪʃn/"},"cn":{"reading":"【普】-若-南-西-诶-申","meaning":"发音"}},{"en":{"word":"comprehension","pos":"n.","ipa":"/ˌkɑːmprɪˈhenʃn/"},"cn":{"reading":"【康】-普-瑞-亨-申","meaning":"理解能力"}},{"en":{"word":"dictation","pos":"n.","ipa":"/dɪkˈteɪʃn/"},"cn":{"reading":"【迪】-克-忒-申","meaning":"听写"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"work abroad"},"cn":{"meaning":"在国外工作"},"note":""},{"en":{"phrase":"repeat after me"},"cn":{"meaning":"跟我重复"},"note":""},{"en":{"phrase":"speak out loud"},"cn":{"meaning":"大声说出来"},"note":""},{"en":{"phrase":"create your own sentences"},"cn":{"meaning":"自己造句"},"note":""},{"en":{"phrase":"long term memory"},"cn":{"meaning":"长期记忆"},"note":""},{"en":{"phrase":"feel free to skip to"},"cn":{"meaning":"可以直接跳到"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"I'll be your instructor throughout___"},"cn":{"text_cn":"我会在整个……中担任你的讲师"},"kind":""},{"en":{"text_en":"Our goal is to___"},"cn":{"text_cn":"我们的目标是……"},"kind":""},{"en":{"text_en":"We'll start with___, then we'll move to___"},"cn":{"text_cn":"我们先从……开始，然后进入……"},"kind":""},{"en":{"text_en":"Be sure to___"},"cn":{"text_cn":"一定要……"},"kind":""},{"en":{"text_en":"Our goal is to improve___"},"cn":{"text_cn":"我们的目标是改进……"},"kind":""},{"en":{"text_en":"We'll focus on___"},"cn":{"text_cn":"我们会重点关注……"},"kind":""},{"en":{"text_en":"Feel free to skip to___"},"cn":{"text_cn":"可以直接跳到……"},"kind":""},{"en":{"text_en":"Make sure that you're able to___"},"cn":{"text_cn":"确保你能够……"},"kind":""},{"en":{"text_en":"Our goal is to improve your English proficiency for work."},"cn":{"text_cn":"我们的目标是提高你的职场英语熟练度。"},"kind":""},{"en":{"text_en":"Every lesson will be interactive."},"cn":{"text_cn":"每节课都会有互动。"},"kind":""},{"en":{"text_en":"Take the time and speak out loud."},"cn":{"text_cn":"花点时间，大声说出来。"},"kind":""},{"en":{"text_en":"We'll start with writing and grammar."},"cn":{"text_cn":"我们会从写作和语法开始。"},"kind":""},{"en":{"text_en":"Be sure to download the printable handout."},"cn":{"text_cn":"一定要下载可打印的讲义。"},"kind":""}]}],"extra":""},{"title":"2. Writing Lesson_ Capitalization","slug":"_Codex__2. Writing Lesson_ Capitalization","chapter":"02 - Writing and Grammar","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\02 - Writing and Grammar\\_Codex__2. Writing Lesson_ Capitalization.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"capitalization","pos":"n.","ipa":"/ˌkæpɪtələˈzeɪʃn/"},"cn":{"reading":"【凯】-皮-特-勒-贼-申","meaning":"大写规则，大写形式"}},{"en":{"word":"uppercase","pos":"n.","ipa":"/ˈʌpərkeɪs/"},"cn":{"reading":"【阿】-珀-凯-斯","meaning":"大写字母，大写的"}},{"en":{"word":"consistent","pos":"adj.","ipa":"/kənˈsɪstənt/"},"cn":{"reading":"【肯】-西-斯-腾-特","meaning":"一致的，前后一致的"}},{"en":{"word":"exception","pos":"n.","ipa":"/ɪkˈsepʃn/"},"cn":{"reading":"【伊】-克-塞-普-申","meaning":"例外"}},{"en":{"word":"publication","pos":"n.","ipa":"/ˌpʌblɪˈkeɪʃn/"},"cn":{"reading":"【帕】-布-利-尅-申","meaning":"出版物"}},{"en":{"word":"Renaissance","pos":"n.","ipa":"/ˈrenəsɑːns/"},"cn":{"reading":"【瑞】-呢-桑-斯","meaning":"文艺复兴"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"stand out"},"cn":{"meaning":"突出，醒目"},"note":""},{"en":{"phrase":"calls attention to"},"cn":{"meaning":"引起对……的注意"},"note":""},{"en":{"phrase":"native language"},"cn":{"meaning":"母语"},"note":""},{"en":{"phrase":"take the time to"},"cn":{"meaning":"花时间去……"},"note":""},{"en":{"phrase":"wind up"},"cn":{"meaning":"最后变成，结果是"},"note":""},{"en":{"phrase":"lowercase"},"cn":{"meaning":"小写字母，小写的"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"You want to make sure___"},"cn":{"text_cn":"你要确保……"},"kind":""},{"en":{"text_en":"The same goes with___"},"cn":{"text_cn":"……也是一样"},"kind":""},{"en":{"text_en":"The only time you're going to___ is when___"},"cn":{"text_cn":"只有在……时才会……"},"kind":""},{"en":{"text_en":"The correct answer would be___"},"cn":{"text_cn":"正确答案应该是……"},"kind":""},{"en":{"text_en":"make your writing easier to read"},"cn":{"text_cn":"让你的文字更容易阅读"},"kind":""},{"en":{"text_en":"look clean and professional"},"cn":{"text_cn":"看起来整洁专业"},"kind":""},{"en":{"text_en":"pay attention if you see___"},"cn":{"text_cn":"如果看到……要注意"},"kind":""},{"en":{"text_en":"not necessarily need to___"},"cn":{"text_cn":"不一定需要……"},"kind":""},{"en":{"text_en":"English has its own unique capitalization rules."},"cn":{"text_cn":"英语有自己独特的大写规则。"},"kind":""},{"en":{"text_en":"You want to make sure that you're consistent."},"cn":{"text_cn":"你要确保前后一致。"},"kind":""},{"en":{"text_en":"But there are exceptions."},"cn":{"text_cn":"但也有例外。"},"kind":""},{"en":{"text_en":"The same goes with college and university."},"cn":{"text_cn":"college 和 university 也是一样。"},"kind":""},{"en":{"text_en":"Review the handout and take the quiz."},"cn":{"text_cn":"复习讲义并完成测验。"},"kind":""}]}],"extra":""},{"title":"3. Writing Lesson_ Punctuation","slug":"_Codex__3. Writing Lesson_ Punctuation","chapter":"02 - Writing and Grammar","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\02 - Writing and Grammar\\_Codex__3. Writing Lesson_ Punctuation.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"punctuation","pos":"n.","ipa":"/ˌpʌŋktʃuˈeɪʃn/"},"cn":{"reading":"【庞】-克-丘-诶-申","meaning":"标点符号，标点规则"}},{"en":{"word":"comma","pos":"n.","ipa":"/ˈkɑːmə/"},"cn":{"reading":"【卡】-么","meaning":"逗号"}},{"en":{"word":"period","pos":"n.","ipa":"/ˈpɪriəd/"},"cn":{"reading":"【皮】-瑞-额-德","meaning":"句号"}},{"en":{"word":"compound","pos":"adj.","ipa":"/ˈkɑːmpaʊnd/"},"cn":{"reading":"【康】-泡-恩-德","meaning":"复合的"}},{"en":{"word":"conjunction","pos":"n.","ipa":"/kənˈdʒʌŋkʃn/"},"cn":{"reading":"【肯】-江-克-申","meaning":"连词"}},{"en":{"word":"parallel","pos":"adj.","ipa":"/ˈpærəlel/"},"cn":{"reading":"【派】-若-莱-尔","meaning":"平行一致的"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"complete thought"},"cn":{"meaning":"完整意思"},"note":""},{"en":{"phrase":"rush through"},"cn":{"meaning":"匆忙说完，快速略过"},"note":""},{"en":{"phrase":"connecting words"},"cn":{"meaning":"连接词"},"note":""},{"en":{"phrase":"beginning clause"},"cn":{"meaning":"句首从句"},"note":""},{"en":{"phrase":"sentence interrupter"},"cn":{"meaning":"插入语"},"note":""},{"en":{"phrase":"over budget"},"cn":{"meaning":"超出预算"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"You want to take a small pause."},"cn":{"text_cn":"你要稍微停顿一下。"},"kind":""},{"en":{"text_en":"You don't need a comma."},"cn":{"text_cn":"不需要逗号。"},"kind":""},{"en":{"text_en":"It doesn't matter which form you choose."},"cn":{"text_cn":"选择哪种形式不重要。"},"kind":""},{"en":{"text_en":"How many commas would you need?"},"cn":{"text_cn":"这里需要几个逗号？"},"kind":""},{"en":{"text_en":"easier for listeners to understand"},"cn":{"text_cn":"让听众更容易理解"},"kind":""},{"en":{"text_en":"organize your thoughts into small pieces"},"cn":{"text_cn":"把想法组织成小块"},"kind":""},{"en":{"text_en":"valuable information"},"cn":{"text_cn":"有价值的信息"},"kind":""},{"en":{"text_en":"can interpret the sentence wrong"},"cn":{"text_cn":"可能误解句子"},"kind":""},{"en":{"text_en":"Periods come after a complete sentence."},"cn":{"text_cn":"句号放在完整句子后。"},"kind":""},{"en":{"text_en":"You don't want to just rush through your writing."},"cn":{"text_cn":"你不应该只是匆匆读完你的文章。"},"kind":""},{"en":{"text_en":"It organizes your thoughts into small pieces."},"cn":{"text_cn":"它把你的想法组织成小块。"},"kind":""},{"en":{"text_en":"The real sentence is the project is almost complete."},"cn":{"text_cn":"真正的主句是这个项目快完成了。"},"kind":""},{"en":{"text_en":"That's why it's so important that you're using commas correctly."},"cn":{"text_cn":"这就是正确使用逗号如此重要的原因。"},"kind":""}]}],"extra":""},{"title":"4. Writing Lesson_ Using Plurals","slug":"_Codex__4. Writing Lesson_ Using Plurals","chapter":"02 - Writing and Grammar","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\02 - Writing and Grammar\\_Codex__4. Writing Lesson_ Using Plurals.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"plural","pos":"adj.","ipa":"/ˈplʊrəl/"},"cn":{"reading":"【普】-路-若-尔","meaning":"复数的；复数形式"}},{"en":{"word":"singular","pos":"adj.","ipa":"/ˈsɪŋɡjələr/"},"cn":{"reading":"【辛】-格-又-勒","meaning":"单数的；单数形式"}},{"en":{"word":"construction","pos":"n.","ipa":"/kənˈstrʌkʃn/"},"cn":{"reading":"【肯】-斯-抓-克-申","meaning":"构成方式"}},{"en":{"word":"consonant","pos":"n.","ipa":"/ˈkɑːnsənənt/"},"cn":{"reading":"【康】-瑟-嫩-特","meaning":"辅音"}},{"en":{"word":"vowel","pos":"n.","ipa":"/ˈvaʊəl/"},"cn":{"reading":"【瓦】-欧-尔","meaning":"元音"}},{"en":{"word":"irregular","pos":"adj.","ipa":"/ɪˈreɡjələr/"},"cn":{"reading":"【伊】-瑞-格-又-勒","meaning":"不规则的"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"add an S to the end"},"cn":{"meaning":"在末尾加 S"},"note":""},{"en":{"phrase":"when in doubt"},"cn":{"meaning":"不确定时"},"note":""},{"en":{"phrase":"break up that S sound"},"cn":{"meaning":"分开那个 S 音"},"note":""},{"en":{"phrase":"keep that in mind"},"cn":{"meaning":"记住这一点"},"note":""},{"en":{"phrase":"F to V change"},"cn":{"meaning":"F 变 V 的变化"},"note":""},{"en":{"phrase":"in context"},"cn":{"meaning":"放在语境中"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"There are four ways to___"},"cn":{"text_cn":"有四种方法可以……"},"kind":""},{"en":{"text_en":"This applies to___"},"cn":{"text_cn":"这适用于……"},"kind":""},{"en":{"text_en":"You want to be careful with___"},"cn":{"text_cn":"你要小心……"},"kind":""},{"en":{"text_en":"How would you make___ plural?"},"cn":{"text_cn":"你会怎样把……变成复数？"},"kind":""},{"en":{"text_en":"when in doubt"},"cn":{"text_cn":"不确定时"},"kind":""},{"en":{"text_en":"depending on the spelling"},"cn":{"text_cn":"取决于拼写"},"kind":""},{"en":{"text_en":"there are some exceptions"},"cn":{"text_cn":"有一些例外"},"kind":""},{"en":{"text_en":"keep that in mind"},"cn":{"text_cn":"记住这一点"},"kind":""},{"en":{"text_en":"There are four ways to make a noun plural."},"cn":{"text_cn":"名词变复数有四种方式。"},"kind":""},{"en":{"text_en":"When in doubt, simply add an S."},"cn":{"text_cn":"不确定时，就简单加 S。"},"kind":""},{"en":{"text_en":"You want to be careful with the O words."},"cn":{"text_cn":"你要小心 O 结尾的词。"},"kind":""},{"en":{"text_en":"Let's use some of these nouns in context."},"cn":{"text_cn":"我们把其中一些名词放到语境里使用。"},"kind":""},{"en":{"text_en":"Write down the correct way to spell these plural forms."},"cn":{"text_cn":"写下这些复数形式的正确拼法。"},"kind":""}]}],"extra":""},{"title":"5. Writing Lesson_ Using Articles","slug":"_Codex__5. Writing Lesson_ Using Articles","chapter":"02 - Writing and Grammar","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\02 - Writing and Grammar\\_Codex__5. Writing Lesson_ Using Articles.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"article","pos":"n.","ipa":"/ˈɑːrtɪkl/"},"cn":{"reading":"【阿】-提-克-尔","meaning":"冠词"}},{"en":{"word":"modify","pos":"v.","ipa":"/ˈmɑːdɪfaɪ/"},"cn":{"reading":"【马】-迪-法-伊","meaning":"修饰"}},{"en":{"word":"grammatical","pos":"adj.","ipa":"/ɡrəˈmætɪkl/"},"cn":{"reading":"【格】-若-麦-提-克-尔","meaning":"语法的"}},{"en":{"word":"possessive","pos":"adj.","ipa":"/pəˈzesɪv/"},"cn":{"reading":"【泼】-泽-西-夫","meaning":"所有格的"}},{"en":{"word":"preposition","pos":"n.","ipa":"/ˌprepəˈzɪʃn/"},"cn":{"reading":"【普】-瑞-泼-贼-申","meaning":"介词"}},{"en":{"word":"aviation","pos":"n.","ipa":"/ˌeɪviˈeɪʃn/"},"cn":{"reading":"【诶】-维-诶-申","meaning":"航空"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"one object"},"cn":{"meaning":"一个物体"},"note":""},{"en":{"phrase":"specific objects"},"cn":{"meaning":"特定物体"},"note":""},{"en":{"phrase":"introduce a new object"},"cn":{"meaning":"引入一个新对象"},"note":""},{"en":{"phrase":"after you introduce a word"},"cn":{"meaning":"引入一个词之后"},"note":""},{"en":{"phrase":"not applicable"},"cn":{"meaning":"不适用"},"note":""},{"en":{"phrase":"it depends on the context"},"cn":{"meaning":"这取决于上下文"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"It depends on___"},"cn":{"text_cn":"这取决于……"},"kind":""},{"en":{"text_en":"No article is needed."},"cn":{"text_cn":"不需要冠词。"},"kind":""},{"en":{"text_en":"In order to___"},"cn":{"text_cn":"为了……"},"kind":""},{"en":{"text_en":"You don't need___ as well."},"cn":{"text_cn":"也不需要……"},"kind":""},{"en":{"text_en":"It depends on the context."},"cn":{"text_cn":"取决于上下文。"},"kind":""},{"en":{"text_en":"a particular object"},"cn":{"text_cn":"某个特定对象"},"kind":""},{"en":{"text_en":"no article is needed"},"cn":{"text_cn":"不需要冠词"},"kind":""},{"en":{"text_en":"check it out"},"cn":{"text_cn":"借出；查看"},"kind":""},{"en":{"text_en":"We always need something to modify a noun."},"cn":{"text_cn":"我们总是需要某个东西来修饰名词。"},"kind":""},{"en":{"text_en":"It depends on the context."},"cn":{"text_cn":"这取决于上下文。"},"kind":""},{"en":{"text_en":"No articles are needed on those types of sentences."},"cn":{"text_cn":"这类句子不需要冠词。"},"kind":""},{"en":{"text_en":"The article is a little bit more specific."},"cn":{"text_cn":"这个冠词更具体一点。"},"kind":""},{"en":{"text_en":"Look in the book for the answer."},"cn":{"text_cn":"在书里找答案。"},"kind":""}]}],"extra":""},{"title":"6. Writing Lesson_ Subject-Verb Agreement","slug":"_Codex__6. Writing Lesson_ Subject-Verb Agreement","chapter":"02 - Writing and Grammar","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\02 - Writing and Grammar\\_Codex__6. Writing Lesson_ Subject-Verb Agreement.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"agreement","pos":"n.","ipa":"/əˈɡriːmənt/"},"cn":{"reading":"【额】-格-瑞-门-特","meaning":"一致，呼应"}},{"en":{"word":"continuous","pos":"adj.","ipa":"/kənˈtɪnjuəs/"},"cn":{"reading":"【肯】-提-纽-厄-斯","meaning":"持续的，进行的"}},{"en":{"word":"conjugate","pos":"v.","ipa":"/ˈkɑːndʒuɡeɪt/"},"cn":{"reading":"【康】-朱-给-特","meaning":"变位，按人称变化"}},{"en":{"word":"collide","pos":"v.","ipa":"/kəˈlaɪd/"},"cn":{"reading":"【肯】-莱-德","meaning":"碰撞"}},{"en":{"word":"unleash","pos":"v.","ipa":"/ʌnˈliːʃ/"},"cn":{"reading":"【安】-利-什","meaning":"释放，放出"}},{"en":{"word":"trigger","pos":"v.","ipa":"/ˈtrɪɡər/"},"cn":{"reading":"【崔】-格-尔","meaning":"触发，引发"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"simple present"},"cn":{"meaning":"一般现在时"},"note":""},{"en":{"phrase":"present continuous"},"cn":{"meaning":"现在进行时"},"note":""},{"en":{"phrase":"general truths"},"cn":{"meaning":"普遍真理"},"note":""},{"en":{"phrase":"third person singular"},"cn":{"meaning":"第三人称单数"},"note":""},{"en":{"phrase":"draw your attention to"},"cn":{"meaning":"提醒你注意"},"note":""},{"en":{"phrase":"every quarter"},"cn":{"meaning":"每季度"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"There are two ways to___"},"cn":{"text_cn":"有两种方式可以……"},"kind":""},{"en":{"text_en":"You can make it with___"},"cn":{"text_cn":"你可以用……来构成它"},"kind":""},{"en":{"text_en":"Change that into___"},"cn":{"text_cn":"把它改成……"},"kind":""},{"en":{"text_en":"One option would be___"},"cn":{"text_cn":"一种答案是……"},"kind":""},{"en":{"text_en":"adjust our computer settings"},"cn":{"text_cn":"调整我们的电脑设置"},"kind":""},{"en":{"text_en":"trigger the alarm"},"cn":{"text_cn":"触发警报"},"kind":""},{"en":{"text_en":"managing a small firm"},"cn":{"text_cn":"管理一家小公司"},"kind":""},{"en":{"text_en":"running slow"},"cn":{"text_cn":"运行很慢"},"kind":""},{"en":{"text_en":"Success comes from hard work."},"cn":{"text_cn":"成功来自努力。"},"kind":""},{"en":{"text_en":"Walk two blocks and then turn left."},"cn":{"text_cn":"走两个街区，然后左转。"},"kind":""},{"en":{"text_en":"I wanted to draw your attention to that."},"cn":{"text_cn":"我想提醒你注意这一点。"},"kind":""},{"en":{"text_en":"The company does."},"cn":{"text_cn":"这家公司会这样做。"},"kind":""},{"en":{"text_en":"Please adjust the volume."},"cn":{"text_cn":"请调一下音量。"},"kind":""}]}],"extra":""},{"title":"7. Writing Lesson_ Using Transition Words","slug":"_Codex__7. Writing Lesson_ Using Transition Words","chapter":"02 - Writing and Grammar","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\02 - Writing and Grammar\\_Codex__7. Writing Lesson_ Using Transition Words.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"transition","pos":"n.","ipa":"/trænˈzɪʃn/"},"cn":{"reading":"【传】-滋-申","meaning":"过渡，衔接"}},{"en":{"word":"complex","pos":"adj.","ipa":"/kəmˈpleks/"},"cn":{"reading":"【肯】-普-莱-克-斯","meaning":"复杂的"}},{"en":{"word":"synonym","pos":"n.","ipa":"/ˈsɪnənɪm/"},"cn":{"reading":"【西】-呢-宁","meaning":"同义词"}},{"en":{"word":"advantage","pos":"n.","ipa":"/ədˈvæntɪdʒ/"},"cn":{"reading":"【额】-德-万-提-吉","meaning":"优势"}},{"en":{"word":"obstacle","pos":"n.","ipa":"/ˈɑːbstəkl/"},"cn":{"reading":"【阿】-布-斯-特-克-尔","meaning":"障碍"}},{"en":{"word":"mortgage","pos":"n.","ipa":"/ˈmɔːrɡɪdʒ/"},"cn":{"reading":"【摩】-给-吉","meaning":"房贷，抵押贷款"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"organize your thoughts clearly"},"cn":{"meaning":"清晰组织想法"},"note":""},{"en":{"phrase":"respond to complex questions"},"cn":{"meaning":"回答复杂问题"},"note":""},{"en":{"phrase":"pros and cons"},"cn":{"meaning":"优缺点"},"note":""},{"en":{"phrase":"pay off your mortgage"},"cn":{"meaning":"还清房贷"},"note":""},{"en":{"phrase":"rent free"},"cn":{"meaning":"免租金的"},"note":""},{"en":{"phrase":"in the long term"},"cn":{"meaning":"从长期来看"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"One advantage of___ is that___"},"cn":{"text_cn":"……的一个优点是……"},"kind":""},{"en":{"text_en":"Another benefit is that___"},"cn":{"text_cn":"另一个好处是……"},"kind":""},{"en":{"text_en":"In addition, ___"},"cn":{"text_cn":"此外，……"},"kind":""},{"en":{"text_en":"However, ___ has some disadvantages too."},"cn":{"text_cn":"然而，……也有一些缺点。"},"kind":""},{"en":{"text_en":"respond to the director's questions"},"cn":{"text_cn":"回答主管的问题"},"kind":""},{"en":{"text_en":"job interviews"},"cn":{"text_cn":"工作面试"},"kind":""},{"en":{"text_en":"business meetings"},"cn":{"text_cn":"商务会议"},"kind":""},{"en":{"text_en":"pros and cons of relocating"},"cn":{"text_cn":"搬迁的利弊"},"kind":""},{"en":{"text_en":"Our goal is to learn how to organize your thoughts clearly."},"cn":{"text_cn":"我们的目标是学会如何清晰组织想法。"},"kind":""},{"en":{"text_en":"What are the pros and cons of relocating to a different country?"},"cn":{"text_cn":"搬到另一个国家有什么利弊？"},"kind":""},{"en":{"text_en":"Another benefit is that your house payment is temporary."},"cn":{"text_cn":"另一个好处是你的房款支付是暂时的。"},"kind":""},{"en":{"text_en":"However, owning a home also has challenges."},"cn":{"text_cn":"然而，拥有住房也有挑战。"},"kind":""},{"en":{"text_en":"In conclusion, I believe that..."},"cn":{"text_cn":"总之，我认为……"},"kind":""}]}],"extra":""},{"title":"8. Writing Lesson_ Writing Emails","slug":"_Codex__8. Writing Lesson_ Writing Emails","chapter":"02 - Writing and Grammar","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\02 - Writing and Grammar\\_Codex__8. Writing Lesson_ Writing Emails.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"recipient","pos":"n.","ipa":"/rɪˈsɪpiənt/"},"cn":{"reading":"【瑞】-西-皮-恩-特","meaning":"收件人，接收者"}},{"en":{"word":"regarding","pos":"prep.","ipa":"/rɪˈɡɑːrdɪŋ/"},"cn":{"reading":"【瑞】-嘎-丁","meaning":"关于"}},{"en":{"word":"appreciation","pos":"n.","ipa":"/əˌpriːʃiˈeɪʃn/"},"cn":{"reading":"【额】-普-瑞-西-诶-申","meaning":"感谢，欣赏"}},{"en":{"word":"consideration","pos":"n.","ipa":"/kənˌsɪdəˈreɪʃn/"},"cn":{"reading":"【肯】-西-德-瑞-申","meaning":"考虑"}},{"en":{"word":"signature","pos":"n.","ipa":"/ˈsɪɡnətʃər/"},"cn":{"reading":"【西】-格-呢-丘","meaning":"签名，邮件署名"}},{"en":{"word":"demographic","pos":"adj.","ipa":"/ˌdeməˈɡræfɪk/"},"cn":{"reading":"【德】-么-格-瑞-菲-克","meaning":"人口统计的"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"short and to the point"},"cn":{"meaning":"简短直接"},"note":""},{"en":{"phrase":"with a goal in mind"},"cn":{"meaning":"带着目标"},"note":""},{"en":{"phrase":"goal oriented"},"cn":{"meaning":"目标导向的"},"note":""},{"en":{"phrase":"request action"},"cn":{"meaning":"请求对方采取行动"},"note":""},{"en":{"phrase":"subject line"},"cn":{"meaning":"邮件主题行"},"note":""},{"en":{"phrase":"bullet points"},"cn":{"meaning":"项目符号列表"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"I'm writing regarding___"},"cn":{"text_cn":"我写信是关于……"},"kind":""},{"en":{"text_en":"I'm writing to let you know___"},"cn":{"text_cn":"我写信是想告诉你……"},"kind":""},{"en":{"text_en":"Could you please___?"},"cn":{"text_cn":"能否请你……"},"kind":""},{"en":{"text_en":"I appreciate your time and consideration."},"cn":{"text_cn":"感谢你的时间和考虑。"},"kind":""},{"en":{"text_en":"update on the Waverly project"},"cn":{"text_cn":"Waverly 项目的更新"},"kind":""},{"en":{"text_en":"scheduling a meeting about___"},"cn":{"text_cn":"安排关于……的会议"},"kind":""},{"en":{"text_en":"question about the software project"},"cn":{"text_cn":"关于软件项目的问题"},"kind":""},{"en":{"text_en":"Please complete this required training."},"cn":{"text_cn":"请完成这个必修培训。"},"kind":""},{"en":{"text_en":"You want to keep it short and to the point."},"cn":{"text_cn":"你要让它简短直接。"},"kind":""},{"en":{"text_en":"Always write your emails with a goal in mind."},"cn":{"text_cn":"写邮件时始终要带着目标。"},"kind":""},{"en":{"text_en":"I'm writing regarding your upcoming appointment."},"cn":{"text_cn":"我写信是关于你即将到来的预约。"},"kind":""},{"en":{"text_en":"Could you please complete the attached paperwork?"},"cn":{"text_cn":"能否请你完成附件中的文件？"},"kind":""},{"en":{"text_en":"I really appreciate your time and attention to this matter."},"cn":{"text_cn":"非常感谢你对此事付出的时间和关注。"},"kind":""}]}],"extra":""},{"title":"9. Introduction to Improving Your Speaking","slug":"_Codex__9. Introduction to Improving Your Speaking","chapter":"03 - Speaking Section","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\03 - Speaking Section\\_Codex__9. Introduction to Improving Your Speaking.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"proficiency","pos":"n.","ipa":"/prəˈfɪʃnsi/"},"cn":{"reading":"【普】-若-菲-申-西","meaning":"熟练程度，能力水平"}},{"en":{"word":"strategy","pos":"n.","ipa":"/ˈstrætədʒi/"},"cn":{"reading":"【斯】-抓-特-吉","meaning":"策略，方法"}},{"en":{"word":"vocabulary","pos":"n.","ipa":"/vəˈkæbjəleri/"},"cn":{"reading":"【沃】-凯-表-勒-瑞","meaning":"词汇"}},{"en":{"word":"analysis","pos":"n.","ipa":"/əˈnæləsɪs/"},"cn":{"reading":"【额】-奈-勒-西-斯","meaning":"分析"}},{"en":{"word":"critique","pos":"v.","ipa":"/krɪˈtiːk/"},"cn":{"reading":"【克】-瑞-提-克","meaning":"评析，批评性评价"}},{"en":{"word":"repetition","pos":"n.","ipa":"/ˌrepəˈtɪʃn/"},"cn":{"reading":"【瑞】-珀-提-申","meaning":"重复"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"in order to"},"cn":{"meaning":"为了"},"note":""},{"en":{"phrase":"daily thinking in English exercises"},"cn":{"meaning":"每日英语思考练习"},"note":""},{"en":{"phrase":"throughout the day"},"cn":{"meaning":"一整天中"},"note":""},{"en":{"phrase":"vocabulary recall"},"cn":{"meaning":"词汇提取能力"},"note":""},{"en":{"phrase":"recordings of yourself"},"cn":{"meaning":"你自己的录音"},"note":""},{"en":{"phrase":"timing and accent"},"cn":{"meaning":"节奏和口音"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"We're going to work on___"},"cn":{"text_cn":"我们要练习/改善……"},"kind":""},{"en":{"text_en":"Those include___"},"cn":{"text_cn":"这些包括……"},"kind":""},{"en":{"text_en":"You'll be surprised at___"},"cn":{"text_cn":"你会惊讶于……"},"kind":""},{"en":{"text_en":"Let's go ahead and get started."},"cn":{"text_cn":"我们现在开始吧。"},"kind":""},{"en":{"text_en":"several different strategies"},"cn":{"text_cn":"几种不同策略"},"kind":""},{"en":{"text_en":"commenting on everything"},"cn":{"text_cn":"对所有事情进行描述"},"kind":""},{"en":{"text_en":"analysis of recordings"},"cn":{"text_cn":"对录音进行分析"},"kind":""},{"en":{"text_en":"improve the speed, timing, and accent"},"cn":{"text_cn":"提高速度、节奏和口音"},"kind":""},{"en":{"text_en":"We're going to work on improving your English speaking proficiency."},"cn":{"text_cn":"我们要努力提高你的英语口语熟练度。"},"kind":""},{"en":{"text_en":"Those include daily thinking in English exercises."},"cn":{"text_cn":"这些包括每日英语思考练习。"},"kind":""},{"en":{"text_en":"You'll be surprised at how much you can improve."},"cn":{"text_cn":"你会惊讶于自己能进步多少。"},"kind":""},{"en":{"text_en":"We'll do some repetition exercises."},"cn":{"text_cn":"我们会做一些重复练习。"},"kind":""}]}],"extra":""},{"title":"10. Speaking Lesson 1_ Thinking in English","slug":"_Codex__10. Speaking Lesson 1_ Thinking in English","chapter":"03 - Speaking Section","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\03 - Speaking Section\\_Codex__10. Speaking Lesson 1_ Thinking in English.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"translate","pos":"v.","ipa":"/trænsˈleɪt/"},"cn":{"reading":"【传】-斯-累-特","meaning":"翻译"}},{"en":{"word":"lagging","pos":"v.","ipa":"/ˈlæɡɪŋ/"},"cn":{"reading":"【莱】","meaning":"落后，滞后"}},{"en":{"word":"recall","pos":"n.","ipa":"/rɪˈkɔːl/"},"cn":{"reading":"【瑞】-考-尔","meaning":"回忆，提取"}},{"en":{"word":"mispronunciation","pos":"n.","ipa":"/ˌmɪsprəˌnʌnsiˈeɪʃn/"},"cn":{"reading":"【米】-斯-普-若-南-西-诶-申","meaning":"发音错误"}},{"en":{"word":"hesitation","pos":"n.","ipa":"/ˌhezɪˈteɪʃn/"},"cn":{"reading":"【黑】-兹-忒-申","meaning":"犹豫，停顿"}},{"en":{"word":"fluently","pos":"adv.","ipa":"/ˈfluːəntli/"},"cn":{"reading":"【弗】-路-恩-特-利","meaning":"流利地"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"native language"},"cn":{"meaning":"母语"},"note":""},{"en":{"phrase":"in the midst of"},"cn":{"meaning":"在……过程中"},"note":""},{"en":{"phrase":"frame of mind"},"cn":{"meaning":"思维状态"},"note":""},{"en":{"phrase":"write those things down"},"cn":{"meaning":"把那些东西写下来"},"note":""},{"en":{"phrase":"at the end of the day"},"cn":{"meaning":"在一天结束时"},"note":""},{"en":{"phrase":"problem areas"},"cn":{"meaning":"问题区域，薄弱点"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"I suggest that you do not___"},"cn":{"text_cn":"我建议你不要……"},"kind":""},{"en":{"text_en":"I want you to start___"},"cn":{"text_cn":"我希望你开始……"},"kind":""},{"en":{"text_en":"I'd like you to___"},"cn":{"text_cn":"我希望你……"},"kind":""},{"en":{"text_en":"Listen for___"},"cn":{"text_cn":"留意听……"},"kind":""},{"en":{"text_en":"My computer freezes."},"cn":{"text_cn":"我的电脑卡住了。"},"kind":""},{"en":{"text_en":"work on this project"},"cn":{"text_cn":"做这个项目"},"kind":""},{"en":{"text_en":"write those things down"},"cn":{"text_cn":"把那些内容写下来"},"kind":""},{"en":{"text_en":"verify pronunciation"},"cn":{"text_cn":"核对发音"},"kind":""},{"en":{"text_en":"I suggest that you do not do that."},"cn":{"text_cn":"我建议你不要那样做。"},"kind":""},{"en":{"text_en":"You're always going to be lagging behind."},"cn":{"text_cn":"你总会落后一拍。"},"kind":""},{"en":{"text_en":"I'm going to work on this project."},"cn":{"text_cn":"我要做这个项目。"},"kind":""},{"en":{"text_en":"Write down any word that you can't think of in English."},"cn":{"text_cn":"把你想不起来的英文词写下来。"},"kind":""},{"en":{"text_en":"Repeat those problem areas five times."},"cn":{"text_cn":"把那些问题部分重复五遍。"},"kind":""}]}],"extra":""},{"title":"11. Speaking Lesson 2_ Speaking of Superlatives","slug":"_Codex__11. Speaking Lesson 2_ Speaking of Superlatives","chapter":"03 - Speaking Section","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\03 - Speaking Section\\_Codex__11. Speaking Lesson 2_ Speaking of Superlatives.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"superlative","pos":"n.","ipa":"/suːˈpɜːrlətɪv/"},"cn":{"reading":"【苏】-珀-勒-提-夫","meaning":"最高级；最高级的"}},{"en":{"word":"comparative","pos":"adj.","ipa":"/kəmˈpærətɪv/"},"cn":{"reading":"【肯】-派-若-提-夫","meaning":"比较级；比较的"}},{"en":{"word":"adjective","pos":"n.","ipa":"/ˈædʒɪktɪv/"},"cn":{"reading":"【艾】-吉-克-提-夫","meaning":"形容词"}},{"en":{"word":"consonant","pos":"n.","ipa":"/ˈkɑːnsənənt/"},"cn":{"reading":"【康】-瑟-嫩-特","meaning":"辅音"}},{"en":{"word":"amusing","pos":"adj.","ipa":"/əˈmjuːzɪŋ/"},"cn":{"reading":"【额】-缪","meaning":"好笑的，有趣的"}},{"en":{"word":"mimic","pos":"v.","ipa":"/ˈmɪmɪk/"},"cn":{"reading":"【米】-米-克","meaning":"模仿"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"repetition drill"},"cn":{"meaning":"重复训练"},"note":""},{"en":{"phrase":"working memory"},"cn":{"meaning":"工作记忆"},"note":""},{"en":{"phrase":"compare nouns"},"cn":{"meaning":"比较名词"},"note":""},{"en":{"phrase":"add the ending ER"},"cn":{"meaning":"加 ER 结尾"},"note":""},{"en":{"phrase":"add the words more and most"},"cn":{"meaning":"加 more 和 most"},"note":""},{"en":{"phrase":"future use"},"cn":{"meaning":"以后使用"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"What is a___?"},"cn":{"text_cn":"……是什么？"},"kind":""},{"en":{"text_en":"It's a type of___"},"cn":{"text_cn":"它是一种……"},"kind":""},{"en":{"text_en":"People would understand what you're saying, but___"},"cn":{"text_cn":"别人能懂你的意思，但是……"},"kind":""},{"en":{"text_en":"Try to mimic___"},"cn":{"text_cn":"尽量模仿……"},"kind":""},{"en":{"text_en":"more important"},"cn":{"text_cn":"更重要"},"kind":""},{"en":{"text_en":"the most important"},"cn":{"text_cn":"最重要"},"kind":""},{"en":{"text_en":"more popular"},"cn":{"text_cn":"更受欢迎"},"kind":""},{"en":{"text_en":"future use"},"cn":{"text_cn":"以后使用"},"kind":""},{"en":{"text_en":"It's a type of adjective form that's used to compare nouns."},"cn":{"text_cn":"它是一种用来比较名词的形容词形式。"},"kind":""},{"en":{"text_en":"My house is bigger than your house."},"cn":{"text_cn":"我的房子比你的房子大。"},"kind":""},{"en":{"text_en":"My house is the biggest."},"cn":{"text_cn":"我的房子是最大的。"},"kind":""},{"en":{"text_en":"People would understand what you're saying."},"cn":{"text_cn":"别人能理解你在说什么。"},"kind":""},{"en":{"text_en":"Try to mimic my timing and accent."},"cn":{"text_cn":"尽量模仿我的节奏和口音。"},"kind":""}]}],"extra":""},{"title":"12. Speaking Lesson 3_ Speaking with Karaoke","slug":"_Codex__12. Speaking Lesson 3_ Speaking with Karaoke","chapter":"03 - Speaking Section","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\03 - Speaking Section\\_Codex__12. Speaking Lesson 3_ Speaking with Karaoke.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"karaoke","pos":"n.","ipa":"/ˌkæriˈoʊki/"},"cn":{"reading":"【凯】-瑞-欧","meaning":"卡拉 OK"}},{"en":{"word":"numerous","pos":"adj.","ipa":"/ˈnuːmərəs/"},"cn":{"reading":"【努】-么-若-斯","meaning":"许多的"}},{"en":{"word":"melodic","pos":"adj.","ipa":"/məˈlɑːdɪk/"},"cn":{"reading":"【么】-拉-迪-克","meaning":"旋律优美的"}},{"en":{"word":"slang","pos":"n.","ipa":"/slæŋ/"},"cn":{"reading":"【斯】-朗","meaning":"俚语"}},{"en":{"word":"tumble","pos":"v.","ipa":"/ˈtʌmbl/"},"cn":{"reading":"【坦】-布-尔","meaning":"摔倒，翻滚"}},{"en":{"word":"crumble","pos":"v.","ipa":"/ˈkrʌmbl/"},"cn":{"reading":"【克】-兰-布-尔","meaning":"碎裂，崩塌"}},{"en":{"word":"shed","pos":"v.","ipa":"/ʃed/"},"cn":{"reading":"【谢】-德","meaning":"流下；脱落"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"blended sounds"},"cn":{"meaning":"连读、混合音"},"note":""},{"en":{"phrase":"keep a good flow"},"cn":{"meaning":"保持良好流畅度"},"note":""},{"en":{"phrase":"here and there"},"cn":{"meaning":"到处，偶尔"},"note":""},{"en":{"phrase":"original version"},"cn":{"meaning":"原版"},"note":""},{"en":{"phrase":"as best as you can"},"cn":{"meaning":"尽你所能"},"note":""},{"en":{"phrase":"keep up with the pace"},"cn":{"meaning":"跟上节奏"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"I'll show you why."},"cn":{"text_cn":"我会告诉你为什么。"},"kind":""},{"en":{"text_en":"First of all___"},"cn":{"text_cn":"首先……"},"kind":""},{"en":{"text_en":"The tricky part is to___"},"cn":{"text_cn":"棘手的部分是……"},"kind":""},{"en":{"text_en":"Feel free to___"},"cn":{"text_cn":"可以……"},"kind":""},{"en":{"text_en":"original version"},"cn":{"text_cn":"原版"},"kind":""},{"en":{"text_en":"imitate that as best as you can"},"cn":{"text_cn":"尽量模仿它"},"kind":""},{"en":{"text_en":"keep up with the pace"},"cn":{"text_cn":"跟上节奏"},"kind":""},{"en":{"text_en":"not required but feel free to___"},"cn":{"text_cn":"非必需，但可以……"},"kind":""},{"en":{"text_en":"The benefits of karaoke are numerous."},"cn":{"text_cn":"卡拉 OK 的好处很多。"},"kind":""},{"en":{"text_en":"They also teach good timing."},"cn":{"text_cn":"它们也能教你良好的节奏。"},"kind":""},{"en":{"text_en":"Try to imitate that as best as you can."},"cn":{"text_cn":"尽你所能去模仿它。"},"kind":""},{"en":{"text_en":"The tricky part is to make sure you're understanding the lyrics."},"cn":{"text_cn":"棘手的部分是要确保你理解歌词。"},"kind":""},{"en":{"text_en":"I don't want you to rush through songs."},"cn":{"text_cn":"我不希望你匆匆唱完歌曲。"},"kind":""}]}],"extra":""},{"title":"13. Speaking Lesson 4_ Speaking of the Past","slug":"_Codex__13. Speaking Lesson 4_ Speaking of the Past","chapter":"03 - Speaking Section","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\03 - Speaking Section\\_Codex__13. Speaking Lesson 4_ Speaking of the Past.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"consistently","pos":"adv.","ipa":"/kənˈsɪstəntli/"},"cn":{"reading":"【肯】-西-斯-腾-特-利","meaning":"一贯地，始终如一地"}},{"en":{"word":"participle","pos":"n.","ipa":"/ˈpɑːrtɪsɪpl/"},"cn":{"reading":"【帕】-提-西-普-尔","meaning":"分词"}},{"en":{"word":"interchangeable","pos":"adj.","ipa":"/ˌɪntərˈtʃeɪndʒəbl/"},"cn":{"reading":"【因】-特-忒-因-哲-布-尔","meaning":"可互换的"}},{"en":{"word":"emphasis","pos":"n.","ipa":"/ˈemfəsɪs/"},"cn":{"reading":"【恩】-佛-西-斯","meaning":"强调，侧重点"}},{"en":{"word":"infinitive","pos":"n.","ipa":"/ɪnˈfɪnətɪv/"},"cn":{"reading":"【因】-菲-呢-提-夫","meaning":"动词原形，不定式"}},{"en":{"word":"representative","pos":"n.","ipa":"/ˌreprɪˈzentətɪv/"},"cn":{"reading":"【瑞】-普-瑞-特-夫","meaning":"代表，客服代表"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"simple past tense"},"cn":{"meaning":"一般过去时"},"note":""},{"en":{"phrase":"present perfect"},"cn":{"meaning":"现在完成时"},"note":""},{"en":{"phrase":"past experience"},"cn":{"meaning":"过去经历"},"note":""},{"en":{"phrase":"hybrid verbs"},"cn":{"meaning":"混合型动词"},"note":""},{"en":{"phrase":"job history"},"cn":{"meaning":"工作经历"},"note":""},{"en":{"phrase":"in a timely fashion"},"cn":{"meaning":"及时地"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"Our goal is to review___"},"cn":{"text_cn":"我们的目标是复习……"},"kind":""},{"en":{"text_en":"They may start___, and then___"},"cn":{"text_cn":"他们可能先……然后……"},"kind":""},{"en":{"text_en":"A lot of times___"},"cn":{"text_cn":"很多时候……"},"kind":""},{"en":{"text_en":"What skills did you learn?"},"cn":{"text_cn":"你学到了哪些技能？"},"kind":""},{"en":{"text_en":"I have worked as___"},"cn":{"text_cn":"我曾做过……"},"kind":""},{"en":{"text_en":"provide excellent customer service"},"cn":{"text_cn":"提供优秀客户服务"},"kind":""},{"en":{"text_en":"interact with patients"},"cn":{"text_cn":"与患者互动"},"kind":""},{"en":{"text_en":"meet department goals"},"cn":{"text_cn":"达成部门目标"},"kind":""},{"en":{"text_en":"The simple past shows a completed action."},"cn":{"text_cn":"一般过去时表示已经完成的动作。"},"kind":""},{"en":{"text_en":"I graduated from high school in 2000."},"cn":{"text_cn":"我在 2000 年高中毕业。"},"kind":""},{"en":{"text_en":"I have done computer programming for five years."},"cn":{"text_cn":"我做计算机编程已经五年了。"},"kind":""},{"en":{"text_en":"I have worked on 12 different studies."},"cn":{"text_cn":"我参与过 12 项不同研究。"},"kind":""},{"en":{"text_en":"What skills did you learn on these jobs?"},"cn":{"text_cn":"你在这些工作中学到了哪些技能？"},"kind":""}]}],"extra":""},{"title":"14. Speaking Lesson 5_ Speaking of the Future","slug":"_Codex__14. Speaking Lesson 5_ Speaking of the Future","chapter":"03 - Speaking Section","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\03 - Speaking Section\\_Codex__14. Speaking Lesson 5_ Speaking of the Future.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"auxiliary","pos":"adj.","ipa":"/ɔːɡˈzɪliəri/"},"cn":{"reading":"【奥】-格-齐-利-厄-瑞","meaning":"助动词；辅助的"}},{"en":{"word":"infinitive","pos":"n.","ipa":"/ɪnˈfɪnətɪv/"},"cn":{"reading":"【因】-菲-呢-提-夫","meaning":"动词原形，不定式"}},{"en":{"word":"contracted","pos":"v.","ipa":"/kənˈtræktɪd/"},"cn":{"reading":"【肯】-传-克-提-德","meaning":"缩约，缩短"}},{"en":{"word":"blended","pos":"adj.","ipa":"/ˈblendɪd/"},"cn":{"reading":"【布】-兰-迪-德","meaning":"混合的，连读的"}},{"en":{"word":"continuous","pos":"adj.","ipa":"/kənˈtɪnjuəs/"},"cn":{"reading":"【肯】-提-纽-厄-斯","meaning":"进行的，持续的"}},{"en":{"word":"aspiration","pos":"n.","ipa":"/ˌæspəˈreɪʃn/"},"cn":{"reading":"【艾】-斯-珀-瑞-申","meaning":"志向，抱负"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"simple future"},"cn":{"meaning":"一般将来时"},"note":""},{"en":{"phrase":"present continuous form"},"cn":{"meaning":"现在进行时形式"},"note":""},{"en":{"phrase":"contracted down into"},"cn":{"meaning":"缩约成"},"note":""},{"en":{"phrase":"pay close attention to"},"cn":{"meaning":"密切注意"},"note":""},{"en":{"phrase":"native speakers"},"cn":{"meaning":"母语者"},"note":""},{"en":{"phrase":"five year plan"},"cn":{"meaning":"五年计划"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"It can be expressed several different ways."},"cn":{"text_cn":"它可以用几种不同方式表达。"},"kind":""},{"en":{"text_en":"Keep in mind that___"},"cn":{"text_cn":"记住……"},"kind":""},{"en":{"text_en":"Answer this question for me."},"cn":{"text_cn":"请回答这个问题。"},"kind":""},{"en":{"text_en":"I'm going to___"},"cn":{"text_cn":"我打算……"},"kind":""},{"en":{"text_en":"We'll study again tomorrow."},"cn":{"text_cn":"我们明天再学习。"},"kind":""},{"en":{"text_en":"I'll know that I'm fluent when___"},"cn":{"text_cn":"当……时我就知道自己流利了"},"kind":""},{"en":{"text_en":"office supplies"},"cn":{"text_cn":"办公用品"},"kind":""},{"en":{"text_en":"hopes and aspirations"},"cn":{"text_cn":"希望和抱负"},"kind":""},{"en":{"text_en":"I will cook dinner tonight."},"cn":{"text_cn":"我今晚会做晚饭。"},"kind":""},{"en":{"text_en":"I'll go to work tomorrow."},"cn":{"text_cn":"我明天会去上班。"},"kind":""},{"en":{"text_en":"I'm going to see you tomorrow."},"cn":{"text_cn":"我明天会见你。"},"kind":""},{"en":{"text_en":"What is your five year plan?"},"cn":{"text_cn":"你的五年计划是什么？"},"kind":""}]}],"extra":""},{"title":"15. Vocabulary Builder 1","slug":"_Codex__15. Vocabulary Builder 1","chapter":"04 - Vocabulary Building","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\04 - Vocabulary Building\\_Codex__15. Vocabulary Builder 1.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"unyielding","pos":"adj.","ipa":"/ʌnˈjiːldɪŋ/"},"cn":{"reading":"【安】-耶-尔-丁","meaning":"不动摇的，不屈服的"}},{"en":{"word":"disobeyed","pos":"v.","ipa":"/ˌdɪsəˈbeɪd/"},"cn":{"reading":"【迪】-斯-额-贝-德","meaning":"不服从，违抗"}},{"en":{"word":"elicit","pos":"v.","ipa":"/iˈlɪsɪt/"},"cn":{"reading":"【伊】-利-西-特","meaning":"引出，诱出"}},{"en":{"word":"unmoved","pos":"adj.","ipa":"/ˌʌnˈmuːvd/"},"cn":{"reading":"【安】-穆-夫-德","meaning":"不为所动的"}},{"en":{"word":"discontinued","pos":"v.","ipa":"/ˌdɪskənˈtɪnjuːd/"},"cn":{"reading":"【迪】-斯-肯-提-纽-德","meaning":"停止生产，停止做"}},{"en":{"word":"prefix","pos":"n.","ipa":"/ˈpriːfɪks/"},"cn":{"reading":"【普】-瑞-菲-克-斯","meaning":"前缀"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"mother and daughter"},"cn":{"meaning":"母亲和女儿"},"note":""},{"en":{"phrase":"not moving, changing, or bending"},"cn":{"meaning":"不移动、不改变、不弯曲"},"note":""},{"en":{"phrase":"bring something out"},"cn":{"meaning":"引出某物"},"note":""},{"en":{"phrase":"change his mind"},"cn":{"meaning":"改变他的想法"},"note":""},{"en":{"phrase":"ideal example"},"cn":{"meaning":"理想示范"},"note":""},{"en":{"phrase":"reverse the meaning"},"cn":{"meaning":"反转含义"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"We'll review the vocabulary words afterwards."},"cn":{"text_cn":"之后我们会复习词汇。"},"kind":""},{"en":{"text_en":"Try to use___ in a sentence of your own."},"cn":{"text_cn":"试着用……自己造句。"},"kind":""},{"en":{"text_en":"It means to___"},"cn":{"text_cn":"它的意思是……"},"kind":""},{"en":{"text_en":"Not always, but quite often___"},"cn":{"text_cn":"不总是如此，但经常……"},"kind":""},{"en":{"text_en":"unyielding faith in this project"},"cn":{"text_cn":"对这个项目坚定的信心"},"kind":""},{"en":{"text_en":"elicit a response"},"cn":{"text_cn":"引出回应"},"kind":""},{"en":{"text_en":"discontinued my favorite perfume"},"cn":{"text_cn":"停产了我最喜欢的香水"},"kind":""},{"en":{"text_en":"model student"},"cn":{"text_cn":"模范学生"},"kind":""},{"en":{"text_en":"She has unyielding faith in this project."},"cn":{"text_cn":"她对这个项目有坚定的信心。"},"kind":""},{"en":{"text_en":"I ask questions in order to elicit a response from you."},"cn":{"text_cn":"我提问是为了引出你的回应。"},"kind":""},{"en":{"text_en":"I tried to change his mind, but his opinion was unmoved."},"cn":{"text_cn":"我试图改变他的想法，但他的观点没有动摇。"},"kind":""},{"en":{"text_en":"They are discontinuing my favorite perfume."},"cn":{"text_cn":"他们要停产我最喜欢的香水。"},"kind":""},{"en":{"text_en":"Dis and un reverse the meaning of the word."},"cn":{"text_cn":"`dis` 和 `un` 会反转词义。"},"kind":""}]}],"extra":""},{"title":"17. Vocabulary Builder 2","slug":"_Codex__17. Vocabulary Builder 2","chapter":"04 - Vocabulary Building","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\04 - Vocabulary Building\\_Codex__17. Vocabulary Builder 2.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"innovative","pos":"adj.","ipa":"/ˈɪnəveɪtɪv/"},"cn":{"reading":"【伊】-呢-维-提-夫","meaning":"创新的"}},{"en":{"word":"environmentalist","pos":"n.","ipa":"/ɪnˌvaɪrənˈmentəlɪst/"},"cn":{"reading":"【因】-外-若-门-特-利-斯-特","meaning":"环保主义者"}},{"en":{"word":"ingenious","pos":"adj.","ipa":"/ɪnˈdʒiːniəs/"},"cn":{"reading":"【因】-吉-尼-厄-斯","meaning":"巧妙的，聪明的"}},{"en":{"word":"emissions","pos":"n.","ipa":"/ɪˈmɪʃnz/"},"cn":{"reading":"【伊】-米-申-兹","meaning":"排放物"}},{"en":{"word":"prototype","pos":"n.","ipa":"/ˈproʊtətaɪp/"},"cn":{"reading":"【普】-若-特-泰-普","meaning":"原型，样机"}},{"en":{"word":"foresee","pos":"v.","ipa":"/fɔːrˈsiː/"},"cn":{"reading":"【佛】-尔-西","meaning":"预见，预测"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"solar powered cars"},"cn":{"meaning":"太阳能汽车"},"note":""},{"en":{"phrase":"come out"},"cn":{"meaning":"上映，发布，问世"},"note":""},{"en":{"phrase":"branch out"},"cn":{"meaning":"拓展，尝试新方向"},"note":""},{"en":{"phrase":"carry out"},"cn":{"meaning":"执行，落实"},"note":""},{"en":{"phrase":"business enterprise"},"cn":{"meaning":"商业企业，商业项目"},"note":""},{"en":{"phrase":"venture capitalist"},"cn":{"meaning":"风险投资人"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"What I'll do is___"},"cn":{"text_cn":"我要做的是……"},"kind":""},{"en":{"text_en":"It means to___"},"cn":{"text_cn":"它的意思是……"},"kind":""},{"en":{"text_en":"Make sure that you are able to___"},"cn":{"text_cn":"确保你能够……"},"kind":""},{"en":{"text_en":"Let's move on."},"cn":{"text_cn":"我们继续。"},"kind":""},{"en":{"text_en":"promoted at work"},"cn":{"text_cn":"在工作中被晋升"},"kind":""},{"en":{"text_en":"innovative ideas"},"cn":{"text_cn":"创新想法"},"kind":""},{"en":{"text_en":"implement the new projects successfully"},"cn":{"text_cn":"成功落实新项目"},"kind":""},{"en":{"text_en":"branch out and do a play"},"cn":{"text_cn":"拓展去演戏剧"},"kind":""},{"en":{"text_en":"She was promoted at work for her innovative ideas."},"cn":{"text_cn":"她因为创新想法在工作中获得晋升。"},"kind":""},{"en":{"text_en":"Many environmentalists are working to reverse global warming."},"cn":{"text_cn":"许多环保主义者正在努力逆转全球变暖。"},"kind":""},{"en":{"text_en":"He had the ingenious idea that solved all of our problems."},"cn":{"text_cn":"他想出了一个巧妙的主意，解决了我们所有问题。"},"kind":""},{"en":{"text_en":"He failed to implement the new projects successfully."},"cn":{"text_cn":"他没能成功落实新项目。"},"kind":""},{"en":{"text_en":"I foresee great fortune in your future."},"cn":{"text_cn":"我预见你未来会有好运。"},"kind":""}]}],"extra":""},{"title":"19. Vocabulary Builder 3","slug":"_Codex__19. Vocabulary Builder 3","chapter":"04 - Vocabulary Building","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\04 - Vocabulary Building\\_Codex__19. Vocabulary Builder 3.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"plummet","pos":"v.","ipa":"/ˈplʌmɪt/"},"cn":{"reading":"【普】-拉-米-特","meaning":"暴跌，骤降"}},{"en":{"word":"recession","pos":"n.","ipa":"/rɪˈseʃn/"},"cn":{"reading":"【瑞】-塞-申","meaning":"经济衰退"}},{"en":{"word":"vigilant","pos":"adj.","ipa":"/ˈvɪdʒɪlənt/"},"cn":{"reading":"【维】-吉-伦-特","meaning":"警惕的，谨慎的"}},{"en":{"word":"portfolio","pos":"n.","ipa":"/pɔːrtˈfoʊlioʊ/"},"cn":{"reading":"【波】-特-佛-利-欧","meaning":"投资组合"}},{"en":{"word":"economist","pos":"n.","ipa":"/ɪˈkɑːnəmɪst/"},"cn":{"reading":"【伊】-康-呢-米-斯-特","meaning":"经济学家"}},{"en":{"word":"lucrative","pos":"adj.","ipa":"/ˈluːkrətɪv/"},"cn":{"reading":"【路】-克-若-提-夫","meaning":"有利可图的"}},{"en":{"word":"currency","pos":"n.","ipa":"/ˈkɜːrənsi/"},"cn":{"reading":"【克】-伦-西","meaning":"货币"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"stocks and bonds"},"cn":{"meaning":"股票和债券"},"note":""},{"en":{"phrase":"economic decline"},"cn":{"meaning":"经济下滑"},"note":""},{"en":{"phrase":"annual rate of return"},"cn":{"meaning":"年回报率"},"note":""},{"en":{"phrase":"financial system"},"cn":{"meaning":"金融体系"},"note":""},{"en":{"phrase":"desired result"},"cn":{"meaning":"想要的结果"},"note":""},{"en":{"phrase":"yield a profit"},"cn":{"meaning":"产生利润"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"Our first word is___"},"cn":{"text_cn":"第一个词是……"},"kind":""},{"en":{"text_en":"It has two different meanings."},"cn":{"text_cn":"它有两个不同含义。"},"kind":""},{"en":{"text_en":"You'll hear___ frequently."},"cn":{"text_cn":"你会经常听到……"},"kind":""},{"en":{"text_en":"Can you think of the opposite of___?"},"cn":{"text_cn":"你能想到……的反义词吗？"},"kind":""},{"en":{"text_en":"never wastes money"},"cn":{"text_cn":"从不浪费钱"},"kind":""},{"en":{"text_en":"review the city's potential"},"cn":{"text_cn":"评估城市潜力"},"kind":""},{"en":{"text_en":"get a desired result"},"cn":{"text_cn":"获得想要的结果"},"kind":""},{"en":{"text_en":"a lucrative business"},"cn":{"text_cn":"有利可图的业务"},"kind":""},{"en":{"text_en":"Millions of people lost their jobs during the recession of 2008."},"cn":{"text_cn":"数百万人在 2008 年经济衰退期间失业。"},"kind":""},{"en":{"text_en":"He is very vigilant with his finances and never wastes money."},"cn":{"text_cn":"他在财务上非常谨慎，从不浪费钱。"},"kind":""},{"en":{"text_en":"What tactics should I use to get a job?"},"cn":{"text_cn":"我应该用什么策略找工作？"},"kind":""},{"en":{"text_en":"My savings account yields 1 percent annually."},"cn":{"text_cn":"我的储蓄账户每年产生 1% 的收益。"},"kind":""},{"en":{"text_en":"Currency has changed from gold coins to paper money."},"cn":{"text_cn":"货币已经从金币变成纸币。"},"kind":""}]}],"extra":""},{"title":"21. Vocabulary Builder 4","slug":"_Codex__21. Vocabulary Builder 4","chapter":"04 - Vocabulary Building","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\04 - Vocabulary Building\\_Codex__21. Vocabulary Builder 4.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"irate","pos":"adj.","ipa":"/aɪˈreɪt/"},"cn":{"reading":"【艾】-瑞-特","meaning":"非常愤怒的"}},{"en":{"word":"livid","pos":"adj.","ipa":"/ˈlɪvɪd/"},"cn":{"reading":"【利】-维-德","meaning":"怒不可遏的"}},{"en":{"word":"hostile","pos":"adj.","ipa":"/ˈhɑːstl/"},"cn":{"reading":"【哈】-斯-特-尔","meaning":"敌意的，敌对的"}},{"en":{"word":"abhor","pos":"v.","ipa":"/əbˈhɔːr/"},"cn":{"reading":"【额】-布-霍-尔","meaning":"厌恶，憎恶"}},{"en":{"word":"aggravated","pos":"v.","ipa":"/ˈæɡrəveɪtɪd/"},"cn":{"reading":"【艾】-格-若-维-提-德","meaning":"加重，激怒"}},{"en":{"word":"allay","pos":"v.","ipa":"/əˈleɪ/"},"cn":{"reading":"【额】-累","meaning":"缓解，减轻"}},{"en":{"word":"intervene","pos":"v.","ipa":"/ˌɪntərˈviːn/"},"cn":{"reading":"【因】-特-尔-文","meaning":"介入，干预"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"angry customer"},"cn":{"meaning":"生气的客户"},"note":""},{"en":{"phrase":"stood me up"},"cn":{"meaning":"放我鸽子"},"note":""},{"en":{"phrase":"hostile takeover"},"cn":{"meaning":"恶意接管"},"note":""},{"en":{"phrase":"words of unrest"},"cn":{"meaning":"表示不安、烦躁的词"},"note":""},{"en":{"phrase":"bar brawl"},"cn":{"meaning":"酒吧斗殴"},"note":""},{"en":{"phrase":"deplete vs delete"},"cn":{"meaning":"消耗 vs 删除"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"It means the exact same word as___"},"cn":{"text_cn":"它和……意思完全一样"},"kind":""},{"en":{"text_en":"In this context___"},"cn":{"text_cn":"在这个语境中……"},"kind":""},{"en":{"text_en":"A common mistake is to mix up___"},"cn":{"text_cn":"常见错误是混淆……"},"kind":""},{"en":{"text_en":"Notice___"},"cn":{"text_cn":"注意……"},"kind":""},{"en":{"text_en":"dealing with an angry customer"},"cn":{"text_cn":"处理生气的客户"},"kind":""},{"en":{"text_en":"allay my worries"},"cn":{"text_cn":"缓解我的担忧"},"kind":""},{"en":{"text_en":"intervene during___"},"cn":{"text_cn":"在……期间介入"},"kind":""},{"en":{"text_en":"depleted all our resources"},"cn":{"text_cn":"耗尽了所有资源"},"kind":""},{"en":{"text_en":"She was irate when she found out."},"cn":{"text_cn":"她发现后非常生气。"},"kind":""},{"en":{"text_en":"I'm livid because you stood me up for dinner."},"cn":{"text_cn":"你晚餐放我鸽子，我非常生气。"},"kind":""},{"en":{"text_en":"Talking to you always allays my worries."},"cn":{"text_cn":"和你谈话总能缓解我的担忧。"},"kind":""},{"en":{"text_en":"We have depleted all our resources."},"cn":{"text_cn":"我们已经耗尽了所有资源。"},"kind":""},{"en":{"text_en":"Deplete means to lessen. Delete means to erase something completely."},"cn":{"text_cn":"`deplete` 是减少、耗尽；`delete` 是完全删除。"},"kind":""}]}],"extra":""},{"title":"23. Vocabulary Builder 5_ Farming and Agriculture","slug":"_Codex__23. Vocabulary Builder 5_ Farming and Agriculture","chapter":"04 - Vocabulary Building","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\04 - Vocabulary Building\\_Codex__23. Vocabulary Builder 5_ Farming and Agriculture.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"cultivation","pos":"n.","ipa":"/ˌkʌltɪˈveɪʃn/"},"cn":{"reading":"【卡】-尔-提-维-申","meaning":"耕作；培养"}},{"en":{"word":"drought","pos":"n.","ipa":"/draʊt/"},"cn":{"reading":"【德】-劳-特","meaning":"干旱"}},{"en":{"word":"irrigation","pos":"n.","ipa":"/ˌɪrɪˈɡeɪʃn/"},"cn":{"reading":"【伊】-瑞-给-申","meaning":"灌溉"}},{"en":{"word":"precipitation","pos":"n.","ipa":"/prɪˌsɪpɪˈteɪʃn/"},"cn":{"reading":"【普】-瑞-西-皮-忒-申","meaning":"降水"}},{"en":{"word":"infrastructure","pos":"n.","ipa":"/ˈɪnfrəstrʌktʃər/"},"cn":{"reading":"【因】-弗-若-斯-抓-克-丘","meaning":"基础设施"}},{"en":{"word":"catastrophic","pos":"adj.","ipa":"/ˌkætəˈstrɑːfɪk/"},"cn":{"reading":"【凯】-特-斯-抓-菲-克","meaning":"灾难性的"}},{"en":{"word":"famine","pos":"n.","ipa":"/ˈfæmɪn/"},"cn":{"reading":"【法】-民","meaning":"饥荒"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"farming and agriculture"},"cn":{"meaning":"农业和耕作"},"note":""},{"en":{"phrase":"grow crops"},"cn":{"meaning":"种庄稼"},"note":""},{"en":{"phrase":"enrich the soil"},"cn":{"meaning":"使土壤肥沃"},"note":""},{"en":{"phrase":"flourish in this environment"},"cn":{"meaning":"在这种环境中蓬勃发展"},"note":""},{"en":{"phrase":"conserve power"},"cn":{"meaning":"节约用电"},"note":""},{"en":{"phrase":"improper funding"},"cn":{"meaning":"资金分配不当"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"It originally started as___"},"cn":{"text_cn":"它最初是作为……开始的"},"kind":""},{"en":{"text_en":"Eventually people started to use it to___"},"cn":{"text_cn":"后来人们开始用它来……"},"kind":""},{"en":{"text_en":"Keep in mind___"},"cn":{"text_cn":"记住……"},"kind":""},{"en":{"text_en":"You hear___ a lot on TV."},"cn":{"text_cn":"你在电视上经常听到……"},"kind":""},{"en":{"text_en":"creativity flourishes in this environment"},"cn":{"text_cn":"创造力在这种环境中蓬勃发展"},"kind":""},{"en":{"text_en":"there is a shortage of electricity"},"cn":{"text_cn":"电力短缺"},"kind":""},{"en":{"text_en":"we do not have the resources"},"cn":{"text_cn":"我们没有资源"},"kind":""},{"en":{"text_en":"infrastructure is worsening due to improper funding"},"cn":{"text_cn":"基础设施因资金不当而恶化"},"kind":""},{"en":{"text_en":"Survival is not guaranteed."},"cn":{"text_cn":"生存并不能得到保证。"},"kind":""},{"en":{"text_en":"There is a 50% chance of precipitation tonight."},"cn":{"text_cn":"今晚有 50% 的降水概率。"},"kind":""},{"en":{"text_en":"Creativity flourishes in this environment."},"cn":{"text_cn":"创造力在这种环境中蓬勃发展。"},"kind":""},{"en":{"text_en":"The legend has persisted for many centuries."},"cn":{"text_cn":"这个传说延续了许多世纪。"},"kind":""},{"en":{"text_en":"We do not have the resources to open a new store."},"cn":{"text_cn":"我们没有资源开新店。"},"kind":""}]}],"extra":""},{"title":"25. Vocabulary Builder 6_ Urban, Suburban, and Rural","slug":"_Codex__25. Vocabulary Builder 6_ Urban, Suburban, and Rural","chapter":"04 - Vocabulary Building","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\04 - Vocabulary Building\\_Codex__25. Vocabulary Builder 6_ Urban, Suburban, and Rural.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"disparity","pos":"n.","ipa":"/dɪˈspærəti/"},"cn":{"reading":"【迪】-斯-派-若-提","meaning":"差距，不平等"}},{"en":{"word":"metropolitan","pos":"adj.","ipa":"/ˌmetrəˈpɑːlɪtən/"},"cn":{"reading":"【梅】-特-若-帕-利-腾","meaning":"大城市的，都会的"}},{"en":{"word":"quirky","pos":"adj.","ipa":"/ˈkwɜːrki/"},"cn":{"reading":"【阔】-尔-基","meaning":"古怪的，独特的"}},{"en":{"word":"anonymity","pos":"n.","ipa":"/ˌænəˈnɪməti/"},"cn":{"reading":"【艾】-呢-尼-默-提","meaning":"匿名，不为人知"}},{"en":{"word":"deterrent","pos":"n.","ipa":"/dɪˈtɜːrənt/"},"cn":{"reading":"【迪】-特-伦-特","meaning":"威慑物，阻止因素"}},{"en":{"word":"acquainted","pos":"v.","ipa":"/əˈkweɪntɪd/"},"cn":{"reading":"【额】-奎-恩-提-德","meaning":"熟悉，认识"}},{"en":{"word":"stigmatized","pos":"v.","ipa":"/ˈstɪɡmətaɪzd/"},"cn":{"reading":"【斯】-提-格-么-泰-兹-德","meaning":"使蒙受污名"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"urban, suburban, and rural communities"},"cn":{"meaning":"城市、郊区和农村社区"},"note":""},{"en":{"phrase":"negative connotation"},"cn":{"meaning":"负面含义"},"note":""},{"en":{"phrase":"city-run organizations"},"cn":{"meaning":"城市运营机构"},"note":""},{"en":{"phrase":"forge a friendship"},"cn":{"meaning":"建立友谊"},"note":""},{"en":{"phrase":"on the outskirts"},"cn":{"meaning":"在外围，在郊外"},"note":""},{"en":{"phrase":"well equipped to handle this job"},"cn":{"meaning":"有充分准备胜任这份工作"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"Take a moment to___"},"cn":{"text_cn":"花一点时间去……"},"kind":""},{"en":{"text_en":"It means that things are___"},"cn":{"text_cn":"它表示事情是……"},"kind":""},{"en":{"text_en":"You'll find___ is used a lot with___"},"cn":{"text_cn":"你会发现……经常和……一起用"},"kind":""},{"en":{"text_en":"It can work that way as well."},"cn":{"text_cn":"它也可以这样用。"},"kind":""},{"en":{"text_en":"metropolitan transportation system"},"cn":{"text_cn":"都市交通系统"},"kind":""},{"en":{"text_en":"act as a deterrent"},"cn":{"text_cn":"起到威慑作用"},"kind":""},{"en":{"text_en":"family-oriented events"},"cn":{"text_cn":"以家庭为中心的活动"},"kind":""},{"en":{"text_en":"well equipped to handle this job"},"cn":{"text_cn":"很有能力胜任这份工作"},"kind":""},{"en":{"text_en":"It's sad to see the disparity between the rich and the poor."},"cn":{"text_cn":"看到贫富差距令人难过。"},"kind":""},{"en":{"text_en":"The metropolitan transportation system extended into the suburbs."},"cn":{"text_cn":"都市交通系统延伸到了郊区。"},"kind":""},{"en":{"text_en":"Many famous actors wish for the anonymity of their younger years."},"cn":{"text_cn":"许多著名演员怀念年轻时不为人知的状态。"},"kind":""},{"en":{"text_en":"I've seen him before, but we're not well acquainted."},"cn":{"text_cn":"我以前见过他，但我们并不熟。"},"kind":""},{"en":{"text_en":"The girl is well equipped to handle this job."},"cn":{"text_cn":"这个女孩完全有能力胜任这份工作。"},"kind":""}]}],"extra":""},{"title":"26. Vocabulary Review","slug":"_Codex__26. Vocabulary Review","chapter":"04 - Vocabulary Building","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\04 - Vocabulary Building\\_Codex__26. Vocabulary Review.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"irrigation","pos":"n.","ipa":"/ˌɪrɪˈɡeɪʃn/"},"cn":{"reading":"【伊】-瑞-给-申","meaning":"灌溉"}},{"en":{"word":"lucrative","pos":"adj.","ipa":"/ˈluːkrətɪv/"},"cn":{"reading":"【路】-克-若-提-夫","meaning":"有利可图的"}},{"en":{"word":"demoralized","pos":"v.","ipa":"/dɪˈmɔːrəlaɪzd/"},"cn":{"reading":"【迪】-摩-若-莱-兹-德","meaning":"使沮丧，使士气低落"}},{"en":{"word":"vigilant","pos":"adj.","ipa":"/ˈvɪdʒɪlənt/"},"cn":{"reading":"【维】-吉-伦-特","meaning":"警惕的，谨慎的"}},{"en":{"word":"catastrophic","pos":"adj.","ipa":"/ˌkætəˈstrɑːfɪk/"},"cn":{"reading":"【凯】-特-斯-抓-菲-克","meaning":"灾难性的"}},{"en":{"word":"precipitation","pos":"n.","ipa":"/prɪˌsɪpɪˈteɪʃn/"},"cn":{"reading":"【普】-瑞-西-皮-忒-申","meaning":"降水"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"review schedule"},"cn":{"meaning":"复习计划"},"note":""},{"en":{"phrase":"retain them in your long term memory"},"cn":{"meaning":"把它们保留在长期记忆中"},"note":""},{"en":{"phrase":"write down the correct word"},"cn":{"meaning":"写下正确单词"},"note":""},{"en":{"phrase":"test your spelling"},"cn":{"meaning":"测试拼写"},"note":""},{"en":{"phrase":"using the word in context"},"cn":{"meaning":"在语境中使用单词"},"note":""},{"en":{"phrase":"listening capabilities"},"cn":{"meaning":"听力能力"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"It's time to review."},"cn":{"text_cn":"到复习时间了。"},"kind":""},{"en":{"text_en":"Listen to the definition."},"cn":{"text_cn":"听定义。"},"kind":""},{"en":{"text_en":"Repeat the sentence."},"cn":{"text_cn":"重复这个句子。"},"kind":""},{"en":{"text_en":"Keep reviewing these words."},"cn":{"text_cn":"持续复习这些词。"},"kind":""},{"en":{"text_en":"made the company more productive"},"cn":{"text_cn":"让公司更高效"},"kind":""},{"en":{"text_en":"the merger was an exciting new venture"},"cn":{"text_cn":"合并是一个令人兴奋的新项目"},"kind":""},{"en":{"text_en":"what tactics should I use to get the job"},"cn":{"text_cn":"我应该用什么策略拿到这份工作"},"kind":""},{"en":{"text_en":"harmful emissions in the city"},"cn":{"text_cn":"城市里的有害排放"},"kind":""},{"en":{"text_en":"The ideal review schedule would be to review new words the very next day."},"cn":{"text_cn":"理想的复习计划是在第二天复习新词。"},"kind":""},{"en":{"text_en":"Selling real estate is a very lucrative business."},"cn":{"text_cn":"销售房地产是一门非常赚钱的生意。"},"kind":""},{"en":{"text_en":"His innovative ideas made the company more productive."},"cn":{"text_cn":"他的创新想法让公司更高效。"},"kind":""},{"en":{"text_en":"I have unyielding faith in your abilities."},"cn":{"text_cn":"我对你的能力有坚定的信心。"},"kind":""},{"en":{"text_en":"The merger was an exciting new venture for both companies."},"cn":{"text_cn":"这次合并对两家公司来说都是令人兴奋的新事业。"},"kind":""}]}],"extra":""},{"title":"27. Listening Comprehension Lesson 1_ Breakfast","slug":"_Codex__27. Listening Comprehension Lesson 1_ Breakfast","chapter":"05 - Listening Comprehension","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\05 - Listening Comprehension\\_Codex__27. Listening Comprehension Lesson 1_ Breakfast.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"comprehension","pos":"n.","ipa":"/ˌkɑːmprɪˈhenʃn/"},"cn":{"reading":"【康】-普-瑞-亨-申","meaning":"理解能力"}},{"en":{"word":"restaurant","pos":"n.","ipa":"/ˈrestrɑːnt/"},"cn":{"reading":"【瑞】-斯-特-让-特","meaning":"餐馆"}},{"en":{"word":"classic","pos":"adj.","ipa":"/ˈklæsɪk/"},"cn":{"reading":"【克】-拉-西-克","meaning":"经典的，标准的"}},{"en":{"word":"calories","pos":"n.","ipa":"/ˈkæləriːz/"},"cn":{"reading":"【凯】-勒-瑞-兹","meaning":"卡路里"}},{"en":{"word":"grapefruit","pos":"n.","ipa":"/ˈɡreɪpfruːt/"},"cn":{"reading":"【格】-瑞-普-弗-路-特","meaning":"葡萄柚"}},{"en":{"word":"confirmation","pos":"n.","ipa":"/ˌkɑːnfərˈmeɪʃn/"},"cn":{"reading":"【康】-弗-梅-申","meaning":"确认"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"order breakfast"},"cn":{"meaning":"点早餐"},"note":""},{"en":{"phrase":"add or subtract"},"cn":{"meaning":"增加或去掉"},"note":""},{"en":{"phrase":"classic breakfast plate"},"cn":{"meaning":"经典早餐盘"},"note":""},{"en":{"phrase":"change his mind"},"cn":{"meaning":"改变主意"},"note":""},{"en":{"phrase":"watch his weight"},"cn":{"meaning":"控制体重"},"note":""},{"en":{"phrase":"that'll do"},"cn":{"meaning":"那就可以"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"What did he decide to order?"},"cn":{"text_cn":"他决定点什么？"},"kind":""},{"en":{"text_en":"Let's review real quick."},"cn":{"text_cn":"我们快速复习一下。"},"kind":""},{"en":{"text_en":"He decided against___"},"cn":{"text_cn":"他决定不……"},"kind":""},{"en":{"text_en":"Orange juice will do."},"cn":{"text_cn":"橙汁就可以。"},"kind":""},{"en":{"text_en":"change his mind for a completely different reason"},"cn":{"text_cn":"因为完全不同的原因改变主意"},"kind":""},{"en":{"text_en":"decided against___"},"cn":{"text_cn":"决定不采用……"},"kind":""},{"en":{"text_en":"that'll do"},"cn":{"text_cn":"那样就可以"},"kind":""},{"en":{"text_en":"high in calories and high in fat"},"cn":{"text_cn":"高热量高脂肪"},"kind":""},{"en":{"text_en":"He decided against the pancakes."},"cn":{"text_cn":"他决定不要煎饼。"},"kind":""},{"en":{"text_en":"He wants to watch his weight."},"cn":{"text_cn":"他想控制体重。"},"kind":""},{"en":{"text_en":"That is confirmation of yes."},"cn":{"text_cn":"这就是表示确认同意。"},"kind":""}]}],"extra":""},{"title":"28. Listening Comprehension Lesson 2_ Sports","slug":"_Codex__28. Listening Comprehension Lesson 2_ Sports","chapter":"05 - Listening Comprehension","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\05 - Listening Comprehension\\_Codex__28. Listening Comprehension Lesson 2_ Sports.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"preference","pos":"n.","ipa":"/ˈprefərəns/"},"cn":{"reading":"【普】-瑞-弗-伦-斯","meaning":"偏好"}},{"en":{"word":"sympathy","pos":"n.","ipa":"/ˈsɪmpəθi/"},"cn":{"reading":"【辛】-珀-西","meaning":"同情，慰问"}},{"en":{"word":"recover","pos":"v.","ipa":"/rɪˈkʌvər/"},"cn":{"reading":"【瑞】-卡-弗","meaning":"恢复"}},{"en":{"word":"significant","pos":"adj.","ipa":"/sɪɡˈnɪfɪkənt/"},"cn":{"reading":"【西】-格-尼-菲-肯-特","meaning":"重大的"}},{"en":{"word":"unfortunately","pos":"adv.","ipa":"/ʌnˈfɔːrtʃənətli/"},"cn":{"reading":"【安】-佛-丘-呢-特-利","meaning":"不幸地"}},{"en":{"word":"injured","pos":"adj.","ipa":"/ˈɪndʒərd/"},"cn":{"reading":"【因】-哲-德","meaning":"受伤的"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"after-school program"},"cn":{"meaning":"课后项目"},"note":""},{"en":{"phrase":"enroll their son in"},"cn":{"meaning":"给儿子报名参加"},"note":""},{"en":{"phrase":"decide against"},"cn":{"meaning":"决定不做"},"note":""},{"en":{"phrase":"ice rink"},"cn":{"meaning":"冰场"},"note":""},{"en":{"phrase":"too little experience"},"cn":{"meaning":"经验太少"},"note":""},{"en":{"phrase":"bounce back from"},"cn":{"meaning":"从……恢复过来"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"Did you get it right?"},"cn":{"text_cn":"你答对了吗？"},"kind":""},{"en":{"text_en":"What ___ means is___"},"cn":{"text_cn":"……的意思是……"},"kind":""},{"en":{"text_en":"That's too bad."},"cn":{"text_cn":"真遗憾。"},"kind":""},{"en":{"text_en":"That's horrible."},"cn":{"text_cn":"太糟糕了。"},"kind":""},{"en":{"text_en":"discuss their preference"},"cn":{"text_cn":"讨论他们的偏好"},"kind":""},{"en":{"text_en":"decide against going to___"},"cn":{"text_cn":"决定不去……"},"kind":""},{"en":{"text_en":"too little experience"},"cn":{"text_cn":"经验太少"},"kind":""},{"en":{"text_en":"sorry to hear that"},"cn":{"text_cn":"听到这个很遗憾"},"kind":""},{"en":{"text_en":"What after-school program should they enroll their son in?"},"cn":{"text_cn":"他们应该给儿子报名哪个课后项目？"},"kind":""},{"en":{"text_en":"We decided against going to the movies this evening."},"cn":{"text_cn":"我们决定今晚不去看电影了。"},"kind":""},{"en":{"text_en":"That's too bad, sorry to hear that."},"cn":{"text_cn":"真遗憾，听到这个很抱歉。"},"kind":""},{"en":{"text_en":"That's horrible, so sorry to hear that."},"cn":{"text_cn":"太糟糕了，听到这个我很难过。"},"kind":""},{"en":{"text_en":"The coach had too little experience."},"cn":{"text_cn":"教练经验太少。"},"kind":""}]}],"extra":""},{"title":"29. Listening Comprehension Lesson 3_ Graduate School Dictation","slug":"_Codex__29. Listening Comprehension Lesson 3_ Graduate School Dictation","chapter":"05 - Listening Comprehension","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\05 - Listening Comprehension\\_Codex__29. Listening Comprehension Lesson 3_ Graduate School Dictation.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"dictation","pos":"n.","ipa":"/dɪkˈteɪʃn/"},"cn":{"reading":"【迪】-克-忒-申","meaning":"听写"}},{"en":{"word":"terminology","pos":"n.","ipa":"/ˌtɜːrmɪˈnɑːlədʒi/"},"cn":{"reading":"【特】-尔-米-纳-勒-吉","meaning":"术语"}},{"en":{"word":"bachelor's","pos":"n.","ipa":"/ˈbætʃələrz/"},"cn":{"reading":"【巴】-切-勒-兹","meaning":"学士学位"}},{"en":{"word":"anthropology","pos":"n.","ipa":"/ˌænθrəˈpɑːlədʒi/"},"cn":{"reading":"【安】-斯-若-帕-勒-吉","meaning":"人类学"}},{"en":{"word":"linguistics","pos":"n.","ipa":"/lɪŋˈɡwɪstɪks/"},"cn":{"reading":"【林】-归-斯-提-克-斯","meaning":"语言学"}},{"en":{"word":"entrepreneur","pos":"n.","ipa":"/ˌɑːntrəprəˈnɜːr/"},"cn":{"reading":"【昂】-特-若-普-若-讷-尔","meaning":"创业者"}},{"en":{"word":"incentive","pos":"n.","ipa":"/ɪnˈsentɪv/"},"cn":{"reading":"【因】-森-提-夫","meaning":"激励，诱因"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"word-for-word"},"cn":{"meaning":"逐字地"},"note":""},{"en":{"phrase":"graduate school"},"cn":{"meaning":"研究生院"},"note":""},{"en":{"phrase":"bachelor's degree"},"cn":{"meaning":"学士学位"},"note":""},{"en":{"phrase":"master's degree"},"cn":{"meaning":"硕士学位"},"note":""},{"en":{"phrase":"MBA"},"cn":{"meaning":"工商管理硕士"},"note":""},{"en":{"phrase":"internship"},"cn":{"meaning":"实习"},"note":""},{"en":{"phrase":"abroad"},"cn":{"meaning":"到国外"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"Listen carefully to that."},"cn":{"text_cn":"仔细听。"},"kind":""},{"en":{"text_en":"Write down word-for-word everything that I say."},"cn":{"text_cn":"逐字写下我说的所有内容。"},"kind":""},{"en":{"text_en":"It stands for___"},"cn":{"text_cn":"它代表……"},"kind":""},{"en":{"text_en":"Circle any words that___"},"cn":{"text_cn":"圈出任何……的词"},"kind":""},{"en":{"text_en":"register for classes"},"cn":{"text_cn":"注册课程"},"kind":""},{"en":{"text_en":"gain job experience"},"cn":{"text_cn":"获得工作经验"},"kind":""},{"en":{"text_en":"international business conference"},"cn":{"text_cn":"国际商务会议"},"kind":""},{"en":{"text_en":"a possible benefit that motivates a person"},"cn":{"text_cn":"激励人的潜在好处"},"kind":""},{"en":{"text_en":"I want to enroll in classes this year."},"cn":{"text_cn":"我今年想报名上课。"},"kind":""},{"en":{"text_en":"An internship is a temporary job."},"cn":{"text_cn":"实习是一份临时工作。"},"kind":""},{"en":{"text_en":"They traveled abroad for an international business conference."},"cn":{"text_cn":"他们出国参加国际商务会议。"},"kind":""},{"en":{"text_en":"It's such a great incentive to buy the product."},"cn":{"text_cn":"这是购买这个产品的一个很大诱因。"},"kind":""}]}],"extra":""},{"title":"30. Listening Comprehension Lesson 4_  Human Resources","slug":"_Codex__30. Listening Comprehension Lesson 4_  Human Resources","chapter":"05 - Listening Comprehension","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\05 - Listening Comprehension\\_Codex__30. Listening Comprehension Lesson 4_  Human Resources.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"resources","pos":"n.","ipa":"/ˈriːsɔːrsɪz/"},"cn":{"reading":"【瑞】-索-尔-西-兹","meaning":"资源"}},{"en":{"word":"payroll","pos":"n.","ipa":"/ˈpeɪroʊl/"},"cn":{"reading":"【佩】-若-欧-尔","meaning":"工资发放，薪资名册"}},{"en":{"word":"benefits","pos":"n.","ipa":"/ˈbenɪfɪts/"},"cn":{"reading":"【贝】-尼-菲-茨","meaning":"福利"}},{"en":{"word":"employee","pos":"n.","ipa":"/ɪmˈplɔɪiː/"},"cn":{"reading":"【因】-普-洛-伊","meaning":"员工"}},{"en":{"word":"blazer","pos":"n.","ipa":"/ˈbleɪzər/"},"cn":{"reading":"【布】-雷-泽-尔","meaning":"西装外套"}},{"en":{"word":"cardigan","pos":"n.","ipa":"/ˈkɑːrdɪɡən/"},"cn":{"reading":"【卡】-迪-根","meaning":"开襟毛衣"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"human resources"},"cn":{"meaning":"人力资源部"},"note":""},{"en":{"phrase":"get started"},"cn":{"meaning":"开始，入职办理"},"note":""},{"en":{"phrase":"hiring and firing"},"cn":{"meaning":"招聘和解雇"},"note":""},{"en":{"phrase":"new hire paperwork"},"cn":{"meaning":"新员工入职文件"},"note":""},{"en":{"phrase":"starting fresh"},"cn":{"meaning":"全新开始"},"note":""},{"en":{"phrase":"dark navy blue"},"cn":{"meaning":"深海军蓝"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"He needs to go to___"},"cn":{"text_cn":"他需要去……"},"kind":""},{"en":{"text_en":"Did you get it right?"},"cn":{"text_cn":"你答对了吗？"},"kind":""},{"en":{"text_en":"What ___ is, it's___"},"cn":{"text_cn":"……是……"},"kind":""},{"en":{"text_en":"It's always good to review."},"cn":{"text_cn":"复习总是好的。"},"kind":""},{"en":{"text_en":"starting a new job"},"cn":{"text_cn":"开始一份新工作"},"kind":""},{"en":{"text_en":"human resources department"},"cn":{"text_cn":"人力资源部门"},"kind":""},{"en":{"text_en":"new hire paperwork"},"cn":{"text_cn":"新员工入职文件"},"kind":""},{"en":{"text_en":"benefits of all employees"},"cn":{"text_cn":"所有员工的福利"},"kind":""},{"en":{"text_en":"He needs to go to human resources to get started."},"cn":{"text_cn":"他需要去人力资源部开始办理。"},"kind":""},{"en":{"text_en":"HR is a department in large companies."},"cn":{"text_cn":"HR 是大公司里的一个部门。"},"kind":""},{"en":{"text_en":"They manage the hiring, firing, payroll, and benefits."},"cn":{"text_cn":"他们管理员工招聘、解雇、薪资和福利。"},"kind":""},{"en":{"text_en":"New hire means someone who is starting a new company."},"cn":{"text_cn":"新员工指刚开始在新公司工作的人。"},"kind":""},{"en":{"text_en":"Navy is a dark blue."},"cn":{"text_cn":"海军蓝是一种深蓝色。"},"kind":""}]}],"extra":""},{"title":"31. Listening Comprehension Lesson 5_ Dictation","slug":"_Codex__31. Listening Comprehension Lesson 5_ Dictation","chapter":"05 - Listening Comprehension","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\05 - Listening Comprehension\\_Codex__31. Listening Comprehension Lesson 5_ Dictation.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"tally","pos":"n.","ipa":"/ˈtæli/"},"cn":{"reading":"【泰】-利","meaning":"计数，记录"}},{"en":{"word":"consistently","pos":"adv.","ipa":"/kənˈsɪstəntli/"},"cn":{"reading":"【肯】-西-斯-腾-特-利","meaning":"一贯地，反复地"}},{"en":{"word":"nuance","pos":"n.","ipa":"/ˈnuːɑːns/"},"cn":{"reading":"【努】-昂-斯","meaning":"细微差别"}},{"en":{"word":"peculiar","pos":"adj.","ipa":"/pɪˈkjuːliər/"},"cn":{"reading":"【皮】-丘-利-厄-尔","meaning":"奇怪的，古怪的"}},{"en":{"word":"agitate","pos":"v.","ipa":"/ˈædʒɪteɪt/"},"cn":{"reading":"【艾】-吉-忒-特","meaning":"搅动；激怒"}},{"en":{"word":"incompetent","pos":"adj.","ipa":"/ɪnˈkɑːmpɪtənt/"},"cn":{"reading":"【因】-康-皮-腾-特","meaning":"无能力的，不胜任的"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"change things up"},"cn":{"meaning":"改变一下方式"},"note":""},{"en":{"phrase":"full speed"},"cn":{"meaning":"正常速度，全速"},"note":""},{"en":{"phrase":"keep count of"},"cn":{"meaning":"记录数量"},"note":""},{"en":{"phrase":"missing any words"},"cn":{"meaning":"漏掉任何词"},"note":""},{"en":{"phrase":"on the tip of your tongue"},"cn":{"meaning":"话到嘴边，随时能说出来"},"note":""},{"en":{"phrase":"at the same pace as a native speaker"},"cn":{"meaning":"以母语者同样的速度"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"We're going to change things up."},"cn":{"text_cn":"我们要换个方式。"},"kind":""},{"en":{"text_en":"What that means is___"},"cn":{"text_cn":"这意思是……"},"kind":""},{"en":{"text_en":"Compare what you wrote down to___"},"cn":{"text_cn":"把你写的和……对比"},"kind":""},{"en":{"text_en":"Be sure to review___"},"cn":{"text_cn":"一定要复习……"},"kind":""},{"en":{"text_en":"keep a tally"},"cn":{"text_cn":"做计数记录"},"kind":""},{"en":{"text_en":"comprehend everything"},"cn":{"text_cn":"理解所有内容"},"kind":""},{"en":{"text_en":"catch the nuances"},"cn":{"text_cn":"捕捉细微差别"},"kind":""},{"en":{"text_en":"proved incompetent while managing the last one"},"cn":{"text_cn":"管理上一个项目时证明不胜任"},"kind":""},{"en":{"text_en":"We're going to change things up a little bit."},"cn":{"text_cn":"我们要稍微换个方式。"},"kind":""},{"en":{"text_en":"Keep count of how many times you have to rewind."},"cn":{"text_cn":"记录你需要倒回多少次。"},"kind":""},{"en":{"text_en":"The goal is to make sure you're able to comprehend everything."},"cn":{"text_cn":"目标是确保你能理解所有内容。"},"kind":""},{"en":{"text_en":"Everything has to be on the tip of your tongue."},"cn":{"text_cn":"所有内容都必须熟到脱口而出。"},"kind":""},{"en":{"text_en":"I would not trust Sam to complete that project."},"cn":{"text_cn":"我不会信任 Sam 来完成那个项目。"},"kind":""}]}],"extra":""},{"title":"32. Reading Comprehension Handout","slug":"_Codex__32. Reading Comprehension Handout","chapter":"06 - Reading Comprehension","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\06 - Reading Comprehension\\_Codex__32. Reading Comprehension Handout.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"comprehension","pos":"n.","ipa":"/ˌkɑːmprɪˈhenʃn/"},"cn":{"reading":"【康】-普-瑞-亨-申","meaning":"理解能力"}},{"en":{"word":"essay","pos":"n.","ipa":"/ˈeseɪ/"},"cn":{"reading":"【埃】","meaning":"文章，短文"}},{"en":{"word":"multiple choice","pos":"adj. phr.","ipa":"/ˌmʌltɪpl ˈtʃɔɪs/"},"cn":{"reading":"【马】-尔-提-普-尔-乔-伊-斯","meaning":"多项选择的"}},{"en":{"word":"previously","pos":"adv.","ipa":"/ˈpriːviəsli/"},"cn":{"reading":"【普】-瑞-维-厄-斯-利","meaning":"先前地"}},{"en":{"word":"apply","pos":"v.","ipa":"/əˈplaɪ/"},"cn":{"reading":"【额】-普-莱","meaning":"应用"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"reading comprehension section"},"cn":{"meaning":"阅读理解部分"},"note":""},{"en":{"phrase":"written essays"},"cn":{"meaning":"书面文章"},"note":""},{"en":{"phrase":"write down"},"cn":{"meaning":"写下"},"note":""},{"en":{"phrase":"correct multiple choice answer"},"cn":{"meaning":"正确的选择题答案"},"note":""},{"en":{"phrase":"previously reviewed vocabulary words"},"cn":{"meaning":"之前复习过的词汇"},"note":""},{"en":{"phrase":"check your answers against the handout"},"cn":{"meaning":"对照讲义检查答案"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"Welcome to___"},"cn":{"text_cn":"欢迎来到……"},"kind":""},{"en":{"text_en":"Each of these___ includes___"},"cn":{"text_cn":"每一个……都包含……"},"kind":""},{"en":{"text_en":"Our goal is to___"},"cn":{"text_cn":"我们的目标是……"},"kind":""},{"en":{"text_en":"Check your answers against___"},"cn":{"text_cn":"对照……检查答案"},"kind":""},{"en":{"text_en":"combine everything that we've learned so far"},"cn":{"text_cn":"结合目前学到的所有内容"},"kind":""},{"en":{"text_en":"apply everything that you have learned"},"cn":{"text_cn":"应用你学到的所有内容"},"kind":""},{"en":{"text_en":"check your answers against the handout"},"cn":{"text_cn":"对照讲义检查答案"},"kind":""},{"en":{"text_en":"previously reviewed vocabulary"},"cn":{"text_cn":"之前复习过的词汇"},"kind":""},{"en":{"text_en":"Welcome to the reading comprehension section."},"cn":{"text_cn":"欢迎来到阅读理解部分。"},"kind":""},{"en":{"text_en":"I'd like you to read each essay."},"cn":{"text_cn":"我希望你阅读每篇文章。"},"kind":""},{"en":{"text_en":"Each of these essays includes new vocabulary words."},"cn":{"text_cn":"每篇文章都包含新词。"},"kind":""},{"en":{"text_en":"Our goal is to combine everything that we've learned so far."},"cn":{"text_cn":"我们的目标是结合目前学到的所有内容。"},"kind":""},{"en":{"text_en":"You can check your answers against the handout."},"cn":{"text_cn":"你可以对照讲义检查答案。"},"kind":""}]}],"extra":""},{"title":"33. Bonus Lecture","slug":"_Codex__33. Bonus Lecture","chapter":"07 - Your Final Exam","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\07 - Your Final Exam\\_Codex__33. Bonus Lecture.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"congratulations","pos":"n.","ipa":"/kənˌɡrætʃuˈleɪʃnz/"},"cn":{"reading":"【肯】-格-拉-丘-累-申-兹","meaning":"祝贺"}},{"en":{"word":"impressed","pos":"adj.","ipa":"/ɪmˈprest/"},"cn":{"reading":"【因】-普-瑞-斯-特","meaning":"印象深刻的，佩服的"}},{"en":{"word":"valuable","pos":"adj.","ipa":"/ˈvæljuəbl/"},"cn":{"reading":"【瓦】-留-额-布-尔","meaning":"有价值的"}},{"en":{"word":"feedback","pos":"n.","ipa":"/ˈfiːdbæk/"},"cn":{"reading":"【费】-德-拜-克","meaning":"反馈"}},{"en":{"word":"capabilities","pos":"n.","ipa":"/ˌkeɪpəˈbɪlətiz/"},"cn":{"reading":"【凯】-珀-比-勒-提-兹","meaning":"能力"}},{"en":{"word":"intensive","pos":"adj.","ipa":"/ɪnˈtensɪv/"},"cn":{"reading":"【因】-滕-西-夫","meaning":"集中的，强化的"}},{"en":{"word":"professionals","pos":"n.","ipa":"/prəˈfeʃənlz/"},"cn":{"reading":"【普】-若-费-申-纳-尔-兹","meaning":"专业人士，职场人士"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"stuck with it"},"cn":{"meaning":"坚持下来了"},"note":""},{"en":{"phrase":"to the end"},"cn":{"meaning":"到最后"},"note":""},{"en":{"phrase":"five star review"},"cn":{"meaning":"五星评价"},"note":""},{"en":{"phrase":"thanks in advance"},"cn":{"meaning":"提前感谢"},"note":""},{"en":{"phrase":"check out"},"cn":{"meaning":"查看，了解"},"note":""},{"en":{"phrase":"speak up at meetings"},"cn":{"meaning":"在会议上发言"},"note":""},{"en":{"phrase":"bite size quizzes"},"cn":{"meaning":"小份量测验"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"Congratulations on___"},"cn":{"text_cn":"祝贺你……"},"kind":""},{"en":{"text_en":"I'm impressed that___"},"cn":{"text_cn":"我很佩服你……"},"kind":""},{"en":{"text_en":"If you found this useful, I hope that___"},"cn":{"text_cn":"如果你觉得这有用，我希望……"},"kind":""},{"en":{"text_en":"If you're interested in___, you can___"},"cn":{"text_cn":"如果你对……感兴趣，可以……"},"kind":""},{"en":{"text_en":"I wish you the best with___"},"cn":{"text_cn":"祝你在……方面一切顺利"},"kind":""},{"en":{"text_en":"valuable feedback"},"cn":{"text_cn":"有价值的反馈"},"kind":""},{"en":{"text_en":"get the help they need to succeed"},"cn":{"text_cn":"获得成功所需的帮助"},"kind":""},{"en":{"text_en":"struggling to speak up at meetings"},"cn":{"text_cn":"很难在会议上发言"},"kind":""},{"en":{"text_en":"increase their business skills"},"cn":{"text_cn":"提升商务技能"},"kind":""},{"en":{"text_en":"get updates whenever___"},"cn":{"text_cn":"每当……时收到更新"},"kind":""},{"en":{"text_en":"Congratulations on completing this course."},"cn":{"text_cn":"祝贺你完成这门课程。"},"kind":""},{"en":{"text_en":"I'm impressed that you stuck with it to the end."},"cn":{"text_cn":"你能坚持到最后，我很佩服。"},"kind":""},{"en":{"text_en":"Your review gives me valuable feedback."},"cn":{"text_cn":"你的评价会给我有价值的反馈。"},"kind":""},{"en":{"text_en":"Thanks in advance for leaving a review."},"cn":{"text_cn":"提前感谢你留下评价。"},"kind":""},{"en":{"text_en":"Feel free to check out the YouTube channel."},"cn":{"text_cn":"可以去看看这个 YouTube 频道。"},"kind":""},{"en":{"text_en":"It's been a pleasure working with you."},"cn":{"text_cn":"很高兴和你一起学习/合作。"},"kind":""},{"en":{"text_en":"I wish you the best with your English and with your career."},"cn":{"text_cn":"祝你的英语学习和职业发展一切顺利。"},"kind":""}]}],"extra":""}],"tree":[{"chapter":"01 - Introduction","files":[{"slug":"_Codex__1. An Introduction to this English Course","title":"1. An Introduction to this English Course"}]},{"chapter":"02 - Writing and Grammar","files":[{"slug":"_Codex__2. Writing Lesson_ Capitalization","title":"2. Writing Lesson_ Capitalization"},{"slug":"_Codex__3. Writing Lesson_ Punctuation","title":"3. Writing Lesson_ Punctuation"},{"slug":"_Codex__4. Writing Lesson_ Using Plurals","title":"4. Writing Lesson_ Using Plurals"},{"slug":"_Codex__5. Writing Lesson_ Using Articles","title":"5. Writing Lesson_ Using Articles"},{"slug":"_Codex__6. Writing Lesson_ Subject-Verb Agreement","title":"6. Writing Lesson_ Subject-Verb Agreement"},{"slug":"_Codex__7. Writing Lesson_ Using Transition Words","title":"7. Writing Lesson_ Using Transition Words"},{"slug":"_Codex__8. Writing Lesson_ Writing Emails","title":"8. Writing Lesson_ Writing Emails"}]},{"chapter":"03 - Speaking Section","files":[{"slug":"_Codex__9. Introduction to Improving Your Speaking","title":"9. Introduction to Improving Your Speaking"},{"slug":"_Codex__10. Speaking Lesson 1_ Thinking in English","title":"10. Speaking Lesson 1_ Thinking in English"},{"slug":"_Codex__11. Speaking Lesson 2_ Speaking of Superlatives","title":"11. Speaking Lesson 2_ Speaking of Superlatives"},{"slug":"_Codex__12. Speaking Lesson 3_ Speaking with Karaoke","title":"12. Speaking Lesson 3_ Speaking with Karaoke"},{"slug":"_Codex__13. Speaking Lesson 4_ Speaking of the Past","title":"13. Speaking Lesson 4_ Speaking of the Past"},{"slug":"_Codex__14. Speaking Lesson 5_ Speaking of the Future","title":"14. Speaking Lesson 5_ Speaking of the Future"}]},{"chapter":"04 - Vocabulary Building","files":[{"slug":"_Codex__15. Vocabulary Builder 1","title":"15. Vocabulary Builder 1"},{"slug":"_Codex__17. Vocabulary Builder 2","title":"17. Vocabulary Builder 2"},{"slug":"_Codex__19. Vocabulary Builder 3","title":"19. Vocabulary Builder 3"},{"slug":"_Codex__21. Vocabulary Builder 4","title":"21. Vocabulary Builder 4"},{"slug":"_Codex__23. Vocabulary Builder 5_ Farming and Agriculture","title":"23. Vocabulary Builder 5_ Farming and Agriculture"},{"slug":"_Codex__25. Vocabulary Builder 6_ Urban, Suburban, and Rural","title":"25. Vocabulary Builder 6_ Urban, Suburban, and Rural"},{"slug":"_Codex__26. Vocabulary Review","title":"26. Vocabulary Review"}]},{"chapter":"05 - Listening Comprehension","files":[{"slug":"_Codex__27. Listening Comprehension Lesson 1_ Breakfast","title":"27. Listening Comprehension Lesson 1_ Breakfast"},{"slug":"_Codex__28. Listening Comprehension Lesson 2_ Sports","title":"28. Listening Comprehension Lesson 2_ Sports"},{"slug":"_Codex__29. Listening Comprehension Lesson 3_ Graduate School Dictation","title":"29. Listening Comprehension Lesson 3_ Graduate School Dictation"},{"slug":"_Codex__30. Listening Comprehension Lesson 4_  Human Resources","title":"30. Listening Comprehension Lesson 4_  Human Resources"},{"slug":"_Codex__31. Listening Comprehension Lesson 5_ Dictation","title":"31. Listening Comprehension Lesson 5_ Dictation"}]},{"chapter":"06 - Reading Comprehension","files":[{"slug":"_Codex__32. Reading Comprehension Handout","title":"32. Reading Comprehension Handout"}]},{"chapter":"07 - Your Final Exam","files":[{"slug":"_Codex__33. Bonus Lecture","title":"33. Bonus Lecture"}]}]}</script>
+  <!-- 导入收藏用的隐藏文件选择框，由「导入收藏」按钮触发点击 -->
+  <input type="file" accept="application/json" data-role="favorites-import-input" hidden>
+  <script>/**
+ * app.js — livenotes 前端交互
+ *
+ * 两层控制（见 _AI_READ/ARCHITECTURE.md §4）：
+ *   ① 顶部 EN ⇄ CN 模式切换 → 决定默认隐藏哪一侧
+ *   ② 每个 item 独立揭示按钮 → 隐藏侧从下方展开 / 收起
+ * 顶部便捷键：全部展开 / 全部收起
+ * 顶部主题下拉：切换配色主题（含「跟随系统」）
+ * 状态（模式、主题、已展开项）存 localStorage
+ */
+
+(function () {
+  'use strict';
+
+  // ── 常量 ─────────────────────────────────
+  const STORAGE_MODE_KEY = 'livenotes:mode';
+  const STORAGE_EXPANDED_PREFIX = 'livenotes:expanded:';
+  const STORAGE_THEME_KEY = 'livenotes:theme';
+  const STORAGE_FAVORITES_KEY = 'livenotes:favorites';
+  const STORAGE_SIDEBAR_COLLAPSED_KEY = 'livenotes:sidebar-collapsed';
+  const STORAGE_SIDEBAR_WIDTH_KEY = 'livenotes:sidebar-width';
+  const DEFAULT_MODE = 'en'; // 默认显示英文、隐藏中文
+  const DEFAULT_THEME = 'light';
+  const QUIZ_BATCH_SIZE = 10; // 测验模式一批显示多少条，内容多时避免一次性渲染几百条卡顿
+
+  // 可选主题（id 与 style.css 的 :root[data-theme="id"] 一一对应）；light 为基础主题，不写 data-theme
+  // swatch：收起态色块的背景，跟对应主题 style.css 里的 --color-bg 保持一致（改主题配色时这里也要同步改）
+  // auto 没有固定单一颜色，用斜切黑白表示"跟随系统"
+  const THEMES = [
+    { id: 'light', label: '浅色', swatch: '#ffffff' },
+    { id: 'sepia', label: '纸质 Sepia', swatch: '#f4ecd8' },
+    { id: 'solarized-light', label: 'Solarized Light', swatch: '#fdf6e3' },
+    { id: 'graphite', label: '石墨深色', swatch: '#0f1115' },
+    { id: 'solarized-dark', label: 'Solarized Dark', swatch: '#002b36' },
+    { id: 'nord', label: 'Nord', swatch: '#2e3440' },
+    { id: 'gruvbox', label: 'Gruvbox', swatch: '#282828' },
+    { id: 'auto', label: '跟随系统', swatch: 'linear-gradient(135deg, #ffffff 50%, #0f1115 50%)' },
+  ];
+
+  // 各 section 类型的 en / cn 两侧字段（顺序即渲染顺序），与 config.js 的 SECTION_TYPES 对应
+  const SIDE_FIELDS = {
+    vocab: { en: ['word', 'pos', 'ipa'], cn: ['meaning', 'reading'] },
+    phrases: { en: ['phrase'], cn: ['meaning'] },
+    sentences: { en: ['text_en'], cn: ['text_cn'] },
+  };
+
+  // 常驻字段（不参与遮挡）：note / kind
+  const RESIDENT_FIELD = { phrases: 'note', sentences: 'kind' };
+
+  // ── 运行时状态 ───────────────────────────
+  const state = {
+    mode: DEFAULT_MODE,
+    theme: DEFAULT_THEME,
+    view: 'doc',       // 'doc'：正常文档视图；'favorites'：我的收藏视图；'quiz'：测验模式
+    allExpanded: false, // 当前文档是否处于"全部展开"状态，决定切换按钮图标 ➕ / ➖
+    quizPool: null,    // 测验模式当前这一轮打乱后的条目池，null 表示需要重新洗牌
+    quizBatchOffset: 0, // 当前显示的是池子里第几批（每批 QUIZ_BATCH_SIZE 条）
+    currentSlug: null, // index 模式下当前查看的 NoteDoc
+    data: null,        // { docs, tree } 或 { doc }
+  };
+
+
+  /**
+   * 读取页面内嵌的 JSON 数据
+   * @returns {object}
+   */
+  function loadData() {
+
+    const node = document.querySelector('[data-role="livenotes-data"]');
+
+    return JSON.parse(node.textContent);
+  }
+
+  /**
+   * 转义 HTML 文本节点中的特殊字符
+   * @param {*} value
+   * @returns {string}
+   */
+  function escapeHtml(value) {
+
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  /**
+   * 转义 HTML 属性值（在 escapeHtml 基础上再处理引号）
+   * @param {*} value
+   * @returns {string}
+   */
+  function escapeAttr(value) {
+
+    return escapeHtml(value).replace(/"/g, '&quot;');
+  }
+
+  /**
+   * 当前正在查看的 NoteDoc 的 slug（单篇模式取内嵌 doc，index 模式取 state.currentSlug）
+   * @returns {string|null}
+   */
+  function currentSlug() {
+
+    return state.data.doc ? state.data.doc.slug : state.currentSlug;
+  }
+
+  /**
+   * 按 slug 取当前应渲染的 NoteDoc
+   * @param {string|null} slug
+   * @returns {object|null}
+   */
+  function findDoc(slug) {
+
+    if (state.data.doc) {
+
+      return state.data.doc;
+    }
+
+    return (state.data.docs || []).find((doc) => doc.slug === slug) || null;
+  }
+
+  /**
+   * 从 localStorage 恢复模式，无则用默认
+   * @returns {'en'|'cn'}
+   */
+  function loadMode() {
+
+    try {
+
+      return localStorage.getItem(STORAGE_MODE_KEY) || DEFAULT_MODE;
+    } catch (err) {
+
+      // localStorage 不可用（隐私模式 / 被禁用）时回退默认
+      return DEFAULT_MODE;
+    }
+  }
+
+  /**
+   * 持久化当前模式
+   * @param {'en'|'cn'} mode
+   * @returns {void}
+   */
+  function saveMode(mode) {
+
+    try {
+      localStorage.setItem(STORAGE_MODE_KEY, mode);
+    } catch (err) {
+      // 静默降级：不影响页面使用
+    }
+  }
+
+  /**
+   * 从 localStorage 恢复主题 id，无 / 非法值时回退默认
+   * @returns {string}
+   */
+  function loadTheme() {
+
+    try {
+      const saved = localStorage.getItem(STORAGE_THEME_KEY);
+
+      return THEMES.some((theme) => theme.id === saved) ? saved : DEFAULT_THEME;
+    } catch (err) {
+
+      return DEFAULT_THEME;
+    }
+  }
+
+  /**
+   * 持久化主题 id
+   * @param {string} themeId
+   * @returns {void}
+   */
+  function saveTheme(themeId) {
+
+    try {
+      localStorage.setItem(STORAGE_THEME_KEY, themeId);
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 应用主题：light 移除 data-theme（用基础令牌），其余写到 <html data-theme>
+   * @param {string} themeId
+   * @returns {void}
+   */
+  function applyTheme(themeId) {
+
+    state.theme = themeId;
+
+    if (themeId === 'light') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', themeId);
+    }
+
+    updateThemeSwatch(themeId);
+  }
+
+  /**
+   * 更新收起态色块的背景色，跟当前主题保持一致
+   * @param {string} themeId
+   * @returns {void}
+   */
+  function updateThemeSwatch(themeId) {
+
+    const theme = THEMES.find((item) => item.id === themeId);
+
+    if (!theme) {
+
+      return;
+    }
+
+    // 顶部和内容区底部都有色块（同一个 data-role），两个都要同步
+    document.querySelectorAll('[data-role="theme-swatch"]').forEach((swatchEl) => {
+      swatchEl.style.background = theme.swatch;
+    });
+  }
+
+  /**
+   * 填充主题下拉框选项、同步当前值并绑定切换事件。
+   * 顶部的 select 是静态标记、只需要初始化一次；内容区底部的 select 每次 renderContent /
+   * renderQuizView 都会被 innerHTML 重新创建，所以每次渲染完都要再调一次这个函数——
+   * 用 dataset 标记跳过已经初始化过的，避免重复绑定 change 监听
+   * @returns {void}
+   */
+  function setupThemeSelect() {
+
+    document.querySelectorAll('[data-role="theme-select"]').forEach((selectEl) => {
+
+      if (selectEl.dataset.themeReady) {
+
+        return;
+      }
+
+      selectEl.innerHTML = THEMES
+        .map((theme) => `<option value="${theme.id}">${theme.label}</option>`)
+        .join('');
+      selectEl.value = state.theme;
+
+      selectEl.addEventListener('change', () => {
+        applyTheme(selectEl.value);
+        saveTheme(selectEl.value);
+      });
+
+      selectEl.dataset.themeReady = 'true';
+    });
+  }
+
+  /**
+   * 读取某篇已展开的 item key 列表
+   * @param {string} slug
+   * @returns {Set<string>}
+   */
+  function loadExpanded(slug) {
+
+    try {
+      const raw = localStorage.getItem(STORAGE_EXPANDED_PREFIX + slug);
+      const list = raw ? JSON.parse(raw) : [];
+
+      return new Set(Array.isArray(list) ? list : []);
+    } catch (err) {
+
+      return new Set();
+    }
+  }
+
+  /**
+   * 持久化某篇已展开的 item key 列表
+   * @param {string} slug
+   * @param {Set<string>} keys
+   * @returns {void}
+   */
+  function saveExpanded(slug, keys) {
+
+    try {
+      localStorage.setItem(STORAGE_EXPANDED_PREFIX + slug, JSON.stringify([...keys]));
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 读取整个收藏列表（doc + item 两级共用一个数组）
+   * @returns {object[]}
+   */
+  function loadFavorites() {
+
+    try {
+      const raw = localStorage.getItem(STORAGE_FAVORITES_KEY);
+      const list = raw ? JSON.parse(raw) : [];
+
+      return Array.isArray(list) ? list : [];
+    } catch (err) {
+
+      return [];
+    }
+  }
+
+  /**
+   * 持久化整个收藏列表
+   * @param {object[]} list
+   * @returns {void}
+   */
+  function saveFavorites(list) {
+
+    try {
+      localStorage.setItem(STORAGE_FAVORITES_KEY, JSON.stringify(list));
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 在收藏列表里查找某条记录的下标
+   * @param {object[]} list
+   * @param {'doc'|'item'} kind
+   * @param {string} id
+   * @returns {number} 未找到返回 -1
+   */
+  function favoriteIndex(list, kind, id) {
+
+    return list.findIndex((fav) => fav.kind === kind && fav.id === id);
+  }
+
+  /**
+   * 判断某篇文档是否已整篇收藏
+   * @param {string} docSlug
+   * @returns {boolean}
+   */
+  function isDocFavorited(docSlug) {
+
+    return favoriteIndex(loadFavorites(), 'doc', docSlug) >= 0;
+  }
+
+  /**
+   * 取某条 item 的标注记录（收藏 + 评分共用同一条记录），不存在返回 null
+   * @param {string} itemId - `${docSlug}::${sectionType}:${itemIndex}`
+   * @returns {object|null}
+   */
+  function findItemRecord(itemId) {
+
+    return loadFavorites().find((fav) => fav.kind === 'item' && fav.id === itemId) || null;
+  }
+
+  /**
+   * 判断某条 item 是否已收藏
+   * @param {string} itemId - `${docSlug}::${sectionType}:${itemIndex}`
+   * @returns {boolean}
+   */
+  function isItemFavorited(itemId) {
+
+    const record = findItemRecord(itemId);
+
+    return Boolean(record && record.favorited);
+  }
+
+  /**
+   * 取某条 item 的测验评分（1~3），没评过返回 null
+   * @param {string} itemId - `${docSlug}::${sectionType}:${itemIndex}`
+   * @returns {number|null}
+   */
+  function getItemMark(itemId) {
+
+    const record = findItemRecord(itemId);
+
+    return record ? record.mark : null;
+  }
+
+  /**
+   * 切换整篇文档的收藏状态
+   * @param {object} doc - NoteDoc
+   * @returns {void}
+   */
+  function toggleFavoriteDoc(doc) {
+
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'doc', doc.slug);
+
+    if (index >= 0) {
+      list.splice(index, 1);
+    } else {
+      list.push({
+        kind: 'doc',
+        id: doc.slug,
+        docSlug: doc.slug,
+        docTitle: doc.title || doc.slug,
+        chapter: doc.chapter,
+        addedAt: new Date().toISOString(),
+      });
+    }
+
+    saveFavorites(list);
+  }
+
+  /**
+   * 组装 toggleFavoriteItem / setItemMark 需要的 context
+   * @param {object} doc - NoteDoc
+   * @param {object} section - Section
+   * @param {number} itemIndex
+   * @returns {object}
+   */
+  function buildItemContext(doc, section, itemIndex) {
+
+    return {
+      docSlug: doc.slug,
+      docTitle: doc.title || doc.slug,
+      chapter: doc.chapter,
+      sectionType: section.type,
+      sectionHeading: section.heading,
+      itemIndex,
+      item: section.items[itemIndex],
+    };
+  }
+
+  /**
+   * 按 context 找到或新建一条 item 标注记录（收藏 / 评分共用），返回 { list, record, index }
+   * 新建时 favorited/mark 都是空，由调用方接着填
+   * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
+   * @returns {{ list: object[], record: object, index: number }}
+   */
+  function ensureItemRecord(context) {
+
+    const id = `${context.docSlug}::${context.sectionType}:${context.itemIndex}`;
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'item', id);
+
+    if (index >= 0) {
+
+      return { list, record: list[index], index };
+    }
+
+    const record = {
+      kind: 'item',
+      id,
+      docSlug: context.docSlug,
+      docTitle: context.docTitle,
+      chapter: context.chapter,
+      sectionType: context.sectionType,
+      sectionHeading: context.sectionHeading,
+      itemIndex: context.itemIndex,
+      snapshot: {
+        en: context.item.en,
+        cn: context.item.cn,
+        note: context.item.note,
+        kind: context.item.kind,
+      },
+      favorited: false,
+      favoritedAt: null,
+      mark: null,
+      markedAt: null,
+    };
+
+    list.push(record);
+
+    return { list, record, index: list.length - 1 };
+  }
+
+  /**
+   * 收藏了或评过分的记录才需要保留，两者都清空时从列表里删掉
+   * @param {object[]} list
+   * @param {object} record
+   * @param {number} index
+   * @returns {void}
+   */
+  function pruneItemRecordIfEmpty(list, record, index) {
+
+    if (!record.favorited && !record.mark) {
+      list.splice(index, 1);
+    }
+  }
+
+  /**
+   * 切换单条 item 的收藏状态（收藏 / 评分共用同一条记录，见 ensureItemRecord）
+   * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
+   * @returns {void}
+   */
+  function toggleFavoriteItem(context) {
+
+    const { list, record, index } = ensureItemRecord(context);
+
+    record.favorited = !record.favorited;
+    record.favoritedAt = record.favorited ? new Date().toISOString() : null;
+
+    pruneItemRecordIfEmpty(list, record, index);
+    saveFavorites(list);
+  }
+
+  /**
+   * 设置单条 item 的测验评分：再点一次当前档位会清空评分
+   * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
+   * @param {1|2|3} level
+   * @returns {void}
+   */
+  function setItemMark(context, level) {
+
+    const { list, record, index } = ensureItemRecord(context);
+
+    record.mark = record.mark === level ? null : level;
+    record.markedAt = record.mark ? new Date().toISOString() : null;
+
+    pruneItemRecordIfEmpty(list, record, index);
+    saveFavorites(list);
+  }
+
+  /**
+   * 「我的收藏」视图里取消收藏：doc 记录直接删掉；item 记录只清掉 favorited，
+   * 如果还有评分（mark）就保留这条记录（评分不会因为取消收藏被清掉）
+   * @param {'doc'|'item'} kind
+   * @param {string} id
+   * @returns {void}
+   */
+  function removeFavorite(kind, id) {
+
+    const list = loadFavorites();
+    const index = favoriteIndex(list, kind, id);
+
+    if (index === -1) {
+
+      return;
+    }
+
+    if (kind === 'doc') {
+      list.splice(index, 1);
+    } else {
+      const record = list[index];
+
+      record.favorited = false;
+      record.favoritedAt = null;
+      pruneItemRecordIfEmpty(list, record, index);
+    }
+
+    saveFavorites(list);
+    renderFavoritesView();
+  }
+
+  /**
+   * 判断当前页面能否直接跳转到目标文档
+   * （单篇页面只内嵌自己那一篇，只有目标就是自己时才能跳）
+   * @param {string} docSlug
+   * @returns {boolean}
+   */
+  function canJumpToDoc(docSlug) {
+
+    if (state.data.doc) {
+
+      return state.data.doc.slug === docSlug;
+    }
+
+    return (state.data.docs || []).some((doc) => doc.slug === docSlug);
+  }
+
+  /**
+   * 把收藏列表导出为 json 文件并触发浏览器下载
+   * @returns {void}
+   */
+  function exportFavorites() {
+
+    const json = JSON.stringify(loadFavorites(), null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const dateStr = new Date().toISOString().slice(0, 10);
+
+    const linkEl = document.createElement('a');
+    linkEl.href = url;
+    linkEl.download = `livenotes-favorites-${dateStr}.json`;
+    document.body.appendChild(linkEl);
+    linkEl.click();
+    document.body.removeChild(linkEl);
+
+    URL.revokeObjectURL(url);
+  }
+
+  /**
+   * 合并导入的收藏记录：按 kind + id 去重，本地已存在的跳过、不覆盖
+   * @param {object[]} incoming
+   * @returns {void}
+   */
+  function mergeFavorites(incoming) {
+
+    const list = loadFavorites();
+    let added = 0;
+
+    incoming.forEach((fav) => {
+
+      if (!fav || !fav.kind || !fav.id) {
+
+        return;
+      }
+
+      // 兼容收藏 / 评分合并存储之前导出的旧格式：item 记录存在即代表已收藏
+      if (fav.kind === 'item' && fav.favorited === undefined) {
+        fav.favorited = true;
+        fav.favoritedAt = fav.favoritedAt ?? fav.addedAt ?? null;
+        fav.mark = fav.mark ?? null;
+        fav.markedAt = fav.markedAt ?? null;
+      }
+
+      if (favoriteIndex(list, fav.kind, fav.id) === -1) {
+        list.push(fav);
+        added += 1;
+      }
+    });
+
+    saveFavorites(list);
+    renderFavoritesView();
+    window.alert(`导入完成：新增 ${added} 条，跳过 ${incoming.length - added} 条已存在的`);
+  }
+
+  /**
+   * 绑定导入收藏用的隐藏文件选择框
+   * @returns {void}
+   */
+  function setupFavoritesImport() {
+
+    const inputEl = document.querySelector('[data-role="favorites-import-input"]');
+
+    if (!inputEl) {
+
+      return;
+    }
+
+    inputEl.addEventListener('change', () => {
+
+      const file = inputEl.files && inputEl.files[0];
+
+      if (!file) {
+
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = () => {
+
+        try {
+          const incoming = JSON.parse(reader.result);
+
+          mergeFavorites(Array.isArray(incoming) ? incoming : []);
+        } catch (err) {
+          window.alert('导入失败：文件内容不是有效的收藏 json');
+        }
+
+        inputEl.value = '';
+      };
+
+      reader.readAsText(file);
+    });
+  }
+
+  /**
+   * 渲染某一侧（en 或 cn）的单元格 HTML
+   * @param {string} type - section 类型
+   * @param {'en'|'cn'} which - 哪一侧
+   * @param {object} side - item[which] 对象
+   * @returns {string}
+   */
+  function formatSide(type, which, side) {
+
+    const fields = SIDE_FIELDS[type][which];
+
+    return fields
+      .map((field) => `<span class="cell cell--${field}">${escapeHtml(side[field])}</span>`)
+      .join('');
+  }
+
+  /**
+   * 渲染常驻信息（note / kind）；无内容时返回空串
+   * @param {object} section
+   * @param {object} item
+   * @returns {string}
+   */
+  function formatResident(section, item) {
+
+    const field = RESIDENT_FIELD[section.type];
+
+    if (!field || !item[field]) {
+
+      return '';
+    }
+
+    return `<div class="resident resident--${field}">${escapeHtml(item[field])}</div>`;
+  }
+
+  /**
+   * 渲染侧边栏章节树（仅 index 模式）
+   * @param {{ chapter: string, files: object[] }[]} tree
+   * @returns {void}
+   */
+  function renderSidebar(tree) {
+
+    const sidebarEl = document.querySelector('[data-role="sidebar"]');
+    const favorites = loadFavorites();
+
+    const groupsHtml = tree.map((group, groupIndex) => {
+
+      const linksHtml = group.files.map((file) => {
+
+        const favorited = favoriteIndex(favorites, 'doc', file.slug) >= 0;
+
+        return `
+        <li class="doc-item">
+          <button type="button" class="doc-link" data-slug="${escapeAttr(file.slug)}">${escapeHtml(file.title || file.slug)}</button>
+          <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-doc" data-slug="${escapeAttr(file.slug)}" aria-label="收藏整篇">${favorited ? '★' : '☆'}</button>
+        </li>`;
+      }).join('');
+
+      // 默认展开第一个章节
+      return `
+        <details class="chapter"${groupIndex === 0 ? ' open' : ''}>
+          <summary class="chapter-title">${escapeHtml(group.chapter)}</summary>
+          <ul class="doc-list">${linksHtml}</ul>
+        </details>`;
+    }).join('');
+
+    sidebarEl.innerHTML = groupsHtml;
+  }
+
+  /**
+   * 高亮侧边栏中当前篇对应的链接
+   * @param {string} slug
+   * @returns {void}
+   */
+  function highlightActiveLink(slug) {
+
+    document.querySelectorAll('.doc-link').forEach((el) => {
+      el.classList.toggle('is-active', el.dataset.slug === slug);
+    });
+  }
+
+  /**
+   * 渲染内容区最下面的一组按钮（EN⇄CN / 全部展开收起），跟顶部的按钮共用同一个 data-action，
+   * 点击行为、状态同步都自动一致——划到内容底部不用再翻回顶部就能切换
+   * @returns {string}
+   */
+  function renderBottomControls() {
+
+    return `
+      <div class="bottom-controls">
+        <button type="button" data-action="toggle-mode" class="btn btn-mode"></button>
+        <button type="button" data-action="toggle-all-expanded" class="btn btn-expand-toggle"></button>
+        <button type="button" data-action="toggle-quiz-view" class="btn btn-quiz">📇 测验</button>
+        <button type="button" data-action="toggle-favorites-view" class="btn btn-favorites">★ 收藏</button>
+      </div>`;
+  }
+
+  /**
+   * 渲染内容区：某个 NoteDoc 的三段表格
+   * @param {object} doc - NoteDoc
+   * @returns {void}
+   */
+  function renderContent(doc) {
+
+    const contentEl = document.querySelector('[data-role="content"]');
+
+    const shownSide = state.mode;
+    const hiddenSide = state.mode === 'en' ? 'cn' : 'en';
+    const revealText = hiddenSide === 'cn' ? '中文' : 'EN';
+
+    // 恢复该篇已展开的 item
+    const expanded = loadExpanded(doc.slug);
+
+    // 该篇内已收藏的 item id 集合，用于渲染每个 item 的收藏星标状态
+    const favoriteIds = new Set(
+      loadFavorites().filter((fav) => fav.kind === 'item' && fav.favorited).map((fav) => fav.id)
+    );
+
+    const sectionsHtml = doc.sections.map((section) => {
+
+      const itemsHtml = section.items.map((item, index) => {
+
+        const key = `${section.type}:${index}`;
+        const expandedClass = expanded.has(key) ? ' is-expanded' : '';
+        const favorited = favoriteIds.has(`${doc.slug}::${key}`);
+
+        return `
+          <li class="item${expandedClass}" data-key="${key}">
+            <div class="shown-side">${formatSide(section.type, shownSide, item[shownSide])}</div>
+            <div class="item-actions">
+              <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
+              <button type="button" class="reveal-btn"><span class="reveal-arrow" aria-hidden="true">▸</span><span class="reveal-text">${revealText}</span></button>
+            </div>
+            <div class="hidden-side">${formatSide(section.type, hiddenSide, item[hiddenSide])}</div>
+            ${formatResident(section, item)}
+          </li>`;
+      }).join('');
+
+      return `
+        <section class="section section--${section.type}">
+          <h2 class="section-title">${escapeHtml(section.heading)}</h2>
+          <ul class="item-list">${itemsHtml}</ul>
+        </section>`;
+    }).join('');
+
+    contentEl.innerHTML = `
+      <header class="doc-header"><h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2></header>
+      ${sectionsHtml}
+      ${renderBottomControls()}`;
+
+    // 根据这篇实际的展开状态同步"全部展开/收起"切换按钮的图标（+ / −）
+    const totalItems = doc.sections.reduce((sum, section) => sum + section.items.length, 0);
+    state.allExpanded = totalItems > 0 && expanded.size === totalItems;
+    updateExpandToggleIcon();
+    updateModeButtonAppearance();
+  }
+
+  /**
+   * 渲染收藏列表视图顶部的导出/导入工具条
+   * @returns {string}
+   */
+  function renderFavoritesToolbar() {
+
+    return `
+      <div class="favorites-toolbar">
+        <button type="button" class="btn" data-action="export-favorites">导出收藏</button>
+        <button type="button" class="btn" data-action="import-favorites">导入收藏</button>
+        <span class="favorites-hint">导出 / 导入用于在电脑和手机之间手动同步收藏</span>
+      </div>`;
+  }
+
+  /**
+   * 渲染一条「整篇文档」收藏记录
+   * @param {object} fav - kind === 'doc' 的收藏记录
+   * @returns {string}
+   */
+  function renderDocFavoriteRow(fav) {
+
+    const jumpable = canJumpToDoc(fav.docSlug);
+
+    const titleHtml = jumpable
+      ? `<button type="button" class="fav-jump" data-action="jump-to-doc" data-slug="${escapeAttr(fav.docSlug)}">${escapeHtml(fav.docTitle)}</button>`
+      : `<span class="fav-jump fav-jump--disabled" title="打开总目录 index.html 才能跳转">${escapeHtml(fav.docTitle)}</span>`;
+
+    return `
+      <li class="favorite-row">
+        <div class="shown-side">
+          <span class="cell cell--chapter">${escapeHtml(fav.chapter || '')}</span>
+          ${titleHtml}
+        </div>
+        <div class="item-actions">
+          <button type="button" class="fav-btn is-favorited" data-action="remove-favorite" data-kind="doc" data-id="${escapeAttr(fav.id)}" aria-label="取消收藏">★</button>
+        </div>
+      </li>`;
+  }
+
+  /**
+   * 渲染一条「单条 item」收藏记录（用收藏时刻的快照展示，不依赖当前页面是否有原文档数据）
+   * @param {object} fav - kind === 'item' 的收藏记录
+   * @returns {string}
+   */
+  function renderItemFavoriteRow(fav) {
+
+    const snapshot = fav.snapshot || {};
+    const jumpable = canJumpToDoc(fav.docSlug);
+    const itemKey = `${fav.sectionType}:${fav.itemIndex}`;
+
+    const jumpHtml = jumpable
+      ? `<button type="button" class="fav-jump" data-action="jump-to-item" data-slug="${escapeAttr(fav.docSlug)}" data-key="${escapeAttr(itemKey)}">跳转原文</button>`
+      : `<span class="fav-jump fav-jump--disabled" title="打开总目录 index.html 才能跳转">跳转原文</span>`;
+
+    const residentText = snapshot.note || snapshot.kind || '';
+
+    return `
+      <li class="favorite-row">
+        <div class="shown-side">
+          <div class="favorite-meta">${escapeHtml(fav.docTitle)} · ${escapeHtml(fav.sectionHeading || '')}</div>
+          <div class="favorite-both-sides">
+            ${formatSide(fav.sectionType, 'en', snapshot.en || {})}
+            ${formatSide(fav.sectionType, 'cn', snapshot.cn || {})}
+          </div>
+          ${residentText ? `<div class="resident">${escapeHtml(residentText)}</div>` : ''}
+        </div>
+        <div class="item-actions">
+          ${jumpHtml}
+          ${renderMarkBadges(fav.mark)}
+          <button type="button" class="fav-btn is-favorited" data-action="remove-favorite" data-kind="item" data-id="${escapeAttr(fav.id)}" aria-label="取消收藏">★</button>
+        </div>
+      </li>`;
+  }
+
+  /**
+   * 渲染「我的收藏」整个视图到内容区
+   * @returns {void}
+   */
+  function renderFavoritesView() {
+
+    const contentEl = document.querySelector('[data-role="content"]');
+    const favorites = loadFavorites();
+    const docFavs = favorites.filter((fav) => fav.kind === 'doc');
+    const itemFavs = favorites.filter((fav) => fav.kind === 'item' && fav.favorited);
+
+    if (docFavs.length === 0 && itemFavs.length === 0) {
+      contentEl.innerHTML = `
+        <header class="doc-header"><h2 class="doc-title">★ 我的收藏</h2></header>
+        ${renderFavoritesToolbar()}
+        <p class="favorites-empty">还没有收藏。点击文档旁或词条旁的 ☆ 试试。</p>`;
+
+      return;
+    }
+
+    const docFavsHtml = docFavs.map(renderDocFavoriteRow).join('');
+    const itemFavsHtml = itemFavs.map(renderItemFavoriteRow).join('');
+
+    contentEl.innerHTML = `
+      <header class="doc-header"><h2 class="doc-title">★ 我的收藏</h2></header>
+      ${renderFavoritesToolbar()}
+      ${docFavs.length ? `
+        <section class="section">
+          <h2 class="section-title">收藏的文档（${docFavs.length}）</h2>
+          <ul class="item-list">${docFavsHtml}</ul>
+        </section>` : ''}
+      ${itemFavs.length ? `
+        <section class="section">
+          <h2 class="section-title">收藏的词条（${itemFavs.length}）</h2>
+          <ul class="item-list">${itemFavsHtml}</ul>
+        </section>` : ''}`;
+  }
+
+  /**
+   * 清掉「我的收藏」「测验」两个视图切换按钮的高亮，同一时刻只有一个视图能高亮
+   * @returns {void}
+   */
+  function clearViewToggleButtons() {
+
+    // 顶部和内容区底部都有这两个按钮（同一个 data-action），两边都要清
+    document.querySelectorAll('[data-action="toggle-favorites-view"]').forEach((btn) => {
+      btn.classList.remove('is-active');
+    });
+
+    document.querySelectorAll('[data-action="toggle-quiz-view"]').forEach((btn) => {
+      btn.classList.remove('is-active');
+    });
+  }
+
+  /**
+   * 切换到「我的收藏」视图，或从收藏视图切回当前文档
+   * @returns {void}
+   */
+  function toggleFavoritesView() {
+
+    state.view = state.view === 'favorites' ? 'doc' : 'favorites';
+
+    clearViewToggleButtons();
+
+    document.querySelectorAll('[data-action="toggle-favorites-view"]').forEach((btn) => {
+      btn.classList.toggle('is-active', state.view === 'favorites');
+    });
+
+    if (state.view === 'favorites') {
+      renderFavoritesView();
+
+      return;
+    }
+
+    const doc = findDoc(currentSlug());
+
+    if (doc) {
+      renderContent(doc);
+    }
+  }
+
+  /**
+   * 从收藏 / 测验视图跳转回某篇文档：单篇页面里只能跳自己，index 页面走 selectDoc
+   * @param {string} slug
+   * @returns {void}
+   */
+  function jumpToDoc(slug) {
+
+    if (state.data.doc) {
+      state.view = 'doc';
+
+      clearViewToggleButtons();
+      renderContent(state.data.doc);
+
+      return;
+    }
+
+    selectDoc(slug);
+  }
+
+  /**
+   * 从收藏视图跳转到某篇文档的某条 item：跳转后自动展开并滚动定位
+   * @param {string} slug
+   * @param {string} key - `${sectionType}:${itemIndex}`
+   * @returns {void}
+   */
+  function jumpToItem(slug, key) {
+
+    jumpToDoc(slug);
+
+    requestAnimationFrame(() => {
+
+      const itemEl = document.querySelector(`[data-role="content"] .item[data-key="${CSS.escape(key)}"]`);
+
+      if (!itemEl) {
+
+        return;
+      }
+
+      if (!itemEl.classList.contains('is-expanded')) {
+        itemEl.classList.add('is-expanded');
+
+        const expanded = loadExpanded(slug);
+        expanded.add(key);
+        saveExpanded(slug, expanded);
+      }
+
+      itemEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
+  /**
+   * Fisher-Yates 洗牌，不改动原数组
+   * @param {Array} list
+   * @returns {Array}
+   */
+  function shuffleArray(list) {
+
+    const result = list.slice();
+
+    for (let i = result.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+
+    return result;
+  }
+
+  /**
+   * 把全部文档的全部 item 摊平成一个池子，供测验模式抽取（只有 index.html 有全部文档数据）
+   * @returns {object[]} 每条含 id / docSlug / docTitle / chapter / sectionType / sectionHeading / itemIndex / item
+   */
+  function buildQuizPool() {
+
+    const pool = [];
+
+    (state.data.docs || []).forEach((doc) => {
+
+      doc.sections.forEach((section) => {
+
+        section.items.forEach((item, itemIndex) => {
+          pool.push({
+            id: `${doc.slug}::${section.type}:${itemIndex}`,
+            docSlug: doc.slug,
+            docTitle: doc.title || doc.slug,
+            chapter: doc.chapter,
+            sectionType: section.type,
+            sectionHeading: section.heading,
+            itemIndex,
+            item,
+          });
+        });
+      });
+    });
+
+    return pool;
+  }
+
+  /**
+   * 渲染评分用的 3 个对号按钮，点亮到当前评分档位（再点一次已点亮的档位会清空，见 setItemMark）
+   * @param {number|null} mark
+   * @returns {string}
+   */
+  function renderMarkButtons(mark) {
+
+    return [1, 2, 3].map((level) => {
+
+      const filled = mark !== null && level <= mark;
+
+      return `<button type="button" class="mark-btn${filled ? ' is-filled' : ''}" data-action="set-quiz-mark" data-level="${level}" aria-label="评分 ${level}">✓</button>`;
+    }).join('');
+  }
+
+  /**
+   * 渲染只读的评分展示（3 个对号，不可点击），用于「我的收藏」列表里展示测验评分
+   * @param {number|null} mark
+   * @returns {string}
+   */
+  function renderMarkBadges(mark) {
+
+    if (!mark) {
+
+      return '';
+    }
+
+    const dots = [1, 2, 3].map((level) => {
+
+      const filled = level <= mark;
+
+      return `<span class="mark-btn${filled ? ' is-filled' : ''}" aria-hidden="true">✓</span>`;
+    }).join('');
+
+    return `<span class="mark-badges" title="测验评分：${mark}/3">${dots}</span>`;
+  }
+
+  /**
+   * 渲染测验模式里的一条 item（数据来自 buildQuizPool 的池子条目，不是某一篇 doc 的 section）
+   * @param {object} entry - buildQuizPool 里的一条
+   * @returns {string}
+   */
+  function renderQuizItemRow(entry, recordsById) {
+
+    const shownSide = state.mode;
+    const hiddenSide = state.mode === 'en' ? 'cn' : 'en';
+    const revealText = hiddenSide === 'cn' ? '中文' : 'EN';
+    const record = recordsById.get(entry.id);
+    const favorited = Boolean(record && record.favorited);
+    const mark = record ? record.mark : null;
+
+    return `
+      <li class="item" data-key="${entry.id}">
+        <div class="shown-side">
+          <div class="favorite-meta">${escapeHtml(entry.sectionHeading)}</div>
+          ${formatSide(entry.sectionType, shownSide, entry.item[shownSide])}
+        </div>
+        <div class="item-actions">
+          <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-quiz-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
+          ${renderMarkButtons(mark)}
+          <button type="button" class="reveal-btn"><span class="reveal-arrow" aria-hidden="true">▸</span><span class="reveal-text">${revealText}</span></button>
+        </div>
+        <div class="hidden-side">${formatSide(entry.sectionType, hiddenSide, entry.item[hiddenSide])}</div>
+        ${formatResident({ type: entry.sectionType }, entry.item)}
+      </li>`;
+  }
+
+  /**
+   * 开始新一轮测验：重新摊平打乱全部文档的 item，批次从头开始
+   * @returns {void}
+   */
+  function startNewQuizPool() {
+
+    state.quizPool = shuffleArray(buildQuizPool());
+    state.quizBatchOffset = 0;
+  }
+
+  /**
+   * 渲染「测验模式」整个视图：只渲染当前这一批（QUIZ_BATCH_SIZE 条），
+   * 而不是一次性把全部文档摊平的内容都塞进页面——内容多的话会有几百条，一次性渲染很卡
+   * @returns {void}
+   */
+  function renderQuizView() {
+
+    const contentEl = document.querySelector('[data-role="content"]');
+
+    if (!state.quizPool) {
+      startNewQuizPool();
+    }
+
+    state.allExpanded = false;
+
+    if (state.quizPool.length === 0) {
+      contentEl.innerHTML = `
+        <header class="doc-header"><h2 class="doc-title">📇 测验模式</h2></header>
+        <p class="favorites-empty">没有可供测验的内容。</p>`;
+      updateExpandToggleIcon();
+      updateModeButtonAppearance();
+
+      return;
+    }
+
+    const batch = state.quizPool.slice(state.quizBatchOffset, state.quizBatchOffset + QUIZ_BATCH_SIZE);
+
+    // 只读一次 localStorage 建查找表，避免每条 item 都单独读一次
+    const recordsById = new Map(
+      loadFavorites().filter((fav) => fav.kind === 'item').map((fav) => [fav.id, fav])
+    );
+    const itemsHtml = batch.map((entry) => renderQuizItemRow(entry, recordsById)).join('');
+
+    const totalBatches = Math.ceil(state.quizPool.length / QUIZ_BATCH_SIZE);
+    const currentBatch = Math.floor(state.quizBatchOffset / QUIZ_BATCH_SIZE) + 1;
+
+    contentEl.innerHTML = `
+      <header class="doc-header"><h2 class="doc-title">📇 测验模式</h2></header>
+      <div class="favorites-toolbar">
+        <button type="button" class="btn" data-action="next-quiz-batch">换一批</button>
+        <span class="favorites-hint">
+          第 ${currentBatch}/${totalBatches} 批，共 ${state.quizPool.length} 条；展开/收起状态不会保存
+        </span>
+      </div>
+      <ul class="item-list">${itemsHtml}</ul>
+      ${renderBottomControls()}`;
+
+    updateExpandToggleIcon();
+    updateModeButtonAppearance();
+  }
+
+  /**
+   * 「换一批」按钮：按批次顺序往后翻，一轮抽完（翻到底）自动重新洗牌开始下一轮
+   * @returns {void}
+   */
+  function nextQuizBatch() {
+
+    state.quizBatchOffset += QUIZ_BATCH_SIZE;
+
+    if (state.quizBatchOffset >= state.quizPool.length) {
+      startNewQuizPool();
+    }
+
+    renderQuizView();
+  }
+
+  /**
+   * 切换到「测验模式」视图，或从测验视图切回当前文档
+   * @returns {void}
+   */
+  function toggleQuizView() {
+
+    state.view = state.view === 'quiz' ? 'doc' : 'quiz';
+
+    clearViewToggleButtons();
+
+    document.querySelectorAll('[data-action="toggle-quiz-view"]').forEach((btn) => {
+      btn.classList.toggle('is-active', state.view === 'quiz');
+    });
+
+    if (state.view === 'quiz') {
+      state.quizPool = null;
+      renderQuizView();
+
+      return;
+    }
+
+    const doc = findDoc(currentSlug());
+
+    if (doc) {
+      renderContent(doc);
+    }
+  }
+
+  /**
+   * 按测验 item 的全局 id 在当前池子里找到对应条目
+   * @param {string} id
+   * @returns {object|null}
+   */
+  function findQuizEntry(id) {
+
+    return (state.quizPool || []).find((entry) => entry.id === id) || null;
+  }
+
+  /**
+   * 测验视图里 item 上「收藏」按钮点击处理
+   * @param {HTMLElement} buttonEl
+   * @returns {void}
+   */
+  function handleToggleFavoriteQuizItem(buttonEl) {
+
+    const itemEl = buttonEl.closest('.item');
+    const entry = itemEl && findQuizEntry(itemEl.dataset.key);
+
+    if (!entry) {
+
+      return;
+    }
+
+    toggleFavoriteItem(entry);
+
+    const favorited = isItemFavorited(entry.id);
+    buttonEl.classList.toggle('is-favorited', favorited);
+    buttonEl.textContent = favorited ? '★' : '☆';
+  }
+
+  /**
+   * 测验视图里评分按钮点击处理：更新该条的 3 个对号
+   * @param {HTMLElement} buttonEl
+   * @returns {void}
+   */
+  function handleSetQuizMark(buttonEl) {
+
+    const itemEl = buttonEl.closest('.item');
+    const entry = itemEl && findQuizEntry(itemEl.dataset.key);
+
+    if (!entry) {
+
+      return;
+    }
+
+    setItemMark(entry, Number(buttonEl.dataset.level));
+
+    const mark = getItemMark(entry.id);
+
+    itemEl.querySelectorAll('.mark-btn').forEach((markBtn) => {
+      const btnLevel = Number(markBtn.dataset.level);
+
+      markBtn.classList.toggle('is-filled', mark !== null && btnLevel <= mark);
+    });
+  }
+
+  /**
+   * 侧边栏「收藏整篇」按钮点击处理：切换收藏状态并更新按钮外观
+   * @param {HTMLElement} buttonEl
+   * @returns {void}
+   */
+  function handleToggleFavoriteDoc(buttonEl) {
+
+    const slug = buttonEl.dataset.slug;
+    const doc = findDoc(slug);
+
+    if (!doc) {
+
+      return;
+    }
+
+    toggleFavoriteDoc(doc);
+
+    const favorited = isDocFavorited(slug);
+    buttonEl.classList.toggle('is-favorited', favorited);
+    buttonEl.textContent = favorited ? '★' : '☆';
+
+    if (state.view === 'favorites') {
+      renderFavoritesView();
+    }
+  }
+
+  /**
+   * item 上「收藏」按钮点击处理：切换收藏状态并更新按钮外观
+   * @param {HTMLElement} buttonEl
+   * @returns {void}
+   */
+  function handleToggleFavoriteItem(buttonEl) {
+
+    const itemEl = buttonEl.closest('.item');
+    const slug = currentSlug();
+    const doc = findDoc(slug);
+
+    if (!itemEl || !doc) {
+
+      return;
+    }
+
+    const key = itemEl.dataset.key;
+    const [sectionType, indexStr] = key.split(':');
+    const itemIndex = Number(indexStr);
+    const section = doc.sections.find((sec) => sec.type === sectionType);
+
+    if (!section || !section.items[itemIndex]) {
+
+      return;
+    }
+
+    toggleFavoriteItem(buildItemContext(doc, section, itemIndex));
+
+    const favorited = isItemFavorited(`${doc.slug}::${key}`);
+    buttonEl.classList.toggle('is-favorited', favorited);
+    buttonEl.textContent = favorited ? '★' : '☆';
+
+    if (state.view === 'favorites') {
+      renderFavoritesView();
+    }
+  }
+
+  /**
+   * 同步 EN⇄CN 按钮的文字：显示"当前显示侧 → 隐藏侧"，点一下文字方向跟着反过来
+   * @returns {void}
+   */
+  function updateModeButtonAppearance() {
+
+    const label = state.mode === 'en' ? 'EN → CN' : 'CN → EN';
+
+    // 顶部和内容区底部都有这个按钮（同一个 data-action），两个都要同步
+    document.querySelectorAll('[data-action="toggle-mode"]').forEach((buttonEl) => {
+      buttonEl.textContent = label;
+    });
+  }
+
+  /**
+   * 切换 EN ⇄ CN 模式：交换默认显示/隐藏侧，清空展开态并重渲染
+   * @returns {void}
+   */
+  function toggleMode() {
+
+    // 收藏视图下不响应模式切换
+    if (state.view === 'favorites') {
+
+      return;
+    }
+
+    state.mode = state.mode === 'en' ? 'cn' : 'en';
+    saveMode(state.mode);
+    updateModeButtonAppearance();
+
+    // 测验模式没有单一的"当前文档"，直接用当前池子重渲染，不走 doc 分支
+    if (state.view === 'quiz') {
+      renderQuizView();
+
+      return;
+    }
+
+    const slug = currentSlug();
+    const doc = findDoc(slug);
+
+    // 切换模式即清空该篇展开记录
+    if (slug) {
+      saveExpanded(slug, new Set());
+    }
+
+    if (doc) {
+      renderContent(doc);
+    }
+  }
+
+  /**
+   * 展开或收起单个 item 的隐藏侧
+   * @param {HTMLElement} itemEl
+   * @returns {void}
+   */
+  function toggleItem(itemEl) {
+
+    itemEl.classList.toggle('is-expanded');
+
+    // 测验模式的展开状态不持久化：池子每次进入都会重新打乱，记住单条状态没有意义
+    if (state.view === 'quiz') {
+
+      return;
+    }
+
+    const slug = currentSlug();
+
+    if (!slug) {
+
+      return;
+    }
+
+    const expanded = loadExpanded(slug);
+    const key = itemEl.dataset.key;
+
+    if (itemEl.classList.contains('is-expanded')) {
+      expanded.add(key);
+    } else {
+      expanded.delete(key);
+    }
+
+    saveExpanded(slug, expanded);
+  }
+
+  /**
+   * 全部展开 / 全部收起当前页所有 item
+   * @param {boolean} shouldExpand
+   * @returns {void}
+   */
+  function setAllExpanded(shouldExpand) {
+
+    // 收藏视图下不响应全部展开/收起
+    if (state.view === 'favorites') {
+
+      return;
+    }
+
+    const items = document.querySelectorAll('[data-role="content"] .item');
+
+    items.forEach((itemEl) => {
+      itemEl.classList.toggle('is-expanded', shouldExpand);
+    });
+
+    // 测验模式的展开状态不持久化
+    if (state.view === 'quiz') {
+
+      return;
+    }
+
+    const slug = currentSlug();
+
+    if (!slug) {
+
+      return;
+    }
+
+    const expanded = loadExpanded(slug);
+
+    items.forEach((itemEl) => {
+      if (shouldExpand) {
+        expanded.add(itemEl.dataset.key);
+      } else {
+        expanded.delete(itemEl.dataset.key);
+      }
+    });
+
+    saveExpanded(slug, expanded);
+  }
+
+  /**
+   * 同步"全部展开/收起"切换按钮的图标、文案：➕ 表示当前可以展开，➖ 表示当前可以收起
+   * @returns {void}
+   */
+  function updateExpandToggleIcon() {
+
+    const label = state.allExpanded ? '全部收起' : '全部展开';
+    const icon = state.allExpanded ? '➖' : '➕';
+
+    // 顶部和内容区底部都有这个按钮（同一个 data-action），两个都要同步
+    document.querySelectorAll('[data-action="toggle-all-expanded"]').forEach((buttonEl) => {
+      buttonEl.textContent = icon;
+      buttonEl.title = label;
+      buttonEl.setAttribute('aria-label', label);
+    });
+  }
+
+  /**
+   * 「全部展开/收起」合并成一个按钮：点一下切换状态，同时改变图标
+   * @returns {void}
+   */
+  function toggleAllExpanded() {
+
+    // 收藏视图下不响应，跟 setAllExpanded 的守卫保持一致，避免图标跟实际状态错位
+    if (state.view === 'favorites') {
+
+      return;
+    }
+
+    state.allExpanded = !state.allExpanded;
+
+    setAllExpanded(state.allExpanded);
+    updateExpandToggleIcon();
+  }
+
+  /**
+   * 读取 CSS 变量并解析成数字（px），解析失败时回退默认值
+   * @param {string} varName - 形如 '--breakpoint'
+   * @param {number} fallback
+   * @returns {number}
+   */
+  function readCssNumberVar(varName, fallback) {
+
+    const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    const parsed = parseInt(raw, 10);
+
+    return Number.isNaN(parsed) ? fallback : parsed;
+  }
+
+  /**
+   * 判断当前是否处于窄屏断点（与 style.css 的 `--breakpoint` 保持一致）
+   * @returns {boolean}
+   */
+  function isNarrowViewport() {
+
+    const breakpoint = readCssNumberVar('--breakpoint', 900);
+
+    return window.matchMedia(`(max-width: ${breakpoint}px)`).matches;
+  }
+
+  /**
+   * 窄屏下监听滚动方向，模拟 Safari 地址栏那种「下滑隐藏、上滑出现」的效果：
+   * 往下滑就把「☰ + 标题」这条收起来让出屏幕空间，往上滑（哪怕滑一点点）立刻露出来，
+   * 滚到接近顶部时也强制露出来。宽屏不受影响（这条本来就不是 fixed 定位）。
+   * @returns {void}
+   */
+  function setupAutoHideTopbar() {
+
+    const topbarLeftEl = document.querySelector('.topbar-left');
+
+    if (!topbarLeftEl) {
+
+      return;
+    }
+
+    let lastScrollY = window.scrollY;
+    let isTicking = false;
+
+    window.addEventListener('scroll', () => {
+
+      if (!isNarrowViewport() || isTicking) {
+
+        return;
+      }
+
+      isTicking = true;
+
+      requestAnimationFrame(() => {
+
+        const currentScrollY = window.scrollY;
+
+        if (currentScrollY < 8 || currentScrollY < lastScrollY) {
+          topbarLeftEl.classList.remove('is-hidden');
+        } else {
+          topbarLeftEl.classList.add('is-hidden');
+        }
+
+        lastScrollY = currentScrollY;
+        isTicking = false;
+      });
+    }, { passive: true });
+  }
+
+  /**
+   * 从 localStorage 恢复宽屏下侧边栏是否收起
+   * @returns {boolean}
+   */
+  function loadSidebarCollapsed() {
+
+    try {
+
+      return localStorage.getItem(STORAGE_SIDEBAR_COLLAPSED_KEY) === 'true';
+    } catch (err) {
+
+      return false;
+    }
+  }
+
+  /**
+   * 持久化宽屏下侧边栏是否收起
+   * @param {boolean} collapsed
+   * @returns {void}
+   */
+  function saveSidebarCollapsed(collapsed) {
+
+    try {
+      localStorage.setItem(STORAGE_SIDEBAR_COLLAPSED_KEY, collapsed ? 'true' : 'false');
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 从 localStorage 恢复侧边栏宽度（px），无 / 非法值时回退 CSS 默认值
+   * @returns {number}
+   */
+  function loadSidebarWidth() {
+
+    const defaultWidth = readCssNumberVar('--sidebar-width', 288);
+
+    try {
+      const raw = localStorage.getItem(STORAGE_SIDEBAR_WIDTH_KEY);
+      const parsed = parseInt(raw, 10);
+
+      return Number.isNaN(parsed) ? defaultWidth : parsed;
+    } catch (err) {
+
+      return defaultWidth;
+    }
+  }
+
+  /**
+   * 持久化侧边栏宽度（px）
+   * @param {number} width
+   * @returns {void}
+   */
+  function saveSidebarWidth(width) {
+
+    try {
+      localStorage.setItem(STORAGE_SIDEBAR_WIDTH_KEY, String(Math.round(width)));
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 把宽度应用到 --sidebar-width CSS 变量（正文的居中公式会跟着自动重新计算）
+   * @param {number} width
+   * @returns {void}
+   */
+  function applySidebarWidth(width) {
+
+    document.documentElement.style.setProperty('--sidebar-width', `${width}px`);
+  }
+
+  /**
+   * 切换侧边栏：窄屏是抽屉滑入/滑出，宽屏是收起/展开（同一个 ☰ 按钮触发）
+   * @returns {void}
+   */
+  function toggleSidebar() {
+
+    const sidebarEl = document.querySelector('.sidebar');
+
+    if (isNarrowViewport()) {
+      sidebarEl.classList.toggle('is-open');
+
+      return;
+    }
+
+    const collapsed = sidebarEl.classList.toggle('is-collapsed');
+    saveSidebarCollapsed(collapsed);
+  }
+
+  /**
+   * 绑定侧边栏拖拽调宽：鼠标按住分隔条拖动，松手后持久化宽度
+   * @returns {void}
+   */
+  function setupSidebarResize() {
+
+    const resizerEl = document.querySelector('[data-role="sidebar-resizer"]');
+
+    if (!resizerEl) {
+
+      return;
+    }
+
+    resizerEl.addEventListener('mousedown', (event) => {
+
+      event.preventDefault();
+
+      const minWidth = readCssNumberVar('--sidebar-min-width', 220);
+      const maxWidth = readCssNumberVar('--sidebar-max-width', 480);
+
+      resizerEl.classList.add('is-dragging');
+      document.body.classList.add('is-resizing-sidebar');
+
+      const onMouseMove = (moveEvent) => {
+
+        const width = Math.min(maxWidth, Math.max(minWidth, moveEvent.clientX));
+        applySidebarWidth(width);
+      };
+
+      const onMouseUp = () => {
+
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        resizerEl.classList.remove('is-dragging');
+        document.body.classList.remove('is-resizing-sidebar');
+
+        saveSidebarWidth(readCssNumberVar('--sidebar-width', 288));
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  /**
+   * 切换当前查看的 NoteDoc（index 模式）
+   * @param {string} slug
+   * @returns {void}
+   */
+  function selectDoc(slug) {
+
+    const doc = findDoc(slug);
+
+    if (!doc) {
+
+      return;
+    }
+
+    state.currentSlug = slug;
+    state.view = 'doc';
+
+    clearViewToggleButtons();
+
+    renderContent(doc);
+    highlightActiveLink(slug);
+
+    // 窄屏选完自动收起抽屉
+    document.querySelector('.sidebar').classList.remove('is-open');
+  }
+
+  /**
+   * 取章节树里第一篇的 slug
+   * @param {{ files: object[] }[]} tree
+   * @returns {string|null}
+   */
+  function firstDocSlug(tree) {
+
+    for (const group of tree) {
+
+      if (group.files.length > 0) {
+
+        return group.files[0].slug;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 事件委托：顶部按钮、侧边栏链接、内容区点击
+   * @returns {void}
+   */
+  function bindEvents() {
+
+    document.addEventListener('click', (event) => {
+      const sidebarEl = document.querySelector('.sidebar');
+
+      // 窄屏抽屉展开时，点击抽屉之外的地方就收起抽屉，这次点击不再触发别的交互
+      if (
+        sidebarEl
+        && sidebarEl.classList.contains('is-open')
+        && !event.target.closest('.sidebar')
+        && !event.target.closest('.drawer-toggle')
+      ) {
+        sidebarEl.classList.remove('is-open');
+
+        return;
+      }
+
+      const actionEl = event.target.closest('[data-action]');
+
+      if (actionEl) {
+        const { action } = actionEl.dataset;
+
+        if (action === 'toggle-mode') toggleMode();
+        if (action === 'toggle-all-expanded') toggleAllExpanded();
+        if (action === 'toggle-sidebar') toggleSidebar();
+        if (action === 'toggle-favorites-view') toggleFavoritesView();
+        if (action === 'toggle-favorite-doc') handleToggleFavoriteDoc(actionEl);
+        if (action === 'toggle-favorite-item') handleToggleFavoriteItem(actionEl);
+        if (action === 'remove-favorite') removeFavorite(actionEl.dataset.kind, actionEl.dataset.id);
+        if (action === 'jump-to-doc') jumpToDoc(actionEl.dataset.slug);
+        if (action === 'jump-to-item') jumpToItem(actionEl.dataset.slug, actionEl.dataset.key);
+        if (action === 'export-favorites') exportFavorites();
+        if (action === 'import-favorites') document.querySelector('[data-role="favorites-import-input"]').click();
+        if (action === 'toggle-quiz-view') toggleQuizView();
+        if (action === 'next-quiz-batch') nextQuizBatch();
+        if (action === 'toggle-favorite-quiz-item') handleToggleFavoriteQuizItem(actionEl);
+        if (action === 'set-quiz-mark') handleSetQuizMark(actionEl);
+
+        return;
+      }
+
+      // 侧边栏文件链接
+      const linkEl = event.target.closest('.doc-link');
+
+      if (linkEl) {
+        selectDoc(linkEl.dataset.slug);
+
+        return;
+      }
+
+      // 点击 item 的揭示按钮或整行
+      const itemEl = event.target.closest('.item');
+
+      if (itemEl) {
+        toggleItem(itemEl);
+      }
+    });
+  }
+
+  /**
+   * 入口
+   * @returns {void}
+   */
+  function init() {
+
+    state.data = loadData();
+    state.mode = loadMode();
+    state.view = 'doc';
+
+    updateModeButtonAppearance();
+
+    // 单篇页面没有章节树数据，侧边栏渲染不出导航内容，直接连 ☰ 按钮一起隐藏
+    if (state.data.doc) {
+      document.body.classList.add('single-doc');
+    }
+
+    applyTheme(loadTheme());
+    setupThemeSelect();
+    setupFavoritesImport();
+    setupSidebarResize();
+    setupAutoHideTopbar();
+
+    // 恢复侧边栏宽度与宽屏下的收起状态
+    applySidebarWidth(loadSidebarWidth());
+    document.querySelector('.sidebar').classList.toggle('is-collapsed', loadSidebarCollapsed());
+
+    bindEvents();
+
+    // 单篇模式：data.doc 存在；index 模式：data.docs + data.tree
+    if (state.data.doc) {
+      renderContent(state.data.doc);
+
+      return;
+    }
+
+    renderSidebar(state.data.tree);
+
+    // 默认选中第一篇
+    const firstSlug = firstDocSlug(state.data.tree);
+
+    if (firstSlug) {
+      selectDoc(firstSlug);
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

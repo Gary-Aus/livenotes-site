@@ -1,0 +1,2732 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>6. Writing Lesson_ Subject-Verb Agreement</title>
+  <style>/*
+ * style.css — livenotes 响应式样式
+ *
+ * 侧边栏始终 position: fixed 悬浮，不占文档流宽度：
+ *   宽屏（>= 900px）：默认展开，.is-collapsed 收起；右边缘可拖拽调宽；正文相对整个视口居中
+ *   窄屏：默认收起（抽屉），.is-open 滑入；内容单栏铺满，没有拖拽调宽
+ * 热区按钮 >= 44px，不依赖 :hover（用 :active / :focus-visible）
+ * 详见 ARCHITECTURE.md §4「布局」
+ */
+
+:root {
+  --breakpoint: 900px;
+  --hit-size: 44px;
+  --sidebar-width: 288px;
+  --sidebar-min-width: 220px;
+  --sidebar-max-width: 480px;
+  --topbar-h: 56px;
+  --content-max: 760px;
+  --radius: 10px;
+  --gap: 16px;
+
+  /* 配色令牌（浅色为主） */
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-text: #1a1a1a;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-accent: #2563eb;
+  --color-on-accent: #ffffff;
+
+  /* 隐藏侧展开后的背景，与显示侧区分 */
+  --mask-bg: #f3f4f6;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/*
+ * 主题：每个主题只覆盖约 9 个配色令牌，布局规则复用。
+ * 默认（无 data-theme）= 浅色；data-theme="auto" 跟随系统浅 / 深。
+ * 主题 id 与 template/app.js 的 THEMES 列表一一对应。
+ */
+
+/* 跟随系统：仅当系统为深色时套用「石墨深色」令牌 */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --color-bg: #0f1115;
+    --color-surface: #171a21;
+    --color-text: #e6e8eb;
+    --color-muted: #9aa3af;
+    --color-border: #2a2f3a;
+    --color-accent: #60a5fa;
+    --color-on-accent: #0f1115;
+    --mask-bg: #232a36;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* 纸质 Sepia：暖米黄，经典阅读模式 */
+:root[data-theme="sepia"] {
+  --color-bg: #f4ecd8;
+  --color-surface: #faf4e4;
+  --color-text: #5b4636;
+  --color-muted: #8c7a63;
+  --color-border: #e2d6bb;
+  --color-accent: #a3682f;
+  --color-on-accent: #faf4e4;
+  --mask-bg: #ece0c6;
+  --shadow: 0 1px 2px rgba(91, 70, 54, 0.10), 0 4px 12px rgba(91, 70, 54, 0.07);
+}
+
+/* Solarized Light */
+:root[data-theme="solarized-light"] {
+  --color-bg: #fdf6e3;
+  --color-surface: #fdf6e3;
+  --color-text: #586e75;
+  --color-muted: #93a1a1;
+  --color-border: #e6dfc6;
+  --color-accent: #268bd2;
+  --color-on-accent: #fdf6e3;
+  --mask-bg: #eee8d5;
+  --shadow: 0 1px 2px rgba(101, 123, 131, 0.10), 0 4px 12px rgba(101, 123, 131, 0.06);
+}
+
+/* 石墨深色：中性深灰 */
+:root[data-theme="graphite"] {
+  --color-bg: #0f1115;
+  --color-surface: #171a21;
+  --color-text: #e6e8eb;
+  --color-muted: #9aa3af;
+  --color-border: #2a2f3a;
+  --color-accent: #60a5fa;
+  --color-on-accent: #0f1115;
+  --mask-bg: #232a36;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+/* Solarized Dark */
+:root[data-theme="solarized-dark"] {
+  --color-bg: #002b36;
+  --color-surface: #073642;
+  --color-text: #93a1a1;
+  --color-muted: #657b83;
+  --color-border: #0b3f4c;
+  --color-accent: #268bd2;
+  --color-on-accent: #fdf6e3;
+  --mask-bg: #0b4a5a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 16px rgba(0, 0, 0, 0.40);
+}
+
+/* Nord：冷蓝极简 */
+:root[data-theme="nord"] {
+  --color-bg: #2e3440;
+  --color-surface: #343b49;
+  --color-text: #d8dee9;
+  --color-muted: #8b98b0;
+  --color-border: #434c5e;
+  --color-accent: #88c0d0;
+  --color-on-accent: #2e3440;
+  --mask-bg: #3b4252;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.40), 0 6px 16px rgba(0, 0, 0, 0.32);
+}
+
+/* Gruvbox：暖褐复古 */
+:root[data-theme="gruvbox"] {
+  --color-bg: #282828;
+  --color-surface: #32302f;
+  --color-text: #ebdbb2;
+  --color-muted: #a89984;
+  --color-border: #504945;
+  --color-accent: #fe8019;
+  --color-on-accent: #282828;
+  --mask-bg: #3c3836;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.42), 0 6px 16px rgba(0, 0, 0, 0.34);
+}
+
+* { box-sizing: border-box; }
+
+/*
+ * iOS 部分容器 App（比如 Documents by Readdle）内置的网页预览会把"点一下页面"识别成
+ * "切换阅读器顶部工具栏"的手势，点整行揭示/按钮时会跟着一起触发，体验很差。
+ * touch-action: manipulation 去掉双击缩放的判定延迟，让单击更快被网页自己的点击逻辑
+ * 消费掉，减少被宿主 App 误判成"点了空白页面"的概率（如果宿主用的是原生手势识别器，
+ * 这个也不一定完全压得住，是尽力而为的兼容写法）。
+ */
+.item, .doc-link, .btn, .reveal-btn, .fav-btn, .mark-btn, .fav-jump,
+.drawer-toggle, .theme-picker-wrap, .sidebar-resizer {
+  touch-action: manipulation;
+}
+
+body {
+  margin: 0;
+  font-size: clamp(15px, 2.5vw, 17px);
+  line-height: 1.6;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  overflow-x: hidden; /* 禁止横向溢出 */
+}
+
+/* ── 顶部工具条 ───────────────────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--topbar-h);
+  padding: 8px 16px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app-title {
+  margin: 0;
+  font-size: clamp(15px, 3vw, 18px);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.controls {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/*
+ * 宽屏：标题独立留在左边，按钮组居中到工具条正中间。
+ * 用 grid 三列（左 / 中 / 右）而不是 position: absolute——之前用绝对定位时，
+ * 按钮组一旦在中等宽度下换行变成两行，会因为脱离文档流而跟下方正文重叠
+ * （工具条自身高度不会跟着换行长高）。grid 让按钮组留在正常文档流里，
+ * 换行时工具条本身会跟着长高，不会盖住正文。
+ */
+@media (min-width: 901px) {
+  .topbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    column-gap: 12px;
+  }
+
+  .topbar-left { grid-column: 1; }
+
+  .app-title { max-width: min(32vw, 400px); }
+
+  .controls {
+    grid-column: 2;
+    justify-self: center;
+    margin-left: 0;
+    justify-content: center;
+    max-width: min(90vw, 640px);
+  }
+
+  .back-link {
+    grid-column: 3;
+    justify-self: end;
+  }
+}
+
+.btn {
+  min-width: var(--hit-size);
+  min-height: var(--hit-size);
+  padding: 6px 14px;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* EN⇄CN 模式按钮：背景跟「➕/➖」按钮一样用普通 .btn 素色，不用强调色；靠文字区分当前模式 */
+.btn-mode {
+  white-space: nowrap;
+}
+
+/* 「全部展开/收起」合并按钮：➕/➖ 图标本身已经是粗体符号，字号调大一点更醒目 */
+.btn-expand-toggle {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 「★ 收藏」入口按钮：平时浅色底，跟收藏星标的金色呼应但不抢眼；打开收藏列表视图时换成强调色 */
+.btn-favorites {
+  color: #b45f06;
+  background: rgba(245, 165, 36, 0.15);
+  border-color: rgba(245, 165, 36, 0.5);
+}
+
+.btn-favorites.is-active {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* 「📇 测验」入口按钮：打开测验模式时高亮 */
+.btn-quiz.is-active {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/*
+ * 测验模式评分按钮：3 个对号，点第几个就点亮到第几个（类似打分条）。
+ * 用固定的灰 / 黄两色（不用主题令牌），跟收藏星标的金色区分开，避免混淆成同一种标记。
+ */
+.mark-btn {
+  min-width: 32px;
+  min-height: var(--hit-size);
+  padding: 4px 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(128, 128, 128, 0.5);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.mark-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* 点亮态用实心黄底 + 深色对号，比只变文字颜色更醒目，一眼能扫出点亮了几个 */
+.mark-btn.is-filled {
+  color: #78350f;
+  background: #facc15;
+  border-color: #facc15;
+}
+
+/* 收藏星标按钮：侧边栏文档条目 / item 上通用，已收藏用金色区分（跨主题固定色，保持可辨识） */
+.fav-btn {
+  flex: 0 0 auto;
+  min-width: var(--hit-size);
+  min-height: var(--hit-size);
+  padding: 4px 10px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.fav-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* 已收藏：实心金底 + 白色星标，跟评分对号的"点亮=实心底"用同一套视觉语言，一眼能看出已收藏 */
+.fav-btn.is-favorited {
+  color: #ffffff;
+  background: #f5a524;
+  border-color: #f5a524;
+}
+
+/* 「我的收藏」列表里只读展示评分（不可点击），跟评分按钮共用 .mark-btn 样式 */
+.mark-badges {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.mark-badges .mark-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: auto;
+  cursor: default;
+}
+
+/*
+ * 主题选择：收起态只显示一个方形色块（颜色跟当前主题一致），不显示主题名字。
+ * 原生 select 还在，但整个变透明盖在色块上面——点击色块其实点到的是透明的 select，
+ * 照常弹出原生选项列表（列表里的文字正常显示，浏览器原生渲染，不用自己写下拉逻辑）。
+ */
+.theme-picker-wrap {
+  position: relative;
+  display: inline-flex;
+  min-width: var(--hit-size);
+  min-height: var(--hit-size);
+}
+
+/*
+ * 描边用固定的深浅双层（不用 --color-border）：外圈深、内圈浅，不管色块本身是深是浅，
+ * 总有一层能跟它区分开，不会跟当前主题背景糊在一起。再加个 🎨 图标，一眼就能认出是主题按钮，
+ * 不用完全依赖色块本身的对比度。
+ */
+.theme-swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hit-size);
+  height: var(--hit-size);
+  border-radius: var(--radius);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.18);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.theme-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.theme-picker-wrap:focus-within .theme-swatch {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.back-link {
+  color: var(--color-accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.back-link:active { opacity: 0.7; }
+
+/* 汉堡按钮：切换侧边栏，窄屏是抽屉滑入/滑出，宽屏是收起/展开，两种宽度下都常驻显示 */
+.drawer-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit-size);
+  min-height: var(--hit-size);
+  font-size: 18px;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* 拖拽调宽时锁定光标、禁止选中文字 */
+body.is-resizing-sidebar {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* ── 布局：侧边栏 fixed 悬浮，不占文档流宽度 ── */
+.sidebar {
+  position: fixed;
+  top: var(--topbar-h);
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  z-index: 65;
+  overflow-y: auto;
+  padding: 12px;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  transition: transform 0.2s ease;
+}
+
+.content {
+  min-width: 0; /* 允许内容收缩，配合子元素换行避免横向溢出 */
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 20px clamp(16px, 4vw, 32px) 64px;
+}
+
+/* 拖拽调宽分隔条：贴着侧边栏右边缘，只在宽屏出现（见下方媒体查询） */
+.sidebar-resizer { display: none; }
+
+/*
+ * 单篇页面没有章节树数据，侧边栏渲染不出导航内容，连 ☰ 按钮一起隐藏，避免空框和摆设按钮；
+ * 测验模式需要全部文档数据摊平抽取，单篇页面也做不到，一并隐藏
+ */
+body.single-doc .drawer-toggle,
+body.single-doc .sidebar,
+body.single-doc .sidebar-resizer,
+body.single-doc .btn-quiz {
+  display: none;
+}
+
+@media (min-width: 901px) {
+  body.single-doc .content { margin-left: auto; }
+}
+
+/* ── 侧边栏：章节树 ───────────────────────── */
+.chapter { border-bottom: 1px solid var(--color-border); }
+
+.chapter-title {
+  padding: 10px 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.doc-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+/* 文件条目：文件名按钮 + 收藏星标并排 */
+.doc-item {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.doc-link {
+  display: block;
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--hit-size);
+  padding: 8px 10px;
+  font: inherit;
+  text-align: left;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.doc-link:active { background: var(--mask-bg); }
+
+.doc-link.is-active {
+  color: var(--color-accent);
+  background: var(--mask-bg);
+  font-weight: 600;
+}
+
+/* ── 内容区 ───────────────────────────────── */
+.doc-header { margin-bottom: 16px; }
+
+/* 内容区最下面的 EN⇄CN / 全部展开收起，跟顶部一样的按钮，划到底不用翻回顶部就能切换 */
+.bottom-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.doc-title {
+  margin: 0;
+  font-size: clamp(19px, 4vw, 24px);
+}
+
+.section { margin-top: 28px; }
+
+.section-title {
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  font-size: clamp(16px, 3vw, 19px);
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* item：显示侧在左，揭示按钮在右，隐藏侧 / 常驻信息整行排在下方 */
+.item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.shown-side {
+  align-self: center;
+  overflow-wrap: anywhere;
+}
+
+/* 收藏星标 + 揭示按钮的容器，占 item 网格第二列 */
+.item-actions {
+  grid-column: 2;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.reveal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--hit-size);
+  min-width: var(--hit-size);
+  padding: 4px 12px;
+  font: inherit;
+  color: var(--color-accent);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.reveal-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.reveal-arrow {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.item.is-expanded .reveal-arrow { transform: rotate(90deg); }
+
+.hidden-side {
+  display: none;
+  grid-column: 1 / -1;
+  padding: 10px 12px;
+  background: var(--mask-bg);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.item.is-expanded .hidden-side { display: block; }
+
+.resident {
+  grid-column: 1 / -1;
+  color: var(--color-muted);
+  font-size: 0.9em;
+}
+
+/* 词汇表单元格排版：单词加大加粗突出主角，词性/音标进一步弱化拉开主次对比 */
+.cell { margin-right: 10px; }
+
+.cell--word,
+.cell--phrase {
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+/* 句型 & 金句：只稍微加粗，不加大字号——分量比单词/短语轻一点 */
+.cell--text_en { font-weight: 600; }
+
+.cell--pos {
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.cell--ipa {
+  color: var(--color-muted);
+  font-size: 0.85em;
+  font-family: ui-monospace, "SF Mono", "Consolas", monospace;
+}
+
+/*
+ * 释义 / 读法各自一个色块（同一行），用已有的主题变量而不是写死颜色，
+ * 保证深色主题下也有足够对比度：释义用强调色实心块（更显眼，这是核心信息），
+ * 读法用中性浅底块（弱化，只是辅助的拼音读法）
+ */
+.cell--meaning {
+  display: inline-block;
+  margin: 2px 6px 2px 0;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  background: var(--mask-bg);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  font-weight: 600;
+}
+
+.cell--reading {
+  display: inline-block;
+  margin: 2px 0;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  background: var(--mask-bg);
+  color: var(--color-muted);
+}
+
+/* ── 我的收藏视图 ─────────────────────────── */
+.favorites-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.favorites-hint {
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.favorites-empty { color: var(--color-muted); }
+
+/* 收藏列表行：布局仿 .item，但不复用 .item 类名，避免被「点整行揭示」的事件委托误触发 */
+.favorite-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.fav-jump {
+  font: inherit;
+  color: var(--color-accent);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.fav-jump--disabled {
+  color: var(--color-muted);
+  text-decoration: none;
+  cursor: default;
+}
+
+.favorite-meta {
+  margin-bottom: 4px;
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.favorite-both-sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  overflow-wrap: anywhere;
+}
+
+.cell--chapter {
+  margin-right: 8px;
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+/* ── 宽屏：侧边栏收起/展开、拖拽调宽、正文相对整窗居中 ── */
+@media (min-width: 901px) {
+  /* 默认展开，.is-collapsed 时滑出隐藏 */
+  .sidebar.is-collapsed { transform: translateX(-100%); }
+
+  /* 正文按 max(侧边栏宽度, 整窗居中该有的位置) 计算左边距：
+     窗口够宽时严格整窗居中；不够宽时退化成贴着侧边栏右边，避免被遮挡 */
+  .content {
+    margin-left: max(var(--sidebar-width), calc((100% - var(--content-max)) / 2));
+    margin-right: auto;
+  }
+
+  /* 侧边栏收起后，正文完全按整窗居中 */
+  .sidebar.is-collapsed ~ .content { margin-left: auto; }
+
+  .sidebar-resizer {
+    display: block;
+    position: fixed;
+    top: var(--topbar-h);
+    left: var(--sidebar-width);
+    bottom: 0;
+    width: 6px;
+    margin-left: -3px;
+    z-index: 66;
+    cursor: col-resize;
+    background: transparent;
+  }
+
+  .sidebar-resizer:hover,
+  .sidebar-resizer.is-dragging { background: var(--color-accent); opacity: 0.35; }
+
+  /* 侧边栏收起时分隔条也一起隐藏 */
+  .sidebar.is-collapsed ~ .sidebar-resizer { display: none; }
+}
+
+/* ── 窄屏：侧边栏转抽屉 ───────────────────── */
+@media (max-width: 900px) {
+  .sidebar {
+    width: min(84vw, 320px);
+    z-index: 70;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow);
+  }
+
+  .sidebar.is-open { transform: none; }
+
+  .content {
+    max-width: none;
+    padding: 16px 16px 56px;
+  }
+
+  /*
+   * 只让「☰ + 标题」这一条吸顶（position: fixed），按钮那一行（.controls）跟着页面正常滚动，
+   * 不再整个工具条都吸顶——手机屏幕小，两行按钮常驻会占掉很大一块阅读区域
+   */
+  .topbar {
+    position: static;
+    margin-top: var(--topbar-h);
+  }
+
+  .topbar-left {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    min-height: var(--topbar-h);
+    padding: 8px 16px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    transition: transform 0.25s ease;
+  }
+
+  /* 往下滑时收起（滑出屏幕外），往上滑或接近顶部时用 app.js 的滚动监听移除这个类重新露出来 */
+  .topbar-left.is-hidden {
+    transform: translateY(-100%);
+  }
+
+  /* 词条卡片：操作按钮挪到内容下方单独一行，不跟内容抢横向空间；按钮整体缩小一圈 */
+  .item {
+    grid-template-columns: 1fr;
+  }
+
+  .item-actions {
+    grid-column: 1;
+    justify-content: flex-start;
+  }
+
+  .item-actions .fav-btn,
+  .item-actions .mark-btn,
+  .item-actions .reveal-btn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 2px 8px;
+    font-size: 14px;
+  }
+}
+</style>
+</head>
+<body>
+  <!-- 顶部工具条：模式切换 + 全部展开/收起 + 侧边栏开关（窄屏是抽屉，宽屏是收起/展开） -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="drawer-toggle" data-action="toggle-sidebar" aria-label="切换目录">☰</button>
+      <h1 class="app-title">6. Writing Lesson_ Subject-Verb Agreement</h1>
+    </div>
+    <div class="controls">
+      <button data-action="toggle-mode" class="btn btn-mode">EN → CN</button>
+      <button data-action="toggle-all-expanded" class="btn btn-expand-toggle" title="全部展开" aria-label="全部展开">➕</button>
+      <span class="theme-picker-wrap">
+        <span class="theme-swatch" data-role="theme-swatch" aria-hidden="true">🎨</span>
+        <select class="theme-select" data-role="theme-select" aria-label="主题"></select>
+      </span>
+      <button data-action="toggle-quiz-view" class="btn btn-quiz">📇 测验</button>
+      <button data-action="toggle-favorites-view" class="btn btn-favorites">★ 收藏</button>
+    </div>
+    <a class="back-link" href="../index.html">← 返回总目录</a>
+  </header>
+
+  <div class="layout">
+    <!-- 侧边栏：章节树 + 文件列表（单篇模式下隐藏） -->
+    <nav class="sidebar" data-role="sidebar"></nav>
+
+    <!-- 拖拽调宽分隔条：仅宽屏出现，鼠标拖动改 --sidebar-width -->
+    <div class="sidebar-resizer" data-role="sidebar-resizer" aria-hidden="true"></div>
+
+    <!-- 内容区：由 app.js 按当前 NoteDoc 渲染三段表格 -->
+    <main class="content" data-role="content"></main>
+  </div>
+
+  <!-- 构建期内嵌的数据：index 为 { docs, tree }，单篇为 { doc } -->
+  <script type="application/json" data-role="livenotes-data">{"doc":{"title":"6. Writing Lesson_ Subject-Verb Agreement","slug":"_Codex__6. Writing Lesson_ Subject-Verb Agreement","chapter":"02 - Writing and Grammar","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__5__Codex__OK__Master English_Improve Your Speaking, Listening, Writing - 5h\\05__ai_english_quick\\02 - Writing and Grammar\\_Codex__6. Writing Lesson_ Subject-Verb Agreement.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"agreement","pos":"n.","ipa":"/əˈɡriːmənt/"},"cn":{"reading":"【额】-格-瑞-门-特","meaning":"一致，呼应"}},{"en":{"word":"continuous","pos":"adj.","ipa":"/kənˈtɪnjuəs/"},"cn":{"reading":"【肯】-提-纽-厄-斯","meaning":"持续的，进行的"}},{"en":{"word":"conjugate","pos":"v.","ipa":"/ˈkɑːndʒuɡeɪt/"},"cn":{"reading":"【康】-朱-给-特","meaning":"变位，按人称变化"}},{"en":{"word":"collide","pos":"v.","ipa":"/kəˈlaɪd/"},"cn":{"reading":"【肯】-莱-德","meaning":"碰撞"}},{"en":{"word":"unleash","pos":"v.","ipa":"/ʌnˈliːʃ/"},"cn":{"reading":"【安】-利-什","meaning":"释放，放出"}},{"en":{"word":"trigger","pos":"v.","ipa":"/ˈtrɪɡər/"},"cn":{"reading":"【崔】-格-尔","meaning":"触发，引发"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"simple present"},"cn":{"meaning":"一般现在时"},"note":""},{"en":{"phrase":"present continuous"},"cn":{"meaning":"现在进行时"},"note":""},{"en":{"phrase":"general truths"},"cn":{"meaning":"普遍真理"},"note":""},{"en":{"phrase":"third person singular"},"cn":{"meaning":"第三人称单数"},"note":""},{"en":{"phrase":"draw your attention to"},"cn":{"meaning":"提醒你注意"},"note":""},{"en":{"phrase":"every quarter"},"cn":{"meaning":"每季度"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"There are two ways to___"},"cn":{"text_cn":"有两种方式可以……"},"kind":""},{"en":{"text_en":"You can make it with___"},"cn":{"text_cn":"你可以用……来构成它"},"kind":""},{"en":{"text_en":"Change that into___"},"cn":{"text_cn":"把它改成……"},"kind":""},{"en":{"text_en":"One option would be___"},"cn":{"text_cn":"一种答案是……"},"kind":""},{"en":{"text_en":"adjust our computer settings"},"cn":{"text_cn":"调整我们的电脑设置"},"kind":""},{"en":{"text_en":"trigger the alarm"},"cn":{"text_cn":"触发警报"},"kind":""},{"en":{"text_en":"managing a small firm"},"cn":{"text_cn":"管理一家小公司"},"kind":""},{"en":{"text_en":"running slow"},"cn":{"text_cn":"运行很慢"},"kind":""},{"en":{"text_en":"Success comes from hard work."},"cn":{"text_cn":"成功来自努力。"},"kind":""},{"en":{"text_en":"Walk two blocks and then turn left."},"cn":{"text_cn":"走两个街区，然后左转。"},"kind":""},{"en":{"text_en":"I wanted to draw your attention to that."},"cn":{"text_cn":"我想提醒你注意这一点。"},"kind":""},{"en":{"text_en":"The company does."},"cn":{"text_cn":"这家公司会这样做。"},"kind":""},{"en":{"text_en":"Please adjust the volume."},"cn":{"text_cn":"请调一下音量。"},"kind":""}]}],"extra":""}}</script>
+  <!-- 导入收藏用的隐藏文件选择框，由「导入收藏」按钮触发点击 -->
+  <input type="file" accept="application/json" data-role="favorites-import-input" hidden>
+  <script>/**
+ * app.js — livenotes 前端交互
+ *
+ * 两层控制（见 _AI_READ/ARCHITECTURE.md §4）：
+ *   ① 顶部 EN ⇄ CN 模式切换 → 决定默认隐藏哪一侧
+ *   ② 每个 item 独立揭示按钮 → 隐藏侧从下方展开 / 收起
+ * 顶部便捷键：全部展开 / 全部收起
+ * 顶部主题下拉：切换配色主题（含「跟随系统」）
+ * 状态（模式、主题、已展开项）存 localStorage
+ */
+
+(function () {
+  'use strict';
+
+  // ── 常量 ─────────────────────────────────
+  const STORAGE_MODE_KEY = 'livenotes:mode';
+  const STORAGE_EXPANDED_PREFIX = 'livenotes:expanded:';
+  const STORAGE_THEME_KEY = 'livenotes:theme';
+  const STORAGE_FAVORITES_KEY = 'livenotes:favorites';
+  const STORAGE_SIDEBAR_COLLAPSED_KEY = 'livenotes:sidebar-collapsed';
+  const STORAGE_SIDEBAR_WIDTH_KEY = 'livenotes:sidebar-width';
+  const DEFAULT_MODE = 'en'; // 默认显示英文、隐藏中文
+  const DEFAULT_THEME = 'light';
+  const QUIZ_BATCH_SIZE = 10; // 测验模式一批显示多少条，内容多时避免一次性渲染几百条卡顿
+
+  // 可选主题（id 与 style.css 的 :root[data-theme="id"] 一一对应）；light 为基础主题，不写 data-theme
+  // swatch：收起态色块的背景，跟对应主题 style.css 里的 --color-bg 保持一致（改主题配色时这里也要同步改）
+  // auto 没有固定单一颜色，用斜切黑白表示"跟随系统"
+  const THEMES = [
+    { id: 'light', label: '浅色', swatch: '#ffffff' },
+    { id: 'sepia', label: '纸质 Sepia', swatch: '#f4ecd8' },
+    { id: 'solarized-light', label: 'Solarized Light', swatch: '#fdf6e3' },
+    { id: 'graphite', label: '石墨深色', swatch: '#0f1115' },
+    { id: 'solarized-dark', label: 'Solarized Dark', swatch: '#002b36' },
+    { id: 'nord', label: 'Nord', swatch: '#2e3440' },
+    { id: 'gruvbox', label: 'Gruvbox', swatch: '#282828' },
+    { id: 'auto', label: '跟随系统', swatch: 'linear-gradient(135deg, #ffffff 50%, #0f1115 50%)' },
+  ];
+
+  // 各 section 类型的 en / cn 两侧字段（顺序即渲染顺序），与 config.js 的 SECTION_TYPES 对应
+  const SIDE_FIELDS = {
+    vocab: { en: ['word', 'pos', 'ipa'], cn: ['meaning', 'reading'] },
+    phrases: { en: ['phrase'], cn: ['meaning'] },
+    sentences: { en: ['text_en'], cn: ['text_cn'] },
+  };
+
+  // 常驻字段（不参与遮挡）：note / kind
+  const RESIDENT_FIELD = { phrases: 'note', sentences: 'kind' };
+
+  // ── 运行时状态 ───────────────────────────
+  const state = {
+    mode: DEFAULT_MODE,
+    theme: DEFAULT_THEME,
+    view: 'doc',       // 'doc'：正常文档视图；'favorites'：我的收藏视图；'quiz'：测验模式
+    allExpanded: false, // 当前文档是否处于"全部展开"状态，决定切换按钮图标 ➕ / ➖
+    quizPool: null,    // 测验模式当前这一轮打乱后的条目池，null 表示需要重新洗牌
+    quizBatchOffset: 0, // 当前显示的是池子里第几批（每批 QUIZ_BATCH_SIZE 条）
+    currentSlug: null, // index 模式下当前查看的 NoteDoc
+    data: null,        // { docs, tree } 或 { doc }
+  };
+
+
+  /**
+   * 读取页面内嵌的 JSON 数据
+   * @returns {object}
+   */
+  function loadData() {
+
+    const node = document.querySelector('[data-role="livenotes-data"]');
+
+    return JSON.parse(node.textContent);
+  }
+
+  /**
+   * 转义 HTML 文本节点中的特殊字符
+   * @param {*} value
+   * @returns {string}
+   */
+  function escapeHtml(value) {
+
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  /**
+   * 转义 HTML 属性值（在 escapeHtml 基础上再处理引号）
+   * @param {*} value
+   * @returns {string}
+   */
+  function escapeAttr(value) {
+
+    return escapeHtml(value).replace(/"/g, '&quot;');
+  }
+
+  /**
+   * 当前正在查看的 NoteDoc 的 slug（单篇模式取内嵌 doc，index 模式取 state.currentSlug）
+   * @returns {string|null}
+   */
+  function currentSlug() {
+
+    return state.data.doc ? state.data.doc.slug : state.currentSlug;
+  }
+
+  /**
+   * 按 slug 取当前应渲染的 NoteDoc
+   * @param {string|null} slug
+   * @returns {object|null}
+   */
+  function findDoc(slug) {
+
+    if (state.data.doc) {
+
+      return state.data.doc;
+    }
+
+    return (state.data.docs || []).find((doc) => doc.slug === slug) || null;
+  }
+
+  /**
+   * 从 localStorage 恢复模式，无则用默认
+   * @returns {'en'|'cn'}
+   */
+  function loadMode() {
+
+    try {
+
+      return localStorage.getItem(STORAGE_MODE_KEY) || DEFAULT_MODE;
+    } catch (err) {
+
+      // localStorage 不可用（隐私模式 / 被禁用）时回退默认
+      return DEFAULT_MODE;
+    }
+  }
+
+  /**
+   * 持久化当前模式
+   * @param {'en'|'cn'} mode
+   * @returns {void}
+   */
+  function saveMode(mode) {
+
+    try {
+      localStorage.setItem(STORAGE_MODE_KEY, mode);
+    } catch (err) {
+      // 静默降级：不影响页面使用
+    }
+  }
+
+  /**
+   * 从 localStorage 恢复主题 id，无 / 非法值时回退默认
+   * @returns {string}
+   */
+  function loadTheme() {
+
+    try {
+      const saved = localStorage.getItem(STORAGE_THEME_KEY);
+
+      return THEMES.some((theme) => theme.id === saved) ? saved : DEFAULT_THEME;
+    } catch (err) {
+
+      return DEFAULT_THEME;
+    }
+  }
+
+  /**
+   * 持久化主题 id
+   * @param {string} themeId
+   * @returns {void}
+   */
+  function saveTheme(themeId) {
+
+    try {
+      localStorage.setItem(STORAGE_THEME_KEY, themeId);
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 应用主题：light 移除 data-theme（用基础令牌），其余写到 <html data-theme>
+   * @param {string} themeId
+   * @returns {void}
+   */
+  function applyTheme(themeId) {
+
+    state.theme = themeId;
+
+    if (themeId === 'light') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', themeId);
+    }
+
+    updateThemeSwatch(themeId);
+  }
+
+  /**
+   * 更新收起态色块的背景色，跟当前主题保持一致
+   * @param {string} themeId
+   * @returns {void}
+   */
+  function updateThemeSwatch(themeId) {
+
+    const theme = THEMES.find((item) => item.id === themeId);
+
+    if (!theme) {
+
+      return;
+    }
+
+    // 顶部和内容区底部都有色块（同一个 data-role），两个都要同步
+    document.querySelectorAll('[data-role="theme-swatch"]').forEach((swatchEl) => {
+      swatchEl.style.background = theme.swatch;
+    });
+  }
+
+  /**
+   * 填充主题下拉框选项、同步当前值并绑定切换事件。
+   * 顶部的 select 是静态标记、只需要初始化一次；内容区底部的 select 每次 renderContent /
+   * renderQuizView 都会被 innerHTML 重新创建，所以每次渲染完都要再调一次这个函数——
+   * 用 dataset 标记跳过已经初始化过的，避免重复绑定 change 监听
+   * @returns {void}
+   */
+  function setupThemeSelect() {
+
+    document.querySelectorAll('[data-role="theme-select"]').forEach((selectEl) => {
+
+      if (selectEl.dataset.themeReady) {
+
+        return;
+      }
+
+      selectEl.innerHTML = THEMES
+        .map((theme) => `<option value="${theme.id}">${theme.label}</option>`)
+        .join('');
+      selectEl.value = state.theme;
+
+      selectEl.addEventListener('change', () => {
+        applyTheme(selectEl.value);
+        saveTheme(selectEl.value);
+      });
+
+      selectEl.dataset.themeReady = 'true';
+    });
+  }
+
+  /**
+   * 读取某篇已展开的 item key 列表
+   * @param {string} slug
+   * @returns {Set<string>}
+   */
+  function loadExpanded(slug) {
+
+    try {
+      const raw = localStorage.getItem(STORAGE_EXPANDED_PREFIX + slug);
+      const list = raw ? JSON.parse(raw) : [];
+
+      return new Set(Array.isArray(list) ? list : []);
+    } catch (err) {
+
+      return new Set();
+    }
+  }
+
+  /**
+   * 持久化某篇已展开的 item key 列表
+   * @param {string} slug
+   * @param {Set<string>} keys
+   * @returns {void}
+   */
+  function saveExpanded(slug, keys) {
+
+    try {
+      localStorage.setItem(STORAGE_EXPANDED_PREFIX + slug, JSON.stringify([...keys]));
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 读取整个收藏列表（doc + item 两级共用一个数组）
+   * @returns {object[]}
+   */
+  function loadFavorites() {
+
+    try {
+      const raw = localStorage.getItem(STORAGE_FAVORITES_KEY);
+      const list = raw ? JSON.parse(raw) : [];
+
+      return Array.isArray(list) ? list : [];
+    } catch (err) {
+
+      return [];
+    }
+  }
+
+  /**
+   * 持久化整个收藏列表
+   * @param {object[]} list
+   * @returns {void}
+   */
+  function saveFavorites(list) {
+
+    try {
+      localStorage.setItem(STORAGE_FAVORITES_KEY, JSON.stringify(list));
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 在收藏列表里查找某条记录的下标
+   * @param {object[]} list
+   * @param {'doc'|'item'} kind
+   * @param {string} id
+   * @returns {number} 未找到返回 -1
+   */
+  function favoriteIndex(list, kind, id) {
+
+    return list.findIndex((fav) => fav.kind === kind && fav.id === id);
+  }
+
+  /**
+   * 判断某篇文档是否已整篇收藏
+   * @param {string} docSlug
+   * @returns {boolean}
+   */
+  function isDocFavorited(docSlug) {
+
+    return favoriteIndex(loadFavorites(), 'doc', docSlug) >= 0;
+  }
+
+  /**
+   * 取某条 item 的标注记录（收藏 + 评分共用同一条记录），不存在返回 null
+   * @param {string} itemId - `${docSlug}::${sectionType}:${itemIndex}`
+   * @returns {object|null}
+   */
+  function findItemRecord(itemId) {
+
+    return loadFavorites().find((fav) => fav.kind === 'item' && fav.id === itemId) || null;
+  }
+
+  /**
+   * 判断某条 item 是否已收藏
+   * @param {string} itemId - `${docSlug}::${sectionType}:${itemIndex}`
+   * @returns {boolean}
+   */
+  function isItemFavorited(itemId) {
+
+    const record = findItemRecord(itemId);
+
+    return Boolean(record && record.favorited);
+  }
+
+  /**
+   * 取某条 item 的测验评分（1~3），没评过返回 null
+   * @param {string} itemId - `${docSlug}::${sectionType}:${itemIndex}`
+   * @returns {number|null}
+   */
+  function getItemMark(itemId) {
+
+    const record = findItemRecord(itemId);
+
+    return record ? record.mark : null;
+  }
+
+  /**
+   * 切换整篇文档的收藏状态
+   * @param {object} doc - NoteDoc
+   * @returns {void}
+   */
+  function toggleFavoriteDoc(doc) {
+
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'doc', doc.slug);
+
+    if (index >= 0) {
+      list.splice(index, 1);
+    } else {
+      list.push({
+        kind: 'doc',
+        id: doc.slug,
+        docSlug: doc.slug,
+        docTitle: doc.title || doc.slug,
+        chapter: doc.chapter,
+        addedAt: new Date().toISOString(),
+      });
+    }
+
+    saveFavorites(list);
+  }
+
+  /**
+   * 组装 toggleFavoriteItem / setItemMark 需要的 context
+   * @param {object} doc - NoteDoc
+   * @param {object} section - Section
+   * @param {number} itemIndex
+   * @returns {object}
+   */
+  function buildItemContext(doc, section, itemIndex) {
+
+    return {
+      docSlug: doc.slug,
+      docTitle: doc.title || doc.slug,
+      chapter: doc.chapter,
+      sectionType: section.type,
+      sectionHeading: section.heading,
+      itemIndex,
+      item: section.items[itemIndex],
+    };
+  }
+
+  /**
+   * 按 context 找到或新建一条 item 标注记录（收藏 / 评分共用），返回 { list, record, index }
+   * 新建时 favorited/mark 都是空，由调用方接着填
+   * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
+   * @returns {{ list: object[], record: object, index: number }}
+   */
+  function ensureItemRecord(context) {
+
+    const id = `${context.docSlug}::${context.sectionType}:${context.itemIndex}`;
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'item', id);
+
+    if (index >= 0) {
+
+      return { list, record: list[index], index };
+    }
+
+    const record = {
+      kind: 'item',
+      id,
+      docSlug: context.docSlug,
+      docTitle: context.docTitle,
+      chapter: context.chapter,
+      sectionType: context.sectionType,
+      sectionHeading: context.sectionHeading,
+      itemIndex: context.itemIndex,
+      snapshot: {
+        en: context.item.en,
+        cn: context.item.cn,
+        note: context.item.note,
+        kind: context.item.kind,
+      },
+      favorited: false,
+      favoritedAt: null,
+      mark: null,
+      markedAt: null,
+    };
+
+    list.push(record);
+
+    return { list, record, index: list.length - 1 };
+  }
+
+  /**
+   * 收藏了或评过分的记录才需要保留，两者都清空时从列表里删掉
+   * @param {object[]} list
+   * @param {object} record
+   * @param {number} index
+   * @returns {void}
+   */
+  function pruneItemRecordIfEmpty(list, record, index) {
+
+    if (!record.favorited && !record.mark) {
+      list.splice(index, 1);
+    }
+  }
+
+  /**
+   * 切换单条 item 的收藏状态（收藏 / 评分共用同一条记录，见 ensureItemRecord）
+   * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
+   * @returns {void}
+   */
+  function toggleFavoriteItem(context) {
+
+    const { list, record, index } = ensureItemRecord(context);
+
+    record.favorited = !record.favorited;
+    record.favoritedAt = record.favorited ? new Date().toISOString() : null;
+
+    pruneItemRecordIfEmpty(list, record, index);
+    saveFavorites(list);
+  }
+
+  /**
+   * 设置单条 item 的测验评分：再点一次当前档位会清空评分
+   * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
+   * @param {1|2|3} level
+   * @returns {void}
+   */
+  function setItemMark(context, level) {
+
+    const { list, record, index } = ensureItemRecord(context);
+
+    record.mark = record.mark === level ? null : level;
+    record.markedAt = record.mark ? new Date().toISOString() : null;
+
+    pruneItemRecordIfEmpty(list, record, index);
+    saveFavorites(list);
+  }
+
+  /**
+   * 「我的收藏」视图里取消收藏：doc 记录直接删掉；item 记录只清掉 favorited，
+   * 如果还有评分（mark）就保留这条记录（评分不会因为取消收藏被清掉）
+   * @param {'doc'|'item'} kind
+   * @param {string} id
+   * @returns {void}
+   */
+  function removeFavorite(kind, id) {
+
+    const list = loadFavorites();
+    const index = favoriteIndex(list, kind, id);
+
+    if (index === -1) {
+
+      return;
+    }
+
+    if (kind === 'doc') {
+      list.splice(index, 1);
+    } else {
+      const record = list[index];
+
+      record.favorited = false;
+      record.favoritedAt = null;
+      pruneItemRecordIfEmpty(list, record, index);
+    }
+
+    saveFavorites(list);
+    renderFavoritesView();
+  }
+
+  /**
+   * 判断当前页面能否直接跳转到目标文档
+   * （单篇页面只内嵌自己那一篇，只有目标就是自己时才能跳）
+   * @param {string} docSlug
+   * @returns {boolean}
+   */
+  function canJumpToDoc(docSlug) {
+
+    if (state.data.doc) {
+
+      return state.data.doc.slug === docSlug;
+    }
+
+    return (state.data.docs || []).some((doc) => doc.slug === docSlug);
+  }
+
+  /**
+   * 把收藏列表导出为 json 文件并触发浏览器下载
+   * @returns {void}
+   */
+  function exportFavorites() {
+
+    const json = JSON.stringify(loadFavorites(), null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const dateStr = new Date().toISOString().slice(0, 10);
+
+    const linkEl = document.createElement('a');
+    linkEl.href = url;
+    linkEl.download = `livenotes-favorites-${dateStr}.json`;
+    document.body.appendChild(linkEl);
+    linkEl.click();
+    document.body.removeChild(linkEl);
+
+    URL.revokeObjectURL(url);
+  }
+
+  /**
+   * 合并导入的收藏记录：按 kind + id 去重，本地已存在的跳过、不覆盖
+   * @param {object[]} incoming
+   * @returns {void}
+   */
+  function mergeFavorites(incoming) {
+
+    const list = loadFavorites();
+    let added = 0;
+
+    incoming.forEach((fav) => {
+
+      if (!fav || !fav.kind || !fav.id) {
+
+        return;
+      }
+
+      // 兼容收藏 / 评分合并存储之前导出的旧格式：item 记录存在即代表已收藏
+      if (fav.kind === 'item' && fav.favorited === undefined) {
+        fav.favorited = true;
+        fav.favoritedAt = fav.favoritedAt ?? fav.addedAt ?? null;
+        fav.mark = fav.mark ?? null;
+        fav.markedAt = fav.markedAt ?? null;
+      }
+
+      if (favoriteIndex(list, fav.kind, fav.id) === -1) {
+        list.push(fav);
+        added += 1;
+      }
+    });
+
+    saveFavorites(list);
+    renderFavoritesView();
+    window.alert(`导入完成：新增 ${added} 条，跳过 ${incoming.length - added} 条已存在的`);
+  }
+
+  /**
+   * 绑定导入收藏用的隐藏文件选择框
+   * @returns {void}
+   */
+  function setupFavoritesImport() {
+
+    const inputEl = document.querySelector('[data-role="favorites-import-input"]');
+
+    if (!inputEl) {
+
+      return;
+    }
+
+    inputEl.addEventListener('change', () => {
+
+      const file = inputEl.files && inputEl.files[0];
+
+      if (!file) {
+
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = () => {
+
+        try {
+          const incoming = JSON.parse(reader.result);
+
+          mergeFavorites(Array.isArray(incoming) ? incoming : []);
+        } catch (err) {
+          window.alert('导入失败：文件内容不是有效的收藏 json');
+        }
+
+        inputEl.value = '';
+      };
+
+      reader.readAsText(file);
+    });
+  }
+
+  /**
+   * 渲染某一侧（en 或 cn）的单元格 HTML
+   * @param {string} type - section 类型
+   * @param {'en'|'cn'} which - 哪一侧
+   * @param {object} side - item[which] 对象
+   * @returns {string}
+   */
+  function formatSide(type, which, side) {
+
+    const fields = SIDE_FIELDS[type][which];
+
+    return fields
+      .map((field) => `<span class="cell cell--${field}">${escapeHtml(side[field])}</span>`)
+      .join('');
+  }
+
+  /**
+   * 渲染常驻信息（note / kind）；无内容时返回空串
+   * @param {object} section
+   * @param {object} item
+   * @returns {string}
+   */
+  function formatResident(section, item) {
+
+    const field = RESIDENT_FIELD[section.type];
+
+    if (!field || !item[field]) {
+
+      return '';
+    }
+
+    return `<div class="resident resident--${field}">${escapeHtml(item[field])}</div>`;
+  }
+
+  /**
+   * 渲染侧边栏章节树（仅 index 模式）
+   * @param {{ chapter: string, files: object[] }[]} tree
+   * @returns {void}
+   */
+  function renderSidebar(tree) {
+
+    const sidebarEl = document.querySelector('[data-role="sidebar"]');
+    const favorites = loadFavorites();
+
+    const groupsHtml = tree.map((group, groupIndex) => {
+
+      const linksHtml = group.files.map((file) => {
+
+        const favorited = favoriteIndex(favorites, 'doc', file.slug) >= 0;
+
+        return `
+        <li class="doc-item">
+          <button type="button" class="doc-link" data-slug="${escapeAttr(file.slug)}">${escapeHtml(file.title || file.slug)}</button>
+          <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-doc" data-slug="${escapeAttr(file.slug)}" aria-label="收藏整篇">${favorited ? '★' : '☆'}</button>
+        </li>`;
+      }).join('');
+
+      // 默认展开第一个章节
+      return `
+        <details class="chapter"${groupIndex === 0 ? ' open' : ''}>
+          <summary class="chapter-title">${escapeHtml(group.chapter)}</summary>
+          <ul class="doc-list">${linksHtml}</ul>
+        </details>`;
+    }).join('');
+
+    sidebarEl.innerHTML = groupsHtml;
+  }
+
+  /**
+   * 高亮侧边栏中当前篇对应的链接
+   * @param {string} slug
+   * @returns {void}
+   */
+  function highlightActiveLink(slug) {
+
+    document.querySelectorAll('.doc-link').forEach((el) => {
+      el.classList.toggle('is-active', el.dataset.slug === slug);
+    });
+  }
+
+  /**
+   * 渲染内容区最下面的一组按钮（EN⇄CN / 全部展开收起），跟顶部的按钮共用同一个 data-action，
+   * 点击行为、状态同步都自动一致——划到内容底部不用再翻回顶部就能切换
+   * @returns {string}
+   */
+  function renderBottomControls() {
+
+    return `
+      <div class="bottom-controls">
+        <button type="button" data-action="toggle-mode" class="btn btn-mode"></button>
+        <button type="button" data-action="toggle-all-expanded" class="btn btn-expand-toggle"></button>
+        <button type="button" data-action="toggle-quiz-view" class="btn btn-quiz">📇 测验</button>
+        <button type="button" data-action="toggle-favorites-view" class="btn btn-favorites">★ 收藏</button>
+      </div>`;
+  }
+
+  /**
+   * 渲染内容区：某个 NoteDoc 的三段表格
+   * @param {object} doc - NoteDoc
+   * @returns {void}
+   */
+  function renderContent(doc) {
+
+    const contentEl = document.querySelector('[data-role="content"]');
+
+    const shownSide = state.mode;
+    const hiddenSide = state.mode === 'en' ? 'cn' : 'en';
+    const revealText = hiddenSide === 'cn' ? '中文' : 'EN';
+
+    // 恢复该篇已展开的 item
+    const expanded = loadExpanded(doc.slug);
+
+    // 该篇内已收藏的 item id 集合，用于渲染每个 item 的收藏星标状态
+    const favoriteIds = new Set(
+      loadFavorites().filter((fav) => fav.kind === 'item' && fav.favorited).map((fav) => fav.id)
+    );
+
+    const sectionsHtml = doc.sections.map((section) => {
+
+      const itemsHtml = section.items.map((item, index) => {
+
+        const key = `${section.type}:${index}`;
+        const expandedClass = expanded.has(key) ? ' is-expanded' : '';
+        const favorited = favoriteIds.has(`${doc.slug}::${key}`);
+
+        return `
+          <li class="item${expandedClass}" data-key="${key}">
+            <div class="shown-side">${formatSide(section.type, shownSide, item[shownSide])}</div>
+            <div class="item-actions">
+              <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
+              <button type="button" class="reveal-btn"><span class="reveal-arrow" aria-hidden="true">▸</span><span class="reveal-text">${revealText}</span></button>
+            </div>
+            <div class="hidden-side">${formatSide(section.type, hiddenSide, item[hiddenSide])}</div>
+            ${formatResident(section, item)}
+          </li>`;
+      }).join('');
+
+      return `
+        <section class="section section--${section.type}">
+          <h2 class="section-title">${escapeHtml(section.heading)}</h2>
+          <ul class="item-list">${itemsHtml}</ul>
+        </section>`;
+    }).join('');
+
+    contentEl.innerHTML = `
+      <header class="doc-header"><h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2></header>
+      ${sectionsHtml}
+      ${renderBottomControls()}`;
+
+    // 根据这篇实际的展开状态同步"全部展开/收起"切换按钮的图标（+ / −）
+    const totalItems = doc.sections.reduce((sum, section) => sum + section.items.length, 0);
+    state.allExpanded = totalItems > 0 && expanded.size === totalItems;
+    updateExpandToggleIcon();
+    updateModeButtonAppearance();
+  }
+
+  /**
+   * 渲染收藏列表视图顶部的导出/导入工具条
+   * @returns {string}
+   */
+  function renderFavoritesToolbar() {
+
+    return `
+      <div class="favorites-toolbar">
+        <button type="button" class="btn" data-action="export-favorites">导出收藏</button>
+        <button type="button" class="btn" data-action="import-favorites">导入收藏</button>
+        <span class="favorites-hint">导出 / 导入用于在电脑和手机之间手动同步收藏</span>
+      </div>`;
+  }
+
+  /**
+   * 渲染一条「整篇文档」收藏记录
+   * @param {object} fav - kind === 'doc' 的收藏记录
+   * @returns {string}
+   */
+  function renderDocFavoriteRow(fav) {
+
+    const jumpable = canJumpToDoc(fav.docSlug);
+
+    const titleHtml = jumpable
+      ? `<button type="button" class="fav-jump" data-action="jump-to-doc" data-slug="${escapeAttr(fav.docSlug)}">${escapeHtml(fav.docTitle)}</button>`
+      : `<span class="fav-jump fav-jump--disabled" title="打开总目录 index.html 才能跳转">${escapeHtml(fav.docTitle)}</span>`;
+
+    return `
+      <li class="favorite-row">
+        <div class="shown-side">
+          <span class="cell cell--chapter">${escapeHtml(fav.chapter || '')}</span>
+          ${titleHtml}
+        </div>
+        <div class="item-actions">
+          <button type="button" class="fav-btn is-favorited" data-action="remove-favorite" data-kind="doc" data-id="${escapeAttr(fav.id)}" aria-label="取消收藏">★</button>
+        </div>
+      </li>`;
+  }
+
+  /**
+   * 渲染一条「单条 item」收藏记录（用收藏时刻的快照展示，不依赖当前页面是否有原文档数据）
+   * @param {object} fav - kind === 'item' 的收藏记录
+   * @returns {string}
+   */
+  function renderItemFavoriteRow(fav) {
+
+    const snapshot = fav.snapshot || {};
+    const jumpable = canJumpToDoc(fav.docSlug);
+    const itemKey = `${fav.sectionType}:${fav.itemIndex}`;
+
+    const jumpHtml = jumpable
+      ? `<button type="button" class="fav-jump" data-action="jump-to-item" data-slug="${escapeAttr(fav.docSlug)}" data-key="${escapeAttr(itemKey)}">跳转原文</button>`
+      : `<span class="fav-jump fav-jump--disabled" title="打开总目录 index.html 才能跳转">跳转原文</span>`;
+
+    const residentText = snapshot.note || snapshot.kind || '';
+
+    return `
+      <li class="favorite-row">
+        <div class="shown-side">
+          <div class="favorite-meta">${escapeHtml(fav.docTitle)} · ${escapeHtml(fav.sectionHeading || '')}</div>
+          <div class="favorite-both-sides">
+            ${formatSide(fav.sectionType, 'en', snapshot.en || {})}
+            ${formatSide(fav.sectionType, 'cn', snapshot.cn || {})}
+          </div>
+          ${residentText ? `<div class="resident">${escapeHtml(residentText)}</div>` : ''}
+        </div>
+        <div class="item-actions">
+          ${jumpHtml}
+          ${renderMarkBadges(fav.mark)}
+          <button type="button" class="fav-btn is-favorited" data-action="remove-favorite" data-kind="item" data-id="${escapeAttr(fav.id)}" aria-label="取消收藏">★</button>
+        </div>
+      </li>`;
+  }
+
+  /**
+   * 渲染「我的收藏」整个视图到内容区
+   * @returns {void}
+   */
+  function renderFavoritesView() {
+
+    const contentEl = document.querySelector('[data-role="content"]');
+    const favorites = loadFavorites();
+    const docFavs = favorites.filter((fav) => fav.kind === 'doc');
+    const itemFavs = favorites.filter((fav) => fav.kind === 'item' && fav.favorited);
+
+    if (docFavs.length === 0 && itemFavs.length === 0) {
+      contentEl.innerHTML = `
+        <header class="doc-header"><h2 class="doc-title">★ 我的收藏</h2></header>
+        ${renderFavoritesToolbar()}
+        <p class="favorites-empty">还没有收藏。点击文档旁或词条旁的 ☆ 试试。</p>`;
+
+      return;
+    }
+
+    const docFavsHtml = docFavs.map(renderDocFavoriteRow).join('');
+    const itemFavsHtml = itemFavs.map(renderItemFavoriteRow).join('');
+
+    contentEl.innerHTML = `
+      <header class="doc-header"><h2 class="doc-title">★ 我的收藏</h2></header>
+      ${renderFavoritesToolbar()}
+      ${docFavs.length ? `
+        <section class="section">
+          <h2 class="section-title">收藏的文档（${docFavs.length}）</h2>
+          <ul class="item-list">${docFavsHtml}</ul>
+        </section>` : ''}
+      ${itemFavs.length ? `
+        <section class="section">
+          <h2 class="section-title">收藏的词条（${itemFavs.length}）</h2>
+          <ul class="item-list">${itemFavsHtml}</ul>
+        </section>` : ''}`;
+  }
+
+  /**
+   * 清掉「我的收藏」「测验」两个视图切换按钮的高亮，同一时刻只有一个视图能高亮
+   * @returns {void}
+   */
+  function clearViewToggleButtons() {
+
+    // 顶部和内容区底部都有这两个按钮（同一个 data-action），两边都要清
+    document.querySelectorAll('[data-action="toggle-favorites-view"]').forEach((btn) => {
+      btn.classList.remove('is-active');
+    });
+
+    document.querySelectorAll('[data-action="toggle-quiz-view"]').forEach((btn) => {
+      btn.classList.remove('is-active');
+    });
+  }
+
+  /**
+   * 切换到「我的收藏」视图，或从收藏视图切回当前文档
+   * @returns {void}
+   */
+  function toggleFavoritesView() {
+
+    state.view = state.view === 'favorites' ? 'doc' : 'favorites';
+
+    clearViewToggleButtons();
+
+    document.querySelectorAll('[data-action="toggle-favorites-view"]').forEach((btn) => {
+      btn.classList.toggle('is-active', state.view === 'favorites');
+    });
+
+    if (state.view === 'favorites') {
+      renderFavoritesView();
+
+      return;
+    }
+
+    const doc = findDoc(currentSlug());
+
+    if (doc) {
+      renderContent(doc);
+    }
+  }
+
+  /**
+   * 从收藏 / 测验视图跳转回某篇文档：单篇页面里只能跳自己，index 页面走 selectDoc
+   * @param {string} slug
+   * @returns {void}
+   */
+  function jumpToDoc(slug) {
+
+    if (state.data.doc) {
+      state.view = 'doc';
+
+      clearViewToggleButtons();
+      renderContent(state.data.doc);
+
+      return;
+    }
+
+    selectDoc(slug);
+  }
+
+  /**
+   * 从收藏视图跳转到某篇文档的某条 item：跳转后自动展开并滚动定位
+   * @param {string} slug
+   * @param {string} key - `${sectionType}:${itemIndex}`
+   * @returns {void}
+   */
+  function jumpToItem(slug, key) {
+
+    jumpToDoc(slug);
+
+    requestAnimationFrame(() => {
+
+      const itemEl = document.querySelector(`[data-role="content"] .item[data-key="${CSS.escape(key)}"]`);
+
+      if (!itemEl) {
+
+        return;
+      }
+
+      if (!itemEl.classList.contains('is-expanded')) {
+        itemEl.classList.add('is-expanded');
+
+        const expanded = loadExpanded(slug);
+        expanded.add(key);
+        saveExpanded(slug, expanded);
+      }
+
+      itemEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
+  /**
+   * Fisher-Yates 洗牌，不改动原数组
+   * @param {Array} list
+   * @returns {Array}
+   */
+  function shuffleArray(list) {
+
+    const result = list.slice();
+
+    for (let i = result.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+
+    return result;
+  }
+
+  /**
+   * 把全部文档的全部 item 摊平成一个池子，供测验模式抽取（只有 index.html 有全部文档数据）
+   * @returns {object[]} 每条含 id / docSlug / docTitle / chapter / sectionType / sectionHeading / itemIndex / item
+   */
+  function buildQuizPool() {
+
+    const pool = [];
+
+    (state.data.docs || []).forEach((doc) => {
+
+      doc.sections.forEach((section) => {
+
+        section.items.forEach((item, itemIndex) => {
+          pool.push({
+            id: `${doc.slug}::${section.type}:${itemIndex}`,
+            docSlug: doc.slug,
+            docTitle: doc.title || doc.slug,
+            chapter: doc.chapter,
+            sectionType: section.type,
+            sectionHeading: section.heading,
+            itemIndex,
+            item,
+          });
+        });
+      });
+    });
+
+    return pool;
+  }
+
+  /**
+   * 渲染评分用的 3 个对号按钮，点亮到当前评分档位（再点一次已点亮的档位会清空，见 setItemMark）
+   * @param {number|null} mark
+   * @returns {string}
+   */
+  function renderMarkButtons(mark) {
+
+    return [1, 2, 3].map((level) => {
+
+      const filled = mark !== null && level <= mark;
+
+      return `<button type="button" class="mark-btn${filled ? ' is-filled' : ''}" data-action="set-quiz-mark" data-level="${level}" aria-label="评分 ${level}">✓</button>`;
+    }).join('');
+  }
+
+  /**
+   * 渲染只读的评分展示（3 个对号，不可点击），用于「我的收藏」列表里展示测验评分
+   * @param {number|null} mark
+   * @returns {string}
+   */
+  function renderMarkBadges(mark) {
+
+    if (!mark) {
+
+      return '';
+    }
+
+    const dots = [1, 2, 3].map((level) => {
+
+      const filled = level <= mark;
+
+      return `<span class="mark-btn${filled ? ' is-filled' : ''}" aria-hidden="true">✓</span>`;
+    }).join('');
+
+    return `<span class="mark-badges" title="测验评分：${mark}/3">${dots}</span>`;
+  }
+
+  /**
+   * 渲染测验模式里的一条 item（数据来自 buildQuizPool 的池子条目，不是某一篇 doc 的 section）
+   * @param {object} entry - buildQuizPool 里的一条
+   * @returns {string}
+   */
+  function renderQuizItemRow(entry, recordsById) {
+
+    const shownSide = state.mode;
+    const hiddenSide = state.mode === 'en' ? 'cn' : 'en';
+    const revealText = hiddenSide === 'cn' ? '中文' : 'EN';
+    const record = recordsById.get(entry.id);
+    const favorited = Boolean(record && record.favorited);
+    const mark = record ? record.mark : null;
+
+    return `
+      <li class="item" data-key="${entry.id}">
+        <div class="shown-side">
+          <div class="favorite-meta">${escapeHtml(entry.sectionHeading)}</div>
+          ${formatSide(entry.sectionType, shownSide, entry.item[shownSide])}
+        </div>
+        <div class="item-actions">
+          <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-quiz-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
+          ${renderMarkButtons(mark)}
+          <button type="button" class="reveal-btn"><span class="reveal-arrow" aria-hidden="true">▸</span><span class="reveal-text">${revealText}</span></button>
+        </div>
+        <div class="hidden-side">${formatSide(entry.sectionType, hiddenSide, entry.item[hiddenSide])}</div>
+        ${formatResident({ type: entry.sectionType }, entry.item)}
+      </li>`;
+  }
+
+  /**
+   * 开始新一轮测验：重新摊平打乱全部文档的 item，批次从头开始
+   * @returns {void}
+   */
+  function startNewQuizPool() {
+
+    state.quizPool = shuffleArray(buildQuizPool());
+    state.quizBatchOffset = 0;
+  }
+
+  /**
+   * 渲染「测验模式」整个视图：只渲染当前这一批（QUIZ_BATCH_SIZE 条），
+   * 而不是一次性把全部文档摊平的内容都塞进页面——内容多的话会有几百条，一次性渲染很卡
+   * @returns {void}
+   */
+  function renderQuizView() {
+
+    const contentEl = document.querySelector('[data-role="content"]');
+
+    if (!state.quizPool) {
+      startNewQuizPool();
+    }
+
+    state.allExpanded = false;
+
+    if (state.quizPool.length === 0) {
+      contentEl.innerHTML = `
+        <header class="doc-header"><h2 class="doc-title">📇 测验模式</h2></header>
+        <p class="favorites-empty">没有可供测验的内容。</p>`;
+      updateExpandToggleIcon();
+      updateModeButtonAppearance();
+
+      return;
+    }
+
+    const batch = state.quizPool.slice(state.quizBatchOffset, state.quizBatchOffset + QUIZ_BATCH_SIZE);
+
+    // 只读一次 localStorage 建查找表，避免每条 item 都单独读一次
+    const recordsById = new Map(
+      loadFavorites().filter((fav) => fav.kind === 'item').map((fav) => [fav.id, fav])
+    );
+    const itemsHtml = batch.map((entry) => renderQuizItemRow(entry, recordsById)).join('');
+
+    const totalBatches = Math.ceil(state.quizPool.length / QUIZ_BATCH_SIZE);
+    const currentBatch = Math.floor(state.quizBatchOffset / QUIZ_BATCH_SIZE) + 1;
+
+    contentEl.innerHTML = `
+      <header class="doc-header"><h2 class="doc-title">📇 测验模式</h2></header>
+      <div class="favorites-toolbar">
+        <button type="button" class="btn" data-action="next-quiz-batch">换一批</button>
+        <span class="favorites-hint">
+          第 ${currentBatch}/${totalBatches} 批，共 ${state.quizPool.length} 条；展开/收起状态不会保存
+        </span>
+      </div>
+      <ul class="item-list">${itemsHtml}</ul>
+      ${renderBottomControls()}`;
+
+    updateExpandToggleIcon();
+    updateModeButtonAppearance();
+  }
+
+  /**
+   * 「换一批」按钮：按批次顺序往后翻，一轮抽完（翻到底）自动重新洗牌开始下一轮
+   * @returns {void}
+   */
+  function nextQuizBatch() {
+
+    state.quizBatchOffset += QUIZ_BATCH_SIZE;
+
+    if (state.quizBatchOffset >= state.quizPool.length) {
+      startNewQuizPool();
+    }
+
+    renderQuizView();
+  }
+
+  /**
+   * 切换到「测验模式」视图，或从测验视图切回当前文档
+   * @returns {void}
+   */
+  function toggleQuizView() {
+
+    state.view = state.view === 'quiz' ? 'doc' : 'quiz';
+
+    clearViewToggleButtons();
+
+    document.querySelectorAll('[data-action="toggle-quiz-view"]').forEach((btn) => {
+      btn.classList.toggle('is-active', state.view === 'quiz');
+    });
+
+    if (state.view === 'quiz') {
+      state.quizPool = null;
+      renderQuizView();
+
+      return;
+    }
+
+    const doc = findDoc(currentSlug());
+
+    if (doc) {
+      renderContent(doc);
+    }
+  }
+
+  /**
+   * 按测验 item 的全局 id 在当前池子里找到对应条目
+   * @param {string} id
+   * @returns {object|null}
+   */
+  function findQuizEntry(id) {
+
+    return (state.quizPool || []).find((entry) => entry.id === id) || null;
+  }
+
+  /**
+   * 测验视图里 item 上「收藏」按钮点击处理
+   * @param {HTMLElement} buttonEl
+   * @returns {void}
+   */
+  function handleToggleFavoriteQuizItem(buttonEl) {
+
+    const itemEl = buttonEl.closest('.item');
+    const entry = itemEl && findQuizEntry(itemEl.dataset.key);
+
+    if (!entry) {
+
+      return;
+    }
+
+    toggleFavoriteItem(entry);
+
+    const favorited = isItemFavorited(entry.id);
+    buttonEl.classList.toggle('is-favorited', favorited);
+    buttonEl.textContent = favorited ? '★' : '☆';
+  }
+
+  /**
+   * 测验视图里评分按钮点击处理：更新该条的 3 个对号
+   * @param {HTMLElement} buttonEl
+   * @returns {void}
+   */
+  function handleSetQuizMark(buttonEl) {
+
+    const itemEl = buttonEl.closest('.item');
+    const entry = itemEl && findQuizEntry(itemEl.dataset.key);
+
+    if (!entry) {
+
+      return;
+    }
+
+    setItemMark(entry, Number(buttonEl.dataset.level));
+
+    const mark = getItemMark(entry.id);
+
+    itemEl.querySelectorAll('.mark-btn').forEach((markBtn) => {
+      const btnLevel = Number(markBtn.dataset.level);
+
+      markBtn.classList.toggle('is-filled', mark !== null && btnLevel <= mark);
+    });
+  }
+
+  /**
+   * 侧边栏「收藏整篇」按钮点击处理：切换收藏状态并更新按钮外观
+   * @param {HTMLElement} buttonEl
+   * @returns {void}
+   */
+  function handleToggleFavoriteDoc(buttonEl) {
+
+    const slug = buttonEl.dataset.slug;
+    const doc = findDoc(slug);
+
+    if (!doc) {
+
+      return;
+    }
+
+    toggleFavoriteDoc(doc);
+
+    const favorited = isDocFavorited(slug);
+    buttonEl.classList.toggle('is-favorited', favorited);
+    buttonEl.textContent = favorited ? '★' : '☆';
+
+    if (state.view === 'favorites') {
+      renderFavoritesView();
+    }
+  }
+
+  /**
+   * item 上「收藏」按钮点击处理：切换收藏状态并更新按钮外观
+   * @param {HTMLElement} buttonEl
+   * @returns {void}
+   */
+  function handleToggleFavoriteItem(buttonEl) {
+
+    const itemEl = buttonEl.closest('.item');
+    const slug = currentSlug();
+    const doc = findDoc(slug);
+
+    if (!itemEl || !doc) {
+
+      return;
+    }
+
+    const key = itemEl.dataset.key;
+    const [sectionType, indexStr] = key.split(':');
+    const itemIndex = Number(indexStr);
+    const section = doc.sections.find((sec) => sec.type === sectionType);
+
+    if (!section || !section.items[itemIndex]) {
+
+      return;
+    }
+
+    toggleFavoriteItem(buildItemContext(doc, section, itemIndex));
+
+    const favorited = isItemFavorited(`${doc.slug}::${key}`);
+    buttonEl.classList.toggle('is-favorited', favorited);
+    buttonEl.textContent = favorited ? '★' : '☆';
+
+    if (state.view === 'favorites') {
+      renderFavoritesView();
+    }
+  }
+
+  /**
+   * 同步 EN⇄CN 按钮的文字：显示"当前显示侧 → 隐藏侧"，点一下文字方向跟着反过来
+   * @returns {void}
+   */
+  function updateModeButtonAppearance() {
+
+    const label = state.mode === 'en' ? 'EN → CN' : 'CN → EN';
+
+    // 顶部和内容区底部都有这个按钮（同一个 data-action），两个都要同步
+    document.querySelectorAll('[data-action="toggle-mode"]').forEach((buttonEl) => {
+      buttonEl.textContent = label;
+    });
+  }
+
+  /**
+   * 切换 EN ⇄ CN 模式：交换默认显示/隐藏侧，清空展开态并重渲染
+   * @returns {void}
+   */
+  function toggleMode() {
+
+    // 收藏视图下不响应模式切换
+    if (state.view === 'favorites') {
+
+      return;
+    }
+
+    state.mode = state.mode === 'en' ? 'cn' : 'en';
+    saveMode(state.mode);
+    updateModeButtonAppearance();
+
+    // 测验模式没有单一的"当前文档"，直接用当前池子重渲染，不走 doc 分支
+    if (state.view === 'quiz') {
+      renderQuizView();
+
+      return;
+    }
+
+    const slug = currentSlug();
+    const doc = findDoc(slug);
+
+    // 切换模式即清空该篇展开记录
+    if (slug) {
+      saveExpanded(slug, new Set());
+    }
+
+    if (doc) {
+      renderContent(doc);
+    }
+  }
+
+  /**
+   * 展开或收起单个 item 的隐藏侧
+   * @param {HTMLElement} itemEl
+   * @returns {void}
+   */
+  function toggleItem(itemEl) {
+
+    itemEl.classList.toggle('is-expanded');
+
+    // 测验模式的展开状态不持久化：池子每次进入都会重新打乱，记住单条状态没有意义
+    if (state.view === 'quiz') {
+
+      return;
+    }
+
+    const slug = currentSlug();
+
+    if (!slug) {
+
+      return;
+    }
+
+    const expanded = loadExpanded(slug);
+    const key = itemEl.dataset.key;
+
+    if (itemEl.classList.contains('is-expanded')) {
+      expanded.add(key);
+    } else {
+      expanded.delete(key);
+    }
+
+    saveExpanded(slug, expanded);
+  }
+
+  /**
+   * 全部展开 / 全部收起当前页所有 item
+   * @param {boolean} shouldExpand
+   * @returns {void}
+   */
+  function setAllExpanded(shouldExpand) {
+
+    // 收藏视图下不响应全部展开/收起
+    if (state.view === 'favorites') {
+
+      return;
+    }
+
+    const items = document.querySelectorAll('[data-role="content"] .item');
+
+    items.forEach((itemEl) => {
+      itemEl.classList.toggle('is-expanded', shouldExpand);
+    });
+
+    // 测验模式的展开状态不持久化
+    if (state.view === 'quiz') {
+
+      return;
+    }
+
+    const slug = currentSlug();
+
+    if (!slug) {
+
+      return;
+    }
+
+    const expanded = loadExpanded(slug);
+
+    items.forEach((itemEl) => {
+      if (shouldExpand) {
+        expanded.add(itemEl.dataset.key);
+      } else {
+        expanded.delete(itemEl.dataset.key);
+      }
+    });
+
+    saveExpanded(slug, expanded);
+  }
+
+  /**
+   * 同步"全部展开/收起"切换按钮的图标、文案：➕ 表示当前可以展开，➖ 表示当前可以收起
+   * @returns {void}
+   */
+  function updateExpandToggleIcon() {
+
+    const label = state.allExpanded ? '全部收起' : '全部展开';
+    const icon = state.allExpanded ? '➖' : '➕';
+
+    // 顶部和内容区底部都有这个按钮（同一个 data-action），两个都要同步
+    document.querySelectorAll('[data-action="toggle-all-expanded"]').forEach((buttonEl) => {
+      buttonEl.textContent = icon;
+      buttonEl.title = label;
+      buttonEl.setAttribute('aria-label', label);
+    });
+  }
+
+  /**
+   * 「全部展开/收起」合并成一个按钮：点一下切换状态，同时改变图标
+   * @returns {void}
+   */
+  function toggleAllExpanded() {
+
+    // 收藏视图下不响应，跟 setAllExpanded 的守卫保持一致，避免图标跟实际状态错位
+    if (state.view === 'favorites') {
+
+      return;
+    }
+
+    state.allExpanded = !state.allExpanded;
+
+    setAllExpanded(state.allExpanded);
+    updateExpandToggleIcon();
+  }
+
+  /**
+   * 读取 CSS 变量并解析成数字（px），解析失败时回退默认值
+   * @param {string} varName - 形如 '--breakpoint'
+   * @param {number} fallback
+   * @returns {number}
+   */
+  function readCssNumberVar(varName, fallback) {
+
+    const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    const parsed = parseInt(raw, 10);
+
+    return Number.isNaN(parsed) ? fallback : parsed;
+  }
+
+  /**
+   * 判断当前是否处于窄屏断点（与 style.css 的 `--breakpoint` 保持一致）
+   * @returns {boolean}
+   */
+  function isNarrowViewport() {
+
+    const breakpoint = readCssNumberVar('--breakpoint', 900);
+
+    return window.matchMedia(`(max-width: ${breakpoint}px)`).matches;
+  }
+
+  /**
+   * 窄屏下监听滚动方向，模拟 Safari 地址栏那种「下滑隐藏、上滑出现」的效果：
+   * 往下滑就把「☰ + 标题」这条收起来让出屏幕空间，往上滑（哪怕滑一点点）立刻露出来，
+   * 滚到接近顶部时也强制露出来。宽屏不受影响（这条本来就不是 fixed 定位）。
+   * @returns {void}
+   */
+  function setupAutoHideTopbar() {
+
+    const topbarLeftEl = document.querySelector('.topbar-left');
+
+    if (!topbarLeftEl) {
+
+      return;
+    }
+
+    let lastScrollY = window.scrollY;
+    let isTicking = false;
+
+    window.addEventListener('scroll', () => {
+
+      if (!isNarrowViewport() || isTicking) {
+
+        return;
+      }
+
+      isTicking = true;
+
+      requestAnimationFrame(() => {
+
+        const currentScrollY = window.scrollY;
+
+        if (currentScrollY < 8 || currentScrollY < lastScrollY) {
+          topbarLeftEl.classList.remove('is-hidden');
+        } else {
+          topbarLeftEl.classList.add('is-hidden');
+        }
+
+        lastScrollY = currentScrollY;
+        isTicking = false;
+      });
+    }, { passive: true });
+  }
+
+  /**
+   * 从 localStorage 恢复宽屏下侧边栏是否收起
+   * @returns {boolean}
+   */
+  function loadSidebarCollapsed() {
+
+    try {
+
+      return localStorage.getItem(STORAGE_SIDEBAR_COLLAPSED_KEY) === 'true';
+    } catch (err) {
+
+      return false;
+    }
+  }
+
+  /**
+   * 持久化宽屏下侧边栏是否收起
+   * @param {boolean} collapsed
+   * @returns {void}
+   */
+  function saveSidebarCollapsed(collapsed) {
+
+    try {
+      localStorage.setItem(STORAGE_SIDEBAR_COLLAPSED_KEY, collapsed ? 'true' : 'false');
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 从 localStorage 恢复侧边栏宽度（px），无 / 非法值时回退 CSS 默认值
+   * @returns {number}
+   */
+  function loadSidebarWidth() {
+
+    const defaultWidth = readCssNumberVar('--sidebar-width', 288);
+
+    try {
+      const raw = localStorage.getItem(STORAGE_SIDEBAR_WIDTH_KEY);
+      const parsed = parseInt(raw, 10);
+
+      return Number.isNaN(parsed) ? defaultWidth : parsed;
+    } catch (err) {
+
+      return defaultWidth;
+    }
+  }
+
+  /**
+   * 持久化侧边栏宽度（px）
+   * @param {number} width
+   * @returns {void}
+   */
+  function saveSidebarWidth(width) {
+
+    try {
+      localStorage.setItem(STORAGE_SIDEBAR_WIDTH_KEY, String(Math.round(width)));
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 把宽度应用到 --sidebar-width CSS 变量（正文的居中公式会跟着自动重新计算）
+   * @param {number} width
+   * @returns {void}
+   */
+  function applySidebarWidth(width) {
+
+    document.documentElement.style.setProperty('--sidebar-width', `${width}px`);
+  }
+
+  /**
+   * 切换侧边栏：窄屏是抽屉滑入/滑出，宽屏是收起/展开（同一个 ☰ 按钮触发）
+   * @returns {void}
+   */
+  function toggleSidebar() {
+
+    const sidebarEl = document.querySelector('.sidebar');
+
+    if (isNarrowViewport()) {
+      sidebarEl.classList.toggle('is-open');
+
+      return;
+    }
+
+    const collapsed = sidebarEl.classList.toggle('is-collapsed');
+    saveSidebarCollapsed(collapsed);
+  }
+
+  /**
+   * 绑定侧边栏拖拽调宽：鼠标按住分隔条拖动，松手后持久化宽度
+   * @returns {void}
+   */
+  function setupSidebarResize() {
+
+    const resizerEl = document.querySelector('[data-role="sidebar-resizer"]');
+
+    if (!resizerEl) {
+
+      return;
+    }
+
+    resizerEl.addEventListener('mousedown', (event) => {
+
+      event.preventDefault();
+
+      const minWidth = readCssNumberVar('--sidebar-min-width', 220);
+      const maxWidth = readCssNumberVar('--sidebar-max-width', 480);
+
+      resizerEl.classList.add('is-dragging');
+      document.body.classList.add('is-resizing-sidebar');
+
+      const onMouseMove = (moveEvent) => {
+
+        const width = Math.min(maxWidth, Math.max(minWidth, moveEvent.clientX));
+        applySidebarWidth(width);
+      };
+
+      const onMouseUp = () => {
+
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        resizerEl.classList.remove('is-dragging');
+        document.body.classList.remove('is-resizing-sidebar');
+
+        saveSidebarWidth(readCssNumberVar('--sidebar-width', 288));
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  /**
+   * 切换当前查看的 NoteDoc（index 模式）
+   * @param {string} slug
+   * @returns {void}
+   */
+  function selectDoc(slug) {
+
+    const doc = findDoc(slug);
+
+    if (!doc) {
+
+      return;
+    }
+
+    state.currentSlug = slug;
+    state.view = 'doc';
+
+    clearViewToggleButtons();
+
+    renderContent(doc);
+    highlightActiveLink(slug);
+
+    // 窄屏选完自动收起抽屉
+    document.querySelector('.sidebar').classList.remove('is-open');
+  }
+
+  /**
+   * 取章节树里第一篇的 slug
+   * @param {{ files: object[] }[]} tree
+   * @returns {string|null}
+   */
+  function firstDocSlug(tree) {
+
+    for (const group of tree) {
+
+      if (group.files.length > 0) {
+
+        return group.files[0].slug;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 事件委托：顶部按钮、侧边栏链接、内容区点击
+   * @returns {void}
+   */
+  function bindEvents() {
+
+    document.addEventListener('click', (event) => {
+      const sidebarEl = document.querySelector('.sidebar');
+
+      // 窄屏抽屉展开时，点击抽屉之外的地方就收起抽屉，这次点击不再触发别的交互
+      if (
+        sidebarEl
+        && sidebarEl.classList.contains('is-open')
+        && !event.target.closest('.sidebar')
+        && !event.target.closest('.drawer-toggle')
+      ) {
+        sidebarEl.classList.remove('is-open');
+
+        return;
+      }
+
+      const actionEl = event.target.closest('[data-action]');
+
+      if (actionEl) {
+        const { action } = actionEl.dataset;
+
+        if (action === 'toggle-mode') toggleMode();
+        if (action === 'toggle-all-expanded') toggleAllExpanded();
+        if (action === 'toggle-sidebar') toggleSidebar();
+        if (action === 'toggle-favorites-view') toggleFavoritesView();
+        if (action === 'toggle-favorite-doc') handleToggleFavoriteDoc(actionEl);
+        if (action === 'toggle-favorite-item') handleToggleFavoriteItem(actionEl);
+        if (action === 'remove-favorite') removeFavorite(actionEl.dataset.kind, actionEl.dataset.id);
+        if (action === 'jump-to-doc') jumpToDoc(actionEl.dataset.slug);
+        if (action === 'jump-to-item') jumpToItem(actionEl.dataset.slug, actionEl.dataset.key);
+        if (action === 'export-favorites') exportFavorites();
+        if (action === 'import-favorites') document.querySelector('[data-role="favorites-import-input"]').click();
+        if (action === 'toggle-quiz-view') toggleQuizView();
+        if (action === 'next-quiz-batch') nextQuizBatch();
+        if (action === 'toggle-favorite-quiz-item') handleToggleFavoriteQuizItem(actionEl);
+        if (action === 'set-quiz-mark') handleSetQuizMark(actionEl);
+
+        return;
+      }
+
+      // 侧边栏文件链接
+      const linkEl = event.target.closest('.doc-link');
+
+      if (linkEl) {
+        selectDoc(linkEl.dataset.slug);
+
+        return;
+      }
+
+      // 点击 item 的揭示按钮或整行
+      const itemEl = event.target.closest('.item');
+
+      if (itemEl) {
+        toggleItem(itemEl);
+      }
+    });
+  }
+
+  /**
+   * 入口
+   * @returns {void}
+   */
+  function init() {
+
+    state.data = loadData();
+    state.mode = loadMode();
+    state.view = 'doc';
+
+    updateModeButtonAppearance();
+
+    // 单篇页面没有章节树数据，侧边栏渲染不出导航内容，直接连 ☰ 按钮一起隐藏
+    if (state.data.doc) {
+      document.body.classList.add('single-doc');
+    }
+
+    applyTheme(loadTheme());
+    setupThemeSelect();
+    setupFavoritesImport();
+    setupSidebarResize();
+    setupAutoHideTopbar();
+
+    // 恢复侧边栏宽度与宽屏下的收起状态
+    applySidebarWidth(loadSidebarWidth());
+    document.querySelector('.sidebar').classList.toggle('is-collapsed', loadSidebarCollapsed());
+
+    bindEvents();
+
+    // 单篇模式：data.doc 存在；index 模式：data.docs + data.tree
+    if (state.data.doc) {
+      renderContent(state.data.doc);
+
+      return;
+    }
+
+    renderSidebar(state.data.tree);
+
+    // 默认选中第一篇
+    const firstSlug = firstDocSlug(state.data.tree);
+
+    if (firstSlug) {
+      selectDoc(firstSlug);
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
