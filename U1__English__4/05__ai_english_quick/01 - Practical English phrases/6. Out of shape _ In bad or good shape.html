@@ -506,6 +506,16 @@ body.single-doc .btn-quiz {
 /* ── 内容区 ───────────────────────────────── */
 .doc-header { margin-bottom: 16px; }
 
+/* 内容区最下面的 EN⇄CN / 全部展开收起，跟顶部一样的按钮，划到底不用翻回顶部就能切换 */
+.bottom-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
 .doc-title {
   margin: 0;
   font-size: clamp(19px, 4vw, 24px);
@@ -1524,6 +1534,20 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * 渲染内容区最下面的一组按钮（EN⇄CN / 全部展开收起），跟顶部的按钮共用同一个 data-action，
+   * 点击行为、状态同步都自动一致——划到内容底部不用再翻回顶部就能切换
+   * @returns {string}
+   */
+  function renderBottomControls() {
+
+    return `
+      <div class="bottom-controls">
+        <button type="button" data-action="toggle-mode" class="btn btn-mode"></button>
+        <button type="button" data-action="toggle-all-expanded" class="btn btn-expand-toggle"></button>
+      </div>`;
+  }
+
+  /**
    * 渲染内容区：某个 NoteDoc 的三段表格
    * @param {object} doc - NoteDoc
    * @returns {void}
@@ -1573,12 +1597,14 @@ body.single-doc .btn-quiz {
 
     contentEl.innerHTML = `
       <header class="doc-header"><h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2></header>
-      ${sectionsHtml}`;
+      ${sectionsHtml}
+      ${renderBottomControls()}`;
 
     // 根据这篇实际的展开状态同步"全部展开/收起"切换按钮的图标（+ / −）
     const totalItems = doc.sections.reduce((sum, section) => sum + section.items.length, 0);
     state.allExpanded = totalItems > 0 && expanded.size === totalItems;
     updateExpandToggleIcon();
+    updateModeButtonAppearance();
   }
 
   /**
@@ -1929,12 +1955,13 @@ body.single-doc .btn-quiz {
     }
 
     state.allExpanded = false;
-    updateExpandToggleIcon();
 
     if (state.quizPool.length === 0) {
       contentEl.innerHTML = `
         <header class="doc-header"><h2 class="doc-title">🎲 测验模式</h2></header>
         <p class="favorites-empty">没有可供测验的内容。</p>`;
+      updateExpandToggleIcon();
+      updateModeButtonAppearance();
 
       return;
     }
@@ -1958,7 +1985,11 @@ body.single-doc .btn-quiz {
           第 ${currentBatch}/${totalBatches} 批，共 ${state.quizPool.length} 条；展开/收起状态不会保存
         </span>
       </div>
-      <ul class="item-list">${itemsHtml}</ul>`;
+      <ul class="item-list">${itemsHtml}</ul>
+      ${renderBottomControls()}`;
+
+    updateExpandToggleIcon();
+    updateModeButtonAppearance();
   }
 
   /**
@@ -2133,14 +2164,12 @@ body.single-doc .btn-quiz {
    */
   function updateModeButtonAppearance() {
 
-    const buttonEl = document.querySelector('[data-action="toggle-mode"]');
+    const label = state.mode === 'en' ? 'EN → CN' : 'CN → EN';
 
-    if (!buttonEl) {
-
-      return;
-    }
-
-    buttonEl.textContent = state.mode === 'en' ? 'EN → CN' : 'CN → EN';
+    // 顶部和内容区底部都有这个按钮（同一个 data-action），两个都要同步
+    document.querySelectorAll('[data-action="toggle-mode"]').forEach((buttonEl) => {
+      buttonEl.textContent = label;
+    });
   }
 
   /**
@@ -2264,18 +2293,15 @@ body.single-doc .btn-quiz {
    */
   function updateExpandToggleIcon() {
 
-    const buttonEl = document.querySelector('[data-action="toggle-all-expanded"]');
-
-    if (!buttonEl) {
-
-      return;
-    }
-
     const label = state.allExpanded ? '全部收起' : '全部展开';
+    const icon = state.allExpanded ? '➖' : '➕';
 
-    buttonEl.textContent = state.allExpanded ? '➖' : '➕';
-    buttonEl.title = label;
-    buttonEl.setAttribute('aria-label', label);
+    // 顶部和内容区底部都有这个按钮（同一个 data-action），两个都要同步
+    document.querySelectorAll('[data-action="toggle-all-expanded"]').forEach((buttonEl) => {
+      buttonEl.textContent = icon;
+      buttonEl.title = label;
+      buttonEl.setAttribute('aria-label', label);
+    });
   }
 
   /**
@@ -2506,6 +2532,20 @@ body.single-doc .btn-quiz {
   function bindEvents() {
 
     document.addEventListener('click', (event) => {
+      const sidebarEl = document.querySelector('.sidebar');
+
+      // 窄屏抽屉展开时，点击抽屉之外的地方就收起抽屉，这次点击不再触发别的交互
+      if (
+        sidebarEl
+        && sidebarEl.classList.contains('is-open')
+        && !event.target.closest('.sidebar')
+        && !event.target.closest('.drawer-toggle')
+      ) {
+        sidebarEl.classList.remove('is-open');
+
+        return;
+      }
+
       const actionEl = event.target.closest('[data-action]');
 
       if (actionEl) {
