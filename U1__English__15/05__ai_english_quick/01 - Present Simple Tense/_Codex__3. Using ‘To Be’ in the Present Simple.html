@@ -184,6 +184,8 @@ body {
   min-width: 0;
 }
 
+/* 标题跟 ☰ 按钮一样能点，触发同一个 toggleSidebar（见 page.html 的 data-action），
+   加个手型光标 + 点击反馈，不然看不出能点 */
 .app-title {
   margin: 0;
   font-size: clamp(15px, 3vw, 18px);
@@ -191,7 +193,11 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
 }
+
+.app-title:active { opacity: 0.6; }
 
 .controls {
   margin-left: auto;
@@ -408,6 +414,12 @@ body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.drawer-toggle:active {
+  background: var(--mask-bg);
+  transform: translateY(1px);
 }
 
 /* 拖拽调宽时锁定光标、禁止选中文字 */
@@ -424,11 +436,20 @@ body.is-resizing-sidebar {
   bottom: 0;
   width: var(--sidebar-width);
   z-index: 65;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   padding: 12px;
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
   transition: transform 0.2s ease;
+}
+
+/* 章节树滚动区：占满剩余高度，"返回全部课程"（.sidebar-home）留在它外面，
+   固定贴底，不随章节多少变化 */
+.sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0; /* 让 flex 子元素允许收缩出现滚动条，而不是撑破容器 */
+  overflow-y: auto;
 }
 
 .content {
@@ -458,6 +479,24 @@ body.single-doc .btn-quiz {
 }
 
 /* ── 侧边栏：章节树 ───────────────────────── */
+
+/* "返回全部课程"：只在构建时传了 --home-link 才会出现，多课程站点发布时用，放在章节树
+   最下面（划到底才会碰到，避免跟上面的章节/文件误点），箭头跟单篇页面的"返回总目录"
+   （.back-link）保持同一种符号 */
+.sidebar-home {
+  display: block;
+  flex: 0 0 auto;
+  min-height: var(--hit-size);
+  padding: 10px 6px;
+  margin-top: 4px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.sidebar-home:active { opacity: 0.7; }
+
 .chapter { border-bottom: 1px solid var(--color-border); }
 
 .chapter-title {
@@ -826,7 +865,7 @@ body.single-doc .btn-quiz {
   <header class="topbar">
     <div class="topbar-left">
       <button class="drawer-toggle" data-action="toggle-sidebar" aria-label="切换目录">☰</button>
-      <h1 class="app-title">3. Using ‘To Be’ in the Present Simple — be 动词英语速查表</h1>
+      <h1 class="app-title" data-action="toggle-sidebar">3. Using ‘To Be’ in the Present Simple — be 动词英语速查表</h1>
     </div>
     <div class="controls">
       <button data-action="toggle-mode" class="btn btn-mode">EN → CN</button>
@@ -838,7 +877,7 @@ body.single-doc .btn-quiz {
       <button data-action="toggle-quiz-view" class="btn btn-quiz">📇 测验</button>
       <button data-action="toggle-favorites-view" class="btn btn-favorites">★ 收藏</button>
     </div>
-    <a class="back-link" href="../index.html">← 返回总目录</a>
+    <a class="back-link" href="../index.html">◀ 返回总目录</a>
   </header>
 
   <div class="layout">
@@ -1570,7 +1609,15 @@ body.single-doc .btn-quiz {
         </details>`;
     }).join('');
 
-    sidebarEl.innerHTML = groupsHtml;
+    // 构建期传了 homeLink 才显示"返回全部课程"，本地单独跑一门课时不出现；固定贴在
+    // 侧边栏最底部（配合 .sidebar-scroll 的 flex 布局，章节数少时也不会往上飘），
+    // 避免跟上面的章节/文件点击混在一起
+    const homeLink = state.data.homeLink;
+    const homeLinkHtml = homeLink
+      ? `<a class="sidebar-home" href="${escapeAttr(homeLink)}">◀ 全部课程</a>`
+      : '';
+
+    sidebarEl.innerHTML = `<div class="sidebar-scroll">${groupsHtml}</div>${homeLinkHtml}`;
   }
 
   /**
