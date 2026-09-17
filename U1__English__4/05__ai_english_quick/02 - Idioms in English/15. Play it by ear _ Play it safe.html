@@ -792,6 +792,12 @@ body.single-doc .btn-quiz {
     padding: 8px 16px;
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
+    transition: transform 0.25s ease;
+  }
+
+  /* 往下滑时收起（滑出屏幕外），往上滑或接近顶部时用 app.js 的滚动监听移除这个类重新露出来 */
+  .topbar-left.is-hidden {
+    transform: translateY(-100%);
   }
 
   /* 词条卡片：操作按钮挪到内容下方单独一行，不跟内容抢横向空间；按钮整体缩小一圈 */
@@ -2390,6 +2396,49 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * 窄屏下监听滚动方向，模拟 Safari 地址栏那种「下滑隐藏、上滑出现」的效果：
+   * 往下滑就把「☰ + 标题」这条收起来让出屏幕空间，往上滑（哪怕滑一点点）立刻露出来，
+   * 滚到接近顶部时也强制露出来。宽屏不受影响（这条本来就不是 fixed 定位）。
+   * @returns {void}
+   */
+  function setupAutoHideTopbar() {
+
+    const topbarLeftEl = document.querySelector('.topbar-left');
+
+    if (!topbarLeftEl) {
+
+      return;
+    }
+
+    let lastScrollY = window.scrollY;
+    let isTicking = false;
+
+    window.addEventListener('scroll', () => {
+
+      if (!isNarrowViewport() || isTicking) {
+
+        return;
+      }
+
+      isTicking = true;
+
+      requestAnimationFrame(() => {
+
+        const currentScrollY = window.scrollY;
+
+        if (currentScrollY < 8 || currentScrollY < lastScrollY) {
+          topbarLeftEl.classList.remove('is-hidden');
+        } else {
+          topbarLeftEl.classList.add('is-hidden');
+        }
+
+        lastScrollY = currentScrollY;
+        isTicking = false;
+      });
+    }, { passive: true });
+  }
+
+  /**
    * 从 localStorage 恢复宽屏下侧边栏是否收起
    * @returns {boolean}
    */
@@ -2651,6 +2700,7 @@ body.single-doc .btn-quiz {
     setupThemeSelect();
     setupFavoritesImport();
     setupSidebarResize();
+    setupAutoHideTopbar();
 
     // 恢复侧边栏宽度与宽屏下的收起状态
     applySidebarWidth(loadSidebarWidth());
