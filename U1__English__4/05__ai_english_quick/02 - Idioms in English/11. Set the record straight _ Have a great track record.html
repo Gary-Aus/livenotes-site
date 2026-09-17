@@ -272,7 +272,7 @@ body {
   border-color: var(--color-accent);
 }
 
-/* 「🎲 测验」入口按钮：打开测验模式时高亮 */
+/* 「📇 测验」入口按钮：打开测验模式时高亮 */
 .btn-quiz.is-active {
   color: var(--color-on-accent);
   background: var(--color-accent);
@@ -610,14 +610,52 @@ body.single-doc .btn-quiz {
   font-size: 0.9em;
 }
 
-/* 词汇表单元格排版 */
+/* 词汇表单元格排版：单词加大加粗突出主角，词性/音标进一步弱化拉开主次对比 */
 .cell { margin-right: 10px; }
-.cell--word { font-weight: 600; }
-.cell--pos { color: var(--color-muted); }
+
+.cell--word,
+.cell--phrase {
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+/* 句型 & 金句：只稍微加粗，不加大字号——分量比单词/短语轻一点 */
+.cell--text_en { font-weight: 600; }
+
+.cell--pos {
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
 
 .cell--ipa {
   color: var(--color-muted);
+  font-size: 0.85em;
   font-family: ui-monospace, "SF Mono", "Consolas", monospace;
+}
+
+/*
+ * 释义 / 读法各自一个色块（同一行），用已有的主题变量而不是写死颜色，
+ * 保证深色主题下也有足够对比度：释义用强调色实心块（更显眼，这是核心信息），
+ * 读法用中性浅底块（弱化，只是辅助的拼音读法）
+ */
+.cell--meaning {
+  display: inline-block;
+  margin: 2px 6px 2px 0;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  background: var(--mask-bg);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  font-weight: 600;
+}
+
+.cell--reading {
+  display: inline-block;
+  margin: 2px 0;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  background: var(--mask-bg);
+  color: var(--color-muted);
 }
 
 /* ── 我的收藏视图 ─────────────────────────── */
@@ -791,7 +829,7 @@ body.single-doc .btn-quiz {
         <span class="theme-swatch" data-role="theme-swatch" aria-hidden="true">🎨</span>
         <select class="theme-select" data-role="theme-select" aria-label="主题"></select>
       </span>
-      <button data-action="toggle-quiz-view" class="btn btn-quiz">🎲 测验</button>
+      <button data-action="toggle-quiz-view" class="btn btn-quiz">📇 测验</button>
       <button data-action="toggle-favorites-view" class="btn btn-favorites">★ 收藏</button>
     </div>
     <a class="back-link" href="../index.html">← 返回总目录</a>
@@ -853,7 +891,7 @@ body.single-doc .btn-quiz {
 
   // 各 section 类型的 en / cn 两侧字段（顺序即渲染顺序），与 config.js 的 SECTION_TYPES 对应
   const SIDE_FIELDS = {
-    vocab: { en: ['word', 'pos', 'ipa'], cn: ['reading', 'meaning'] },
+    vocab: { en: ['word', 'pos', 'ipa'], cn: ['meaning', 'reading'] },
     phrases: { en: ['phrase'], cn: ['meaning'] },
     sentences: { en: ['text_en'], cn: ['text_cn'] },
   };
@@ -1017,38 +1055,46 @@ body.single-doc .btn-quiz {
    */
   function updateThemeSwatch(themeId) {
 
-    const swatchEl = document.querySelector('[data-role="theme-swatch"]');
     const theme = THEMES.find((item) => item.id === themeId);
 
-    if (!swatchEl || !theme) {
+    if (!theme) {
 
       return;
     }
 
-    swatchEl.style.background = theme.swatch;
+    // 顶部和内容区底部都有色块（同一个 data-role），两个都要同步
+    document.querySelectorAll('[data-role="theme-swatch"]').forEach((swatchEl) => {
+      swatchEl.style.background = theme.swatch;
+    });
   }
 
   /**
-   * 填充主题下拉框选项、同步当前值并绑定切换事件
+   * 填充主题下拉框选项、同步当前值并绑定切换事件。
+   * 顶部的 select 是静态标记、只需要初始化一次；内容区底部的 select 每次 renderContent /
+   * renderQuizView 都会被 innerHTML 重新创建，所以每次渲染完都要再调一次这个函数——
+   * 用 dataset 标记跳过已经初始化过的，避免重复绑定 change 监听
    * @returns {void}
    */
   function setupThemeSelect() {
 
-    const selectEl = document.querySelector('[data-role="theme-select"]');
+    document.querySelectorAll('[data-role="theme-select"]').forEach((selectEl) => {
 
-    if (!selectEl) {
+      if (selectEl.dataset.themeReady) {
 
-      return;
-    }
+        return;
+      }
 
-    selectEl.innerHTML = THEMES
-      .map((theme) => `<option value="${theme.id}">${theme.label}</option>`)
-      .join('');
-    selectEl.value = state.theme;
+      selectEl.innerHTML = THEMES
+        .map((theme) => `<option value="${theme.id}">${theme.label}</option>`)
+        .join('');
+      selectEl.value = state.theme;
 
-    selectEl.addEventListener('change', () => {
-      applyTheme(selectEl.value);
-      saveTheme(selectEl.value);
+      selectEl.addEventListener('change', () => {
+        applyTheme(selectEl.value);
+        saveTheme(selectEl.value);
+      });
+
+      selectEl.dataset.themeReady = 'true';
     });
   }
 
@@ -1544,6 +1590,8 @@ body.single-doc .btn-quiz {
       <div class="bottom-controls">
         <button type="button" data-action="toggle-mode" class="btn btn-mode"></button>
         <button type="button" data-action="toggle-all-expanded" class="btn btn-expand-toggle"></button>
+        <button type="button" data-action="toggle-quiz-view" class="btn btn-quiz">📇 测验</button>
+        <button type="button" data-action="toggle-favorites-view" class="btn btn-favorites">★ 收藏</button>
       </div>`;
   }
 
@@ -1725,16 +1773,14 @@ body.single-doc .btn-quiz {
    */
   function clearViewToggleButtons() {
 
-    const favBtn = document.querySelector('[data-action="toggle-favorites-view"]');
-    const quizBtn = document.querySelector('[data-action="toggle-quiz-view"]');
+    // 顶部和内容区底部都有这两个按钮（同一个 data-action），两边都要清
+    document.querySelectorAll('[data-action="toggle-favorites-view"]').forEach((btn) => {
+      btn.classList.remove('is-active');
+    });
 
-    if (favBtn) {
-      favBtn.classList.remove('is-active');
-    }
-
-    if (quizBtn) {
-      quizBtn.classList.remove('is-active');
-    }
+    document.querySelectorAll('[data-action="toggle-quiz-view"]').forEach((btn) => {
+      btn.classList.remove('is-active');
+    });
   }
 
   /**
@@ -1747,11 +1793,9 @@ body.single-doc .btn-quiz {
 
     clearViewToggleButtons();
 
-    const favBtn = document.querySelector('[data-action="toggle-favorites-view"]');
-
-    if (favBtn) {
-      favBtn.classList.toggle('is-active', state.view === 'favorites');
-    }
+    document.querySelectorAll('[data-action="toggle-favorites-view"]').forEach((btn) => {
+      btn.classList.toggle('is-active', state.view === 'favorites');
+    });
 
     if (state.view === 'favorites') {
       renderFavoritesView();
@@ -1958,7 +2002,7 @@ body.single-doc .btn-quiz {
 
     if (state.quizPool.length === 0) {
       contentEl.innerHTML = `
-        <header class="doc-header"><h2 class="doc-title">🎲 测验模式</h2></header>
+        <header class="doc-header"><h2 class="doc-title">📇 测验模式</h2></header>
         <p class="favorites-empty">没有可供测验的内容。</p>`;
       updateExpandToggleIcon();
       updateModeButtonAppearance();
@@ -1978,7 +2022,7 @@ body.single-doc .btn-quiz {
     const currentBatch = Math.floor(state.quizBatchOffset / QUIZ_BATCH_SIZE) + 1;
 
     contentEl.innerHTML = `
-      <header class="doc-header"><h2 class="doc-title">🎲 测验模式</h2></header>
+      <header class="doc-header"><h2 class="doc-title">📇 测验模式</h2></header>
       <div class="favorites-toolbar">
         <button type="button" class="btn" data-action="next-quiz-batch">换一批</button>
         <span class="favorites-hint">
@@ -2017,11 +2061,9 @@ body.single-doc .btn-quiz {
 
     clearViewToggleButtons();
 
-    const quizBtn = document.querySelector('[data-action="toggle-quiz-view"]');
-
-    if (quizBtn) {
-      quizBtn.classList.toggle('is-active', state.view === 'quiz');
-    }
+    document.querySelectorAll('[data-action="toggle-quiz-view"]').forEach((btn) => {
+      btn.classList.toggle('is-active', state.view === 'quiz');
+    });
 
     if (state.view === 'quiz') {
       state.quizPool = null;
