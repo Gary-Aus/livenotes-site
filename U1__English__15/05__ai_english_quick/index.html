@@ -682,7 +682,7 @@ body.single-doc .btn-quiz {
   display: none;
   grid-column: 1 / -1;
   padding: 10px 12px;
-  background: var(--mask-bg);
+  background: color-mix(in srgb, var(--mask-bg) 50%, var(--color-surface));
   border-radius: 8px;
   overflow-wrap: anywhere;
 }
@@ -721,7 +721,8 @@ body.single-doc .btn-quiz {
 /*
  * 释义 / 读法各自一个色块（同一行），用已有的主题变量而不是写死颜色，
  * 保证深色主题下也有足够对比度：释义用强调色实心块（更显眼，这是核心信息），
- * 读法用中性浅底块（弱化，只是辅助的拼音读法）
+ * 读法用中性浅底块（弱化，只是辅助的拼音读法）。这是收藏页（.favorite-row）
+ * 用的原版底色，不要改这个——用户明确说收藏页这个配色挺好看，不要动
  */
 .cell--meaning {
   display: inline-block;
@@ -741,6 +742,23 @@ body.single-doc .btn-quiz {
   border-radius: var(--radius);
   background: var(--mask-bg);
   color: var(--color-muted);
+}
+
+/*
+ * 课程章节页（.item，含测验模式）的释义色块单独换一版底色：这里的色块套在
+ * .hidden-side 揭示区域里，.hidden-side 的背景刚好也是 --mask-bg，色块背景
+ * 跟容器背景重叠、糊成一片（收藏页没有这层包裹，色块直接摆在卡片底色上，
+ * 所以不受影响，维持上面原版）。用 color-mix 跟强调色混出淡色调，不管套在
+ * 哪层背景里都能跟周围区分开。读法不用单独处理，跟 .hidden-side 背景融为
+ * 一体就是想要的效果（只有释义要用色块凸显出来）
+ */
+.item .cell--meaning {
+  background: color-mix(in srgb, var(--color-accent) 15%, var(--color-surface));
+}
+
+/* 读法背景设成透明，永远跟着 .hidden-side 容器的背景走，不用另外维护一份颜色去对齐 */
+.item .cell--reading {
+  background: transparent;
 }
 
 /* ── 我的收藏视图 ─────────────────────────── */
