@@ -804,9 +804,31 @@ body.single-doc .btn-quiz {
   border-radius: var(--radius);
 }
 
+/* "保存/退出同步"靠左，"导出/导入配置"靠右，同一排但分成两组，一眼能看出不是同类操作 */
 .sync-panel-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
   gap: 10px;
+}
+
+.sync-panel-actions-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* "保存并同步"是这个面板的主操作，用强调色跟其它素色按钮区分开 */
+.btn-sync-primary {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* "退出同步"会清空本机配置，用警示色描边提示这是需要谨慎点的操作 */
+.btn-sync-danger {
+  color: #dc2626;
+  border-color: #dc2626;
 }
 
 /* 收藏列表行：布局仿 .item，但不复用 .item 类名，避免被「点整行揭示」的事件委托误触发 */
@@ -991,6 +1013,8 @@ body.single-doc .btn-quiz {
   <script type="application/json" data-role="livenotes-data">{"doc":{"title":"I give you my word / I'll take your word for it","slug":"5. I give you my word _ I'll take your word for it","chapter":"01 - Practical English phrases","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__4__CC_OK__50 English Phrases, Idioms, and Expressions for ESL Students - 1h\\05__ai_english_quick\\01 - Practical English phrases\\_CC__5. I give you my word _ I'll take your word for it.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"guarantee","pos":"v./n.","ipa":"/ˌɡærənˈtiː/"},"cn":{"reading":"尬-润-【提】","meaning":"保证；担保"}},{"en":{"word":"certainty","pos":"n.","ipa":"/ˈsɜːrtnti/"},"cn":{"reading":"【色】-特恩-提","meaning":"确定性；把握"}},{"en":{"word":"calculations","pos":"n.","ipa":"/ˌkælkjʊˈleɪʃənz/"},"cn":{"reading":"卡尔-可优-【雷】-申兹","meaning":"计算；运算"}},{"en":{"word":"skeptical","pos":"adj.","ipa":"/ˈskɛptɪkl/"},"cn":{"reading":"【斯】-克普-提克-尔","meaning":"怀疑的；持疑态度的"}},{"en":{"word":"confidently","pos":"adv.","ipa":"/ˈkɒnfɪdəntli/"},"cn":{"reading":"【康】-菲-邓特-利","meaning":"自信地"}},{"en":{"word":"sensation","pos":"n.","ipa":"/sɛnˈseɪʃən/"},"cn":{"reading":"斯恩-【赛】-申","meaning":"感觉；感受"}},{"en":{"word":"skydiving","pos":"n.","ipa":"/ˈskaɪdaɪvɪŋ/"},"cn":{"reading":"【斯】-凯-达-维-润","meaning":"跳伞运动"}},{"en":{"word":"dangerous","pos":"adj.","ipa":"/ˈdeɪndʒərəs/"},"cn":{"reading":"【带】-恩-且-若斯","meaning":"危险的"}},{"en":{"word":"resolve","pos":"v.","ipa":"/rɪˈzɒlv/"},"cn":{"reading":"瑞-【孜】-尔夫","meaning":"解决；消除"}},{"en":{"word":"completely","pos":"adv.","ipa":"/kəmˈpliːtli/"},"cn":{"reading":"肯-【普】-利特-利","meaning":"完全地"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"I give you my word"},"cn":{"meaning":"我向你保证"},"note":"比 \"I promise\" 更强烈、更正式"},{"en":{"phrase":"I'll take your word for it"},"cn":{"meaning":"我相信你说的"},"note":"自信语气=真信；迟疑语气=持保留态度"},{"en":{"phrase":"make peace with"},"cn":{"meaning":"与…和解"},"note":""},{"en":{"phrase":"based on the fact that"},"cn":{"meaning":"基于…这一事实"},"note":""},{"en":{"phrase":"choose to believe"},"cn":{"meaning":"选择相信"},"note":""},{"en":{"phrase":"find out about"},"cn":{"meaning":"发现；得知"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"I give you my word that ___."},"cn":{"text_cn":"我向你保证……（强承诺）"},"kind":"句型"},{"en":{"text_en":"I'll take your word for it."},"cn":{"text_cn":"我相信你。（直接说=真信；迟疑说=不太信）"},"kind":"句型"},{"en":{"text_en":"\"I give you my word\" is a strong way to say \"I promise\" or \"I guarantee.\""},"cn":{"text_cn":"比\"我保证\"更有分量的承诺表达。"},"kind":"金句"},{"en":{"text_en":"I checked the calculations and they're all correct. You can check them if you want."},"cn":{"text_cn":"信任对话中的完整场景铺垫。"},"kind":"金句"},{"en":{"text_en":"No, that's okay. I'll take your word for it."},"cn":{"text_cn":"表示完全信任对方，不需要自己再核实。"},"kind":"金句"},{"en":{"text_en":"Well, I'll take your word for it."},"cn":{"text_cn":"语气迟疑时：我姑且相信你（但自己不打算亲身体验）。"},"kind":"金句"}]}],"extra":""}}</script>
   <!-- 导入收藏用的隐藏文件选择框，由「导入收藏」按钮触发点击 -->
   <input type="file" accept="application/json" data-role="favorites-import-input" hidden>
+  <!-- 导入同步配置（Token/Gist ID）用的隐藏文件选择框，由「导入配置」按钮触发点击 -->
+  <input type="file" accept="application/json" data-role="sync-config-import-input" hidden>
   <script>/**
  * app.js — livenotes 前端交互
  *
@@ -1831,6 +1855,30 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * "立即同步"按钮：手动触发一次完整同步，不用等自动拉取/推送的时机
+   * （`pullFavoritesFromGist` 本身就是双向的：拉远端合并本地，本地有远端没有的更新会自动
+   * 补推回去，所以点这一个按钮就够了，不需要分开的"上传"按钮）
+   * @returns {Promise<void>}
+   */
+  async function handleSyncNow() {
+
+    if (!isSyncConfigured()) {
+      window.alert('请先在"同步设置"里填好 Token 和 Gist ID');
+
+      return;
+    }
+
+    // 有正在等待的 debounce 推送就取消掉，马上同步这一次已经把它覆盖了，不用重复推
+    if (state.sync.pushTimer) {
+      clearTimeout(state.sync.pushTimer);
+      state.sync.pushTimer = null;
+    }
+
+    await pullFavoritesFromGist();
+    renderFavoritesView();
+  }
+
+  /**
    * 在收藏列表里查找某条记录的下标
    * @param {object[]} list
    * @param {'doc'|'item'} kind
@@ -2117,6 +2165,36 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * 把当前同步配置（Token + Gist ID）导出为 json 文件下载，方便在别的设备/别的网址上
+   * 一次性导入，不用手动复制粘贴两个输入框
+   * @returns {void}
+   */
+  function exportSyncConfig() {
+
+    const config = loadSyncConfig();
+
+    if (!config.token && !config.gistId) {
+      window.alert('还没有设置同步，没有可导出的配置');
+
+      return;
+    }
+
+    const json = JSON.stringify(config, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const linkEl = document.createElement('a');
+    linkEl.href = url;
+    linkEl.download = 'livenotes-sync-config.json';
+    document.body.appendChild(linkEl);
+    linkEl.click();
+    document.body.removeChild(linkEl);
+
+    URL.revokeObjectURL(url);
+    window.alert('已导出，注意：这个文件里是明文 Token，导入完所有设备后建议删掉，不要一直留在下载目录里');
+  }
+
+  /**
    * 取一条收藏记录的"最后修改时间"，没有 updatedAt 的旧数据退化用其它时间字段兜底，
    * 都没有就当作最旧（合并时优先保留有明确时间戳的一方）
    * @param {object} fav
@@ -2216,6 +2294,54 @@ body.single-doc .btn-quiz {
           mergeFavorites(Array.isArray(incoming) ? incoming : []);
         } catch (err) {
           window.alert('导入失败：文件内容不是有效的收藏 json');
+        }
+
+        inputEl.value = '';
+      };
+
+      reader.readAsText(file);
+    });
+  }
+
+  /**
+   * 绑定导入同步配置用的隐藏文件选择框：读到 { token, gistId } 后直接保存并触发一次同步，
+   * 不用再手动粘贴两个输入框
+   * @returns {void}
+   */
+  function setupSyncConfigImport() {
+
+    const inputEl = document.querySelector('[data-role="sync-config-import-input"]');
+
+    if (!inputEl) {
+
+      return;
+    }
+
+    inputEl.addEventListener('change', () => {
+
+      const file = inputEl.files && inputEl.files[0];
+
+      if (!file) {
+
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = async () => {
+
+        try {
+          const config = JSON.parse(reader.result);
+
+          if (!config || !config.token) {
+            window.alert('导入失败：文件内容不是有效的同步配置');
+          } else {
+            saveSyncConfig({ token: config.token, gistId: config.gistId || '' });
+            await pullFavoritesFromGist();
+            renderFavoritesView();
+          }
+        } catch (err) {
+          window.alert('导入失败：文件内容不是有效的同步配置');
         }
 
         inputEl.value = '';
@@ -2403,9 +2529,9 @@ body.single-doc .btn-quiz {
       <div class="favorites-toolbar">
         <button type="button" class="btn" data-action="export-favorites">导出收藏</button>
         <button type="button" class="btn" data-action="import-favorites">导入收藏</button>
-        <button type="button" class="btn" data-action="toggle-sync-panel">🔄 同步设置</button>
+        <button type="button" class="btn" data-action="toggle-sync-panel">同步设置 <span aria-hidden="true">${state.syncPanelOpen ? '▾' : '▸'}</span></button>
+        <button type="button" class="btn" data-action="sync-now">🔄 立即同步</button>
         <span class="sync-status sync-status--${state.sync.status}" data-role="sync-status">${escapeHtml(formatSyncStatusText())}</span>
-        <span class="favorites-hint">导出 / 导入用于手动同步；"同步设置"是跨设备自动同步</span>
       </div>
       ${renderSyncPanel()}`;
   }
@@ -2435,13 +2561,21 @@ body.single-doc .btn-quiz {
           <input type="text" data-role="sync-gist-id-input" value="${escapeAttr(config.gistId)}" placeholder="留空自动创建" autocomplete="off">
         </label>
         <div class="sync-panel-actions">
-          <button type="button" class="btn" data-action="save-sync-config">保存${configured ? '并同步' : ''}</button>
-          ${configured ? '<button type="button" class="btn" data-action="clear-sync-config">退出同步</button>' : ''}
+          <div class="sync-panel-actions-group">
+            <button type="button" class="btn btn-sync-primary" data-action="save-sync-config">保存${configured ? '并同步' : ''}</button>
+            ${configured ? '<button type="button" class="btn btn-sync-danger" data-action="clear-sync-config">退出同步</button>' : ''}
+          </div>
+          <div class="sync-panel-actions-group">
+            <button type="button" class="btn" data-action="export-sync-config">导出配置</button>
+            <button type="button" class="btn" data-action="import-sync-config">导入配置</button>
+          </div>
         </div>
         <p class="favorites-hint">
           Token / Gist ID 只存在这台设备本地，不会出现在收藏数据里。第一台设备保存时把 Gist ID
           留空会自动创建一个，把生成的 ID 复制到其它设备粘贴进这个输入框——其它设备不要再留空创建，
           否则会各自建出不同的 Gist，互相不同步。私有 Gist 不会被搜索到，但知道链接的人仍能看到内容。
+          嫌手动复制粘贴麻烦的话，也可以"导出配置"存成文件，去别的设备/别的网址上"导入配置"
+          一步到位——但这个文件是明文 Token，导入完记得删掉，不要一直留着。
         </p>
       </div>`;
   }
@@ -2638,7 +2772,6 @@ body.single-doc .btn-quiz {
 
     if (docFavs.length === 0 && itemFavs.length === 0) {
       contentEl.innerHTML = `
-        <header class="doc-header"><h2 class="doc-title">★ 我的收藏</h2></header>
         ${renderFavoritesToolbar()}
         <p class="favorites-empty">还没有收藏。点击文档旁或词条旁的 ☆ 试试。</p>`;
 
@@ -2651,7 +2784,6 @@ body.single-doc .btn-quiz {
     const itemFavsHtml = filteredItemFavs.map(renderItemFavoriteRow).join('');
 
     contentEl.innerHTML = `
-      <header class="doc-header"><h2 class="doc-title">★ 我的收藏</h2></header>
       ${renderFavoritesToolbar()}
       ${docFavs.length ? `
         <section class="section">
@@ -3565,6 +3697,9 @@ body.single-doc .btn-quiz {
         }
         if (action === 'save-sync-config') handleSaveSyncConfig();
         if (action === 'clear-sync-config') handleClearSyncConfig();
+        if (action === 'sync-now') handleSyncNow();
+        if (action === 'export-sync-config') exportSyncConfig();
+        if (action === 'import-sync-config') document.querySelector('[data-role="sync-config-import-input"]').click();
         if (action === 'toggle-quiz-view') toggleQuizView();
         if (action === 'next-quiz-batch') nextQuizBatch();
         if (action === 'toggle-favorite-quiz-item') handleToggleFavoriteQuizItem(actionEl);
@@ -3611,6 +3746,7 @@ body.single-doc .btn-quiz {
     applyTheme(loadTheme());
     setupThemeSelect();
     setupFavoritesImport();
+    setupSyncConfigImport();
     setupFavoritesSync();
     setupSidebarResize();
     setupAutoHideTopbar();

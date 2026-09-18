@@ -804,9 +804,31 @@ body.single-doc .btn-quiz {
   border-radius: var(--radius);
 }
 
+/* "保存/退出同步"靠左，"导出/导入配置"靠右，同一排但分成两组，一眼能看出不是同类操作 */
 .sync-panel-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
   gap: 10px;
+}
+
+.sync-panel-actions-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* "保存并同步"是这个面板的主操作，用强调色跟其它素色按钮区分开 */
+.btn-sync-primary {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* "退出同步"会清空本机配置，用警示色描边提示这是需要谨慎点的操作 */
+.btn-sync-danger {
+  color: #dc2626;
+  border-color: #dc2626;
 }
 
 /* 收藏列表行：布局仿 .item，但不复用 .item 类名，避免被「点整行揭示」的事件委托误触发 */
@@ -991,6 +1013,8 @@ body.single-doc .btn-quiz {
   <script type="application/json" data-role="livenotes-data">{"doc":{"title":"1. Simple Sentences Explained — 简单句英语速查表","slug":"_Codex__1. Simple Sentences Explained","chapter":"01 - Present Simple Tense","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__15__Codex_W__Learn English__The Next Gen Guide to English Grammar - 2h\\05__ai_english_quick\\01 - Present Simple Tense\\_Codex__1. Simple Sentences Explained.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"grammar","pos":"n.","ipa":"/ˈɡræmə/"},"cn":{"reading":"【格拉】-默","meaning":"语法"}},{"en":{"word":"subject","pos":"n.","ipa":"/ˈsʌbdʒɪkt/"},"cn":{"reading":"【萨布】-吉克特","meaning":"主语"}},{"en":{"word":"verb","pos":"n.","ipa":"/vɜːb/"},"cn":{"reading":"【沃布】","meaning":"动词"}},{"en":{"word":"component","pos":"adj.","ipa":"/kəmˈpəʊnənt/"},"cn":{"reading":"肯-【坡】-嫩特","meaning":"组成的"}},{"en":{"word":"function","pos":"n.","ipa":"/ˈfʌŋkʃən/"},"cn":{"reading":"【放克】-申","meaning":"功能"}},{"en":{"word":"physical","pos":"adj.","ipa":"/ˈfɪzɪkəl/"},"cn":{"reading":"【菲】-兹-克尔","meaning":"身体的"}},{"en":{"word":"emotions","pos":"n.","ipa":"/ɪˈməʊʃənz/"},"cn":{"reading":"伊-【谋】-申兹","meaning":"情绪"}},{"en":{"word":"exceptions","pos":"n.","ipa":"/ɪkˈsepʃənz/"},"cn":{"reading":"伊克-【塞普】-申兹","meaning":"例外"}},{"en":{"word":"identify","pos":"v.","ipa":"/aɪˈdentɪfaɪ/"},"cn":{"reading":"艾-【登】-提-法伊","meaning":"识别"}},{"en":{"word":"obvious","pos":"adj.","ipa":"/ˈɒbviəs/"},"cn":{"reading":"【奥布】-维-厄斯","meaning":"明显的"}},{"en":{"word":"stative","pos":"adj.","ipa":"/ˈsteɪtɪv/"},"cn":{"reading":"【斯忒】-蒂夫","meaning":"表状态的"}},{"en":{"word":"transitive","pos":"adj.","ipa":"/ˈtrænzətɪv/"},"cn":{"reading":"【特兰】-泽-蒂夫","meaning":"及物的"}},{"en":{"word":"intransitive","pos":"adj.","ipa":"/ɪnˈtrænzətɪv/"},"cn":{"reading":"因-【特兰】-泽-蒂夫","meaning":"不及物的"}},{"en":{"word":"object","pos":"n.","ipa":"/ˈɒbdʒɪkt/"},"cn":{"reading":"【奥布】-吉克特","meaning":"宾语"}},{"en":{"word":"pineapple","pos":"n.","ipa":"/ˈpaɪnæpəl/"},"cn":{"reading":"【派】-纳-珀尔","meaning":"菠萝"}},{"en":{"word":"clothes","pos":"n.","ipa":"/kləʊðz/"},"cn":{"reading":"【克楼兹】","meaning":"衣服"}},{"en":{"word":"objectives","pos":"n.","ipa":"/əbˈdʒektɪvz/"},"cn":{"reading":"厄布-【杰克】-蒂夫兹","meaning":"目标"}},{"en":{"word":"absolutely","pos":"adv.","ipa":"/ˈæbsəluːtli/"},"cn":{"reading":"【艾布】-瑟-卢特-利","meaning":"非常"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"by the end of this lesson"},"cn":{"meaning":"到本课结束时"},"note":""},{"en":{"phrase":"component parts"},"cn":{"meaning":"组成部分"},"note":""},{"en":{"phrase":"in general"},"cn":{"meaning":"一般来说"},"note":""},{"en":{"phrase":"on their own"},"cn":{"meaning":"独立地；单独地"},"note":""},{"en":{"phrase":"make sense"},"cn":{"meaning":"讲得通；有意义"},"note":""},{"en":{"phrase":"go through"},"cn":{"meaning":"逐一查看"},"note":""},{"en":{"phrase":"for fun"},"cn":{"meaning":"为了消遣"},"note":""},{"en":{"phrase":"in this case"},"cn":{"meaning":"在这种情况下"},"note":""},{"en":{"phrase":"so far"},"cn":{"meaning":"到目前为止"},"note":""},{"en":{"phrase":"be divided into three groups"},"cn":{"meaning":"被分成三组"},"note":""},{"en":{"phrase":"take an object"},"cn":{"meaning":"带宾语"},"note":""},{"en":{"phrase":"depending on the sentence"},"cn":{"meaning":"视句子而定"},"note":""},{"en":{"phrase":"as the name suggests"},"cn":{"meaning":"顾名思义"},"note":""},{"en":{"phrase":"ended in a draw"},"cn":{"meaning":"以平局结束"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"By the end of this lesson, you should be able to ___."},"cn":{"text_cn":"到本课结束时，你应该能够……"},"kind":""},{"en":{"text_en":"It's very common for ___ to ___."},"cn":{"text_cn":"……做……很常见。"},"kind":""},{"en":{"text_en":"See if you can identify ___."},"cn":{"text_cn":"试试看你能否识别……"},"kind":""},{"en":{"text_en":"If we update the sentence now to ___, then ___."},"cn":{"text_cn":"如果现在把句子改成……，那么……"},"kind":""},{"en":{"text_en":"There are some verbs that can be ___ or ___."},"cn":{"text_cn":"有些动词既可以是……，也可以是……"},"kind":""},{"en":{"text_en":"I read for fun."},"cn":{"text_cn":"我读书是为了消遣。"},"kind":""},{"en":{"text_en":"You're my best friend."},"cn":{"text_cn":"你是我最好的朋友。"},"kind":""},{"en":{"text_en":"We're missing some information here."},"cn":{"text_cn":"这里缺少一些信息。"},"kind":""},{"en":{"text_en":"It doesn't make sense."},"cn":{"text_cn":"这讲不通。"},"kind":""},{"en":{"text_en":"We brought our lunch with us."},"cn":{"text_cn":"我们自带了午餐。"},"kind":""},{"en":{"text_en":"I use my computer every day."},"cn":{"text_cn":"我每天使用电脑。"},"kind":""},{"en":{"text_en":"The game ended in a draw."},"cn":{"text_cn":"比赛以平局结束。"},"kind":""},{"en":{"text_en":"I absolutely love this course."},"cn":{"text_cn":"我非常喜欢这门课。"},"kind":""}]}],"extra":""}}</script>
   <!-- 导入收藏用的隐藏文件选择框，由「导入收藏」按钮触发点击 -->
   <input type="file" accept="application/json" data-role="favorites-import-input" hidden>
+  <!-- 导入同步配置（Token/Gist ID）用的隐藏文件选择框，由「导入配置」按钮触发点击 -->
+  <input type="file" accept="application/json" data-role="sync-config-import-input" hidden>
   <script>/**
  * app.js — livenotes 前端交互
  *
@@ -1831,6 +1855,30 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * "立即同步"按钮：手动触发一次完整同步，不用等自动拉取/推送的时机
+   * （`pullFavoritesFromGist` 本身就是双向的：拉远端合并本地，本地有远端没有的更新会自动
+   * 补推回去，所以点这一个按钮就够了，不需要分开的"上传"按钮）
+   * @returns {Promise<void>}
+   */
+  async function handleSyncNow() {
+
+    if (!isSyncConfigured()) {
+      window.alert('请先在"同步设置"里填好 Token 和 Gist ID');
+
+      return;
+    }
+
+    // 有正在等待的 debounce 推送就取消掉，马上同步这一次已经把它覆盖了，不用重复推
+    if (state.sync.pushTimer) {
+      clearTimeout(state.sync.pushTimer);
+      state.sync.pushTimer = null;
+    }
+
+    await pullFavoritesFromGist();
+    renderFavoritesView();
+  }
+
+  /**
    * 在收藏列表里查找某条记录的下标
    * @param {object[]} list
    * @param {'doc'|'item'} kind
@@ -2117,6 +2165,36 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * 把当前同步配置（Token + Gist ID）导出为 json 文件下载，方便在别的设备/别的网址上
+   * 一次性导入，不用手动复制粘贴两个输入框
+   * @returns {void}
+   */
+  function exportSyncConfig() {
+
+    const config = loadSyncConfig();
+
+    if (!config.token && !config.gistId) {
+      window.alert('还没有设置同步，没有可导出的配置');
+
+      return;
+    }
+
+    const json = JSON.stringify(config, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const linkEl = document.createElement('a');
+    linkEl.href = url;
+    linkEl.download = 'livenotes-sync-config.json';
+    document.body.appendChild(linkEl);
+    linkEl.click();
+    document.body.removeChild(linkEl);
+
+    URL.revokeObjectURL(url);
+    window.alert('已导出，注意：这个文件里是明文 Token，导入完所有设备后建议删掉，不要一直留在下载目录里');
+  }
+
+  /**
    * 取一条收藏记录的"最后修改时间"，没有 updatedAt 的旧数据退化用其它时间字段兜底，
    * 都没有就当作最旧（合并时优先保留有明确时间戳的一方）
    * @param {object} fav
@@ -2216,6 +2294,54 @@ body.single-doc .btn-quiz {
           mergeFavorites(Array.isArray(incoming) ? incoming : []);
         } catch (err) {
           window.alert('导入失败：文件内容不是有效的收藏 json');
+        }
+
+        inputEl.value = '';
+      };
+
+      reader.readAsText(file);
+    });
+  }
+
+  /**
+   * 绑定导入同步配置用的隐藏文件选择框：读到 { token, gistId } 后直接保存并触发一次同步，
+   * 不用再手动粘贴两个输入框
+   * @returns {void}
+   */
+  function setupSyncConfigImport() {
+
+    const inputEl = document.querySelector('[data-role="sync-config-import-input"]');
+
+    if (!inputEl) {
+
+      return;
+    }
+
+    inputEl.addEventListener('change', () => {
+
+      const file = inputEl.files && inputEl.files[0];
+
+      if (!file) {
+
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = async () => {
+
+        try {
+          const config = JSON.parse(reader.result);
+
+          if (!config || !config.token) {
+            window.alert('导入失败：文件内容不是有效的同步配置');
+          } else {
+            saveSyncConfig({ token: config.token, gistId: config.gistId || '' });
+            await pullFavoritesFromGist();
+            renderFavoritesView();
+          }
+        } catch (err) {
+          window.alert('导入失败：文件内容不是有效的同步配置');
         }
 
         inputEl.value = '';
@@ -2403,9 +2529,9 @@ body.single-doc .btn-quiz {
       <div class="favorites-toolbar">
         <button type="button" class="btn" data-action="export-favorites">导出收藏</button>
         <button type="button" class="btn" data-action="import-favorites">导入收藏</button>
-        <button type="button" class="btn" data-action="toggle-sync-panel">🔄 同步设置</button>
+        <button type="button" class="btn" data-action="toggle-sync-panel">同步设置 <span aria-hidden="true">${state.syncPanelOpen ? '▾' : '▸'}</span></button>
+        <button type="button" class="btn" data-action="sync-now">🔄 立即同步</button>
         <span class="sync-status sync-status--${state.sync.status}" data-role="sync-status">${escapeHtml(formatSyncStatusText())}</span>
-        <span class="favorites-hint">导出 / 导入用于手动同步；"同步设置"是跨设备自动同步</span>
       </div>
       ${renderSyncPanel()}`;
   }
@@ -2435,13 +2561,21 @@ body.single-doc .btn-quiz {
           <input type="text" data-role="sync-gist-id-input" value="${escapeAttr(config.gistId)}" placeholder="留空自动创建" autocomplete="off">
         </label>
         <div class="sync-panel-actions">
-          <button type="button" class="btn" data-action="save-sync-config">保存${configured ? '并同步' : ''}</button>
-          ${configured ? '<button type="button" class="btn" data-action="clear-sync-config">退出同步</button>' : ''}
+          <div class="sync-panel-actions-group">
+            <button type="button" class="btn btn-sync-primary" data-action="save-sync-config">保存${configured ? '并同步' : ''}</button>
+            ${configured ? '<button type="button" class="btn btn-sync-danger" data-action="clear-sync-config">退出同步</button>' : ''}
+          </div>
+          <div class="sync-panel-actions-group">
+            <button type="button" class="btn" data-action="export-sync-config">导出配置</button>
+            <button type="button" class="btn" data-action="import-sync-config">导入配置</button>
+          </div>
         </div>
         <p class="favorites-hint">
           Token / Gist ID 只存在这台设备本地，不会出现在收藏数据里。第一台设备保存时把 Gist ID
           留空会自动创建一个，把生成的 ID 复制到其它设备粘贴进这个输入框——其它设备不要再留空创建，
           否则会各自建出不同的 Gist，互相不同步。私有 Gist 不会被搜索到，但知道链接的人仍能看到内容。
+          嫌手动复制粘贴麻烦的话，也可以"导出配置"存成文件，去别的设备/别的网址上"导入配置"
+          一步到位——但这个文件是明文 Token，导入完记得删掉，不要一直留着。
         </p>
       </div>`;
   }
@@ -2638,7 +2772,6 @@ body.single-doc .btn-quiz {
 
     if (docFavs.length === 0 && itemFavs.length === 0) {
       contentEl.innerHTML = `
-        <header class="doc-header"><h2 class="doc-title">★ 我的收藏</h2></header>
         ${renderFavoritesToolbar()}
         <p class="favorites-empty">还没有收藏。点击文档旁或词条旁的 ☆ 试试。</p>`;
 
@@ -2651,7 +2784,6 @@ body.single-doc .btn-quiz {
     const itemFavsHtml = filteredItemFavs.map(renderItemFavoriteRow).join('');
 
     contentEl.innerHTML = `
-      <header class="doc-header"><h2 class="doc-title">★ 我的收藏</h2></header>
       ${renderFavoritesToolbar()}
       ${docFavs.length ? `
         <section class="section">
@@ -3565,6 +3697,9 @@ body.single-doc .btn-quiz {
         }
         if (action === 'save-sync-config') handleSaveSyncConfig();
         if (action === 'clear-sync-config') handleClearSyncConfig();
+        if (action === 'sync-now') handleSyncNow();
+        if (action === 'export-sync-config') exportSyncConfig();
+        if (action === 'import-sync-config') document.querySelector('[data-role="sync-config-import-input"]').click();
         if (action === 'toggle-quiz-view') toggleQuizView();
         if (action === 'next-quiz-batch') nextQuizBatch();
         if (action === 'toggle-favorite-quiz-item') handleToggleFavoriteQuizItem(actionEl);
@@ -3611,6 +3746,7 @@ body.single-doc .btn-quiz {
     applyTheme(loadTheme());
     setupThemeSelect();
     setupFavoritesImport();
+    setupSyncConfigImport();
     setupFavoritesSync();
     setupSidebarResize();
     setupAutoHideTopbar();
