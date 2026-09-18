@@ -765,6 +765,50 @@ body.single-doc .btn-quiz {
 
 .favorites-empty { color: var(--color-muted); }
 
+/* 同步状态徽标：颜色跟具体状态挂钩，不跟主题色走（保证 10 个主题下都一眼能分清"正常/进行中/出错"） */
+.sync-status {
+  font-size: 0.85em;
+  color: var(--color-muted);
+}
+
+.sync-status--idle { color: #16a34a; }
+.sync-status--syncing { color: var(--color-muted); }
+.sync-status--error { color: #dc2626; }
+
+/* 同步设置面板：跟工具条其它按钮同一行下方展开，用 surface 底色+ 边框跟正文区分开 */
+.sync-panel {
+  width: 100%;
+  margin-top: 4px;
+  padding: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sync-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9em;
+}
+
+.sync-field input {
+  font: inherit;
+  padding: 6px 10px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.sync-panel-actions {
+  display: flex;
+  gap: 10px;
+}
+
 /* 收藏列表行：布局仿 .item，但不复用 .item 类名，避免被「点整行揭示」的事件委托误触发 */
 .favorite-row {
   display: grid;
@@ -968,6 +1012,14 @@ body.single-doc .btn-quiz {
   const STORAGE_FAVORITES_KEY = 'livenotes:favorites';
   const STORAGE_SIDEBAR_COLLAPSED_KEY = 'livenotes:sidebar-collapsed';
   const STORAGE_SIDEBAR_WIDTH_KEY = 'livenotes:sidebar-width';
+  const STORAGE_SYNC_TOKEN_KEY = 'livenotes:sync-token';
+  const STORAGE_SYNC_GIST_ID_KEY = 'livenotes:sync-gist-id';
+
+  // ── 收藏跨设备同步（GitHub Gist）──────────
+  const GIST_API_BASE = 'https://api.github.com/gists';
+  const GIST_FILENAME = 'livenotes-favorites.json';
+  const SYNC_PUSH_DEBOUNCE_MS = 3000; // 收藏变化后等这么久没有新改动才推送，避免连续操作时每次都发请求
+  const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 取消收藏/清空评分后的"墓碑"记录保留 30 天再物理清理
   const DEFAULT_MODE = 'en'; // 默认显示英文、隐藏中文
   const DEFAULT_THEME = 'kraft';
   const QUIZ_BATCH_SIZE = 10; // 测验模式一批显示多少条，内容多时避免一次性渲染几百条卡顿
@@ -1019,6 +1071,16 @@ body.single-doc .btn-quiz {
     // 「我的收藏」词条列表的筛选条件，只存内存不持久化，刷新页面重置；'all' 表示不筛选
     favoritesTypeFilter: 'all', // 'all' | 'vocab' | 'phrases' | 'sentences'
     favoritesMarkFilter: 'all', // 'all' | 'none' | 1 | 2 | 3
+
+    syncPanelOpen: false, // "同步设置"面板是否展开，只存内存，刷新页面重置为收起
+
+    // 收藏跨设备同步状态，只存内存不持久化
+    sync: {
+      status: 'unconfigured', // 'unconfigured' | 'idle' | 'syncing' | 'error'
+      lastError: null,
+      lastSyncedAt: null,
+      pushTimer: null, // 推送 debounce 用的 setTimeout 句柄
+    },
   };
 
 
@@ -1273,6 +1335,502 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * 读取本机保存的同步配置（Token / Gist ID），没有就返回空字符串
+   * @returns {{ token: string, gistId: string }}
+   */
+  function loadSyncConfig() {
+
+    try {
+
+      return {
+        token: localStorage.getItem(STORAGE_SYNC_TOKEN_KEY) || '',
+        gistId: localStorage.getItem(STORAGE_SYNC_GIST_ID_KEY) || '',
+      };
+    } catch (err) {
+
+      return { token: '', gistId: '' };
+    }
+  }
+
+  /**
+   * 保存同步配置到本机（每台设备各自存一份，不参与 Gist 同步内容本身）
+   * @param {{ token: string, gistId: string }} config
+   * @returns {void}
+   */
+  function saveSyncConfig(config) {
+
+    try {
+      localStorage.setItem(STORAGE_SYNC_TOKEN_KEY, config.token || '');
+      localStorage.setItem(STORAGE_SYNC_GIST_ID_KEY, config.gistId || '');
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 清空本机的同步配置（只影响这台设备，不影响 Gist 本身，也不影响其它设备）
+   * @returns {void}
+   */
+  function clearSyncConfig() {
+
+    try {
+      localStorage.removeItem(STORAGE_SYNC_TOKEN_KEY);
+      localStorage.removeItem(STORAGE_SYNC_GIST_ID_KEY);
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 判断这台设备是否已经配置好同步（Token + Gist ID 都有才算）
+   * @returns {boolean}
+   */
+  function isSyncConfigured() {
+
+    const { token, gistId } = loadSyncConfig();
+
+    return Boolean(token && gistId);
+  }
+
+  /**
+   * 判断某条收藏记录是不是"空"的（取消收藏、且 item 没有评分）——
+   * 空记录只是为了同步时能覆盖别的设备上的旧数据才保留，过一段时间可以物理清理掉
+   * @param {object} fav
+   * @returns {boolean}
+   */
+  function isFavoriteRecordEmpty(fav) {
+
+    if (fav.kind === 'doc') {
+
+      return !fav.favorited;
+    }
+
+    return !fav.favorited && !fav.mark;
+  }
+
+  /**
+   * 清理"已经空了很久"的墓碑记录，避免收藏列表随时间无限增长。保留窗口留够时间
+   * （TOMBSTONE_RETENTION_MS），确保正常同步节奏内的设备都已经拿到过这条删除
+   * @param {object[]} list
+   * @returns {object[]}
+   */
+  function gcStaleFavorites(list) {
+
+    const cutoff = Date.now() - TOMBSTONE_RETENTION_MS;
+
+    return list.filter((fav) => !isFavoriteRecordEmpty(fav) || favoriteUpdatedAtMs(fav) > cutoff);
+  }
+
+  /**
+   * 判断合并结果是否跟远端数据完全一致——一致就说明本地没有任何远端还没有的更新，
+   * 拉取之后不需要再推一次
+   * @param {object[]} merged
+   * @param {object[]} remote
+   * @returns {boolean}
+   */
+  function remoteAlreadyHasAll(merged, remote) {
+
+    if (merged.length !== remote.length) {
+
+      return false;
+    }
+
+    const remoteMap = new Map(remote.map((fav) => [`${fav.kind}:${fav.id}`, fav]));
+
+    return merged.every((fav) => {
+      const remoteFav = remoteMap.get(`${fav.kind}:${fav.id}`);
+
+      return remoteFav && favoriteUpdatedAtMs(remoteFav) === favoriteUpdatedAtMs(fav);
+    });
+  }
+
+  /**
+   * 发一次 GitHub Gist API 请求，统一处理鉴权头和错误信息
+   * @param {string} method
+   * @param {string} path - 拼在 GIST_API_BASE 后面，比如 `/<gistId>`，创建时传空串
+   * @param {string} token
+   * @param {object} [body]
+   * @returns {Promise<object|null>}
+   */
+  async function gistApiRequest(method, path, token, body) {
+
+    const headers = {
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    };
+
+    if (token) {
+      headers.Authorization = `token ${token}`;
+    }
+
+    if (body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const res = await fetch(`${GIST_API_BASE}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+
+    if (!res.ok) {
+      const message = res.status === 401 || res.status === 403
+        ? 'Token 无效或权限不足，请重新设置同步'
+        : res.status === 404
+          ? 'Gist 不存在，请检查 Gist ID'
+          : `GitHub API 请求失败（状态码 ${res.status}）`;
+      const err = new Error(message);
+
+      err.status = res.status;
+
+      throw err;
+    }
+
+    return res.status === 204 ? null : res.json();
+  }
+
+  /**
+   * 创建一个新的私有 Gist 当同步后端，返回新建的 Gist ID
+   * （只有第一台设备需要建，建完把 ID 复制到其它设备，其它设备不要再选自动创建）
+   * @param {string} token
+   * @returns {Promise<string>}
+   */
+  async function createGist(token) {
+
+    const gist = await gistApiRequest('POST', '', token, {
+      description: 'livenotes 收藏数据（跨设备自动同步用，请勿手动编辑）',
+      public: false,
+      files: {
+        [GIST_FILENAME]: {
+          content: JSON.stringify({ updatedAt: new Date().toISOString(), records: [] }, null, 2),
+        },
+      },
+    });
+
+    return gist.id;
+  }
+
+  /**
+   * 从 Gist 读取收藏记录数组
+   * @param {string} gistId
+   * @param {string} token
+   * @returns {Promise<object[]>}
+   */
+  async function fetchGistRecords(gistId, token) {
+
+    const gist = await gistApiRequest('GET', `/${gistId}`, token);
+    const file = gist.files && gist.files[GIST_FILENAME];
+
+    if (!file) {
+
+      return [];
+    }
+
+    let text = file.content || '';
+
+    // 内容超过 1MB 时 GitHub 会截断 content 字段，要另外用 raw_url 拉完整内容；
+    // 收藏数据体量很小，正常用不到，这里只是防呆
+    if (file.truncated && file.raw_url) {
+      const rawRes = await fetch(file.raw_url);
+
+      text = await rawRes.text();
+    }
+
+    try {
+      const parsed = JSON.parse(text);
+
+      return Array.isArray(parsed.records) ? parsed.records : [];
+    } catch (err) {
+
+      return [];
+    }
+  }
+
+  /**
+   * 把收藏记录数组写回 Gist
+   * @param {string} gistId
+   * @param {string} token
+   * @param {object[]} records
+   * @returns {Promise<void>}
+   */
+  async function updateGistRecords(gistId, token, records) {
+
+    await gistApiRequest('PATCH', `/${gistId}`, token, {
+      files: {
+        [GIST_FILENAME]: {
+          content: JSON.stringify({ updatedAt: new Date().toISOString(), records }, null, 2),
+        },
+      },
+    });
+  }
+
+  /**
+   * 同步状态文字 + 图标，工具条和设置面板共用
+   * @returns {string}
+   */
+  function formatSyncStatusText() {
+
+    const { status, lastError, lastSyncedAt } = state.sync;
+
+    if (status === 'syncing') {
+
+      return '⟳ 同步中…';
+    }
+
+    if (status === 'error') {
+
+      return `⚠ 同步失败：${lastError || '未知错误'}`;
+    }
+
+    if (status === 'idle') {
+      const time = lastSyncedAt
+        ? new Date(lastSyncedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        : '';
+
+      return time ? `✓ 已同步（${time}）` : '✓ 已同步';
+    }
+
+    return '未设置跨设备同步';
+  }
+
+  /**
+   * 收藏视图里如果正显示着同步状态徽标，原地刷新文字/颜色，不用整个视图重渲染
+   * （更新状态经常发生在异步请求中途，这时候不适合触发整页重渲染打断用户）
+   * @returns {void}
+   */
+  function refreshSyncStatusBadge() {
+
+    const badgeEl = document.querySelector('[data-role="sync-status"]');
+
+    if (!badgeEl) {
+
+      return;
+    }
+
+    badgeEl.textContent = formatSyncStatusText();
+    badgeEl.className = `sync-status sync-status--${state.sync.status}`;
+  }
+
+  /**
+   * 更新同步状态（写进内存 state，并顺带刷新页面上的状态徽标）
+   * @param {'unconfigured'|'idle'|'syncing'|'error'} status
+   * @param {Error} [err]
+   * @returns {void}
+   */
+  function updateSyncStatus(status, err) {
+
+    state.sync.status = status;
+    state.sync.lastError = err ? err.message : null;
+
+    if (status === 'idle') {
+      state.sync.lastSyncedAt = new Date().toISOString();
+    }
+
+    if (err) {
+      console.warn('[livenotes sync]', err);
+    }
+
+    refreshSyncStatusBadge();
+  }
+
+  /**
+   * 拉取合并后刷新当前正在看的视图（收藏 / 测验 / 正文），让星标 / 评分状态跟合并结果同步。
+   * 侧边栏的文档星标只在 init() 渲染一次，这里暂不刷新——要看到别的设备新收藏的整篇文档，
+   * 目前还需要刷新页面，先记录成已知的后续可以补的点
+   * @returns {void}
+   */
+  function refreshAfterSync() {
+
+    if (state.view === 'favorites') {
+      renderFavoritesView();
+
+      return;
+    }
+
+    if (state.view === 'quiz') {
+      renderQuizView();
+
+      return;
+    }
+
+    const slug = currentSlug();
+    const doc = findDoc(slug);
+
+    if (doc) {
+      renderContent(doc);
+    }
+  }
+
+  /**
+   * 从 Gist 拉取最新数据，跟本地合并；如果合并结果里有本地独有、远端还没有的更新，
+   * 合并后立刻推一次回去（双向同步的核心：既拉又可能补推）
+   * @returns {Promise<void>}
+   */
+  async function pullFavoritesFromGist() {
+
+    const { token, gistId } = loadSyncConfig();
+
+    if (!token || !gistId) {
+
+      return;
+    }
+
+    updateSyncStatus('syncing');
+
+    try {
+      const remote = await fetchGistRecords(gistId, token);
+      const local = loadFavorites();
+      const merged = mergeFavoriteLists(remote, local);
+
+      saveFavorites(merged);
+      refreshAfterSync();
+
+      if (!remoteAlreadyHasAll(merged, remote)) {
+        await updateGistRecords(gistId, token, gcStaleFavorites(merged));
+      }
+
+      updateSyncStatus('idle');
+    } catch (err) {
+      updateSyncStatus('error', err);
+    }
+  }
+
+  /**
+   * 把本地当前收藏数据（清理过期墓碑后）推送到 Gist
+   * @returns {Promise<void>}
+   */
+  async function pushFavoritesToGist() {
+
+    const { token, gistId } = loadSyncConfig();
+
+    if (!token || !gistId) {
+
+      return;
+    }
+
+    updateSyncStatus('syncing');
+
+    try {
+      const cleaned = gcStaleFavorites(loadFavorites());
+
+      saveFavorites(cleaned);
+      await updateGistRecords(gistId, token, cleaned);
+      updateSyncStatus('idle');
+    } catch (err) {
+      updateSyncStatus('error', err);
+    }
+  }
+
+  /**
+   * 推送 debounce：收藏变化后等 SYNC_PUSH_DEBOUNCE_MS 无新改动再真正推送，
+   * 避免连续点收藏/评分时每次操作都发一次请求
+   * @returns {void}
+   */
+  function schedulePushFavorites() {
+
+    if (!isSyncConfigured()) {
+
+      return;
+    }
+
+    if (state.sync.pushTimer) {
+      clearTimeout(state.sync.pushTimer);
+    }
+
+    state.sync.pushTimer = setTimeout(() => {
+      state.sync.pushTimer = null;
+      pushFavoritesToGist();
+    }, SYNC_PUSH_DEBOUNCE_MS);
+  }
+
+  /**
+   * 本地写入收藏 + 触发一次 debounce 推送，所有用户产生的收藏改动都要走这个函数
+   * （从 Gist 拉取合并后的写入不走这个，直接调 saveFavorites，避免拉取触发的写入又排一次推送）
+   * @param {object[]} list
+   * @returns {void}
+   */
+  function persistFavorites(list) {
+
+    saveFavorites(list);
+    schedulePushFavorites();
+  }
+
+  /**
+   * 页面加载、以及页面从后台切回前台时自动拉取一次远端数据；只有配置好同步才会真正发请求
+   * @returns {void}
+   */
+  function setupFavoritesSync() {
+
+    if (isSyncConfigured()) {
+      pullFavoritesFromGist();
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && isSyncConfigured()) {
+        pullFavoritesFromGist();
+      }
+    });
+  }
+
+  /**
+   * "保存"按钮：读设置面板里的 Token / Gist ID 输入框，Gist ID 留空则自动创建一个新 Gist，
+   * 保存配置后立刻拉取一次做首次同步
+   * @returns {Promise<void>}
+   */
+  async function handleSaveSyncConfig() {
+
+    const tokenInput = document.querySelector('[data-role="sync-token-input"]');
+    const gistIdInput = document.querySelector('[data-role="sync-gist-id-input"]');
+
+    if (!tokenInput || !gistIdInput) {
+
+      return;
+    }
+
+    const token = tokenInput.value.trim();
+    let gistId = gistIdInput.value.trim();
+
+    if (!token) {
+      window.alert('请先填写 Token');
+
+      return;
+    }
+
+    updateSyncStatus('syncing');
+
+    try {
+      if (!gistId) {
+        gistId = await createGist(token);
+        window.alert(`已创建新 Gist，ID 是：\n${gistId}\n\n请把这个 ID 复制到其它设备的同步设置里，其它设备不要再留空创建。`);
+      }
+
+      saveSyncConfig({ token, gistId });
+      await pullFavoritesFromGist();
+    } catch (err) {
+      updateSyncStatus('error', err);
+      window.alert(`同步设置失败：${err.message}`);
+    }
+
+    renderFavoritesView();
+  }
+
+  /**
+   * "退出同步"按钮：只清空这台设备保存的 Token/Gist ID，不影响 Gist 本身和其它设备
+   * @returns {void}
+   */
+  function handleClearSyncConfig() {
+
+    if (!window.confirm('确定要退出同步吗？只会清空这台设备保存的 Token/Gist ID，不会删除 Gist 或影响其它设备。')) {
+
+      return;
+    }
+
+    clearSyncConfig();
+    updateSyncStatus('unconfigured');
+    renderFavoritesView();
+  }
+
+  /**
    * 在收藏列表里查找某条记录的下标
    * @param {object[]} list
    * @param {'doc'|'item'} kind
@@ -1291,7 +1849,10 @@ body.single-doc .btn-quiz {
    */
   function isDocFavorited(docSlug) {
 
-    return favoriteIndex(loadFavorites(), 'doc', docSlug) >= 0;
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'doc', docSlug);
+
+    return index >= 0 && Boolean(list[index].favorited);
   }
 
   /**
@@ -1329,29 +1890,56 @@ body.single-doc .btn-quiz {
   }
 
   /**
-   * 切换整篇文档的收藏状态
+   * 按 slug 找到或新建一条整篇文档收藏记录，返回 { list, record }
+   * 新建时 favorited 是 false，由调用方接着填（同步用：不物理删除记录，见 toggleFavoriteDoc）
    * @param {object} doc - NoteDoc
-   * @returns {void}
+   * @returns {{ list: object[], record: object }}
    */
-  function toggleFavoriteDoc(doc) {
+  function ensureDocRecord(doc) {
 
     const list = loadFavorites();
     const index = favoriteIndex(list, 'doc', doc.slug);
 
     if (index >= 0) {
-      list.splice(index, 1);
-    } else {
-      list.push({
-        kind: 'doc',
-        id: doc.slug,
-        docSlug: doc.slug,
-        docTitle: doc.title || doc.slug,
-        chapter: doc.chapter,
-        addedAt: new Date().toISOString(),
-      });
+
+      return { list, record: list[index] };
     }
 
-    saveFavorites(list);
+    const record = {
+      kind: 'doc',
+      id: doc.slug,
+      docSlug: doc.slug,
+      docTitle: doc.title || doc.slug,
+      chapter: doc.chapter,
+      favorited: false,
+      favoritedAt: null,
+      addedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    list.push(record);
+
+    return { list, record };
+  }
+
+  /**
+   * 切换整篇文档的收藏状态。取消收藏不物理删除记录，只是把 favorited 置为 false
+   * （跨设备同步需要靠这条"取消"记录本身去覆盖别的设备上的旧数据，见 mergeFavoriteLists）
+   * @param {object} doc - NoteDoc
+   * @returns {void}
+   */
+  function toggleFavoriteDoc(doc) {
+
+    const { list, record } = ensureDocRecord(doc);
+    const now = new Date().toISOString();
+
+    record.favorited = !record.favorited;
+    record.favoritedAt = record.favorited ? now : null;
+    record.updatedAt = now;
+    record.docTitle = doc.title || doc.slug;
+    record.chapter = doc.chapter;
+
+    persistFavorites(list);
   }
 
   /**
@@ -1375,10 +1963,10 @@ body.single-doc .btn-quiz {
   }
 
   /**
-   * 按 context 找到或新建一条 item 标注记录（收藏 / 评分共用），返回 { list, record, index }
+   * 按 context 找到或新建一条 item 标注记录（收藏 / 评分共用），返回 { list, record }
    * 新建时 favorited/mark 都是空，由调用方接着填
    * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
-   * @returns {{ list: object[], record: object, index: number }}
+   * @returns {{ list: object[], record: object }}
    */
   function ensureItemRecord(context) {
 
@@ -1388,7 +1976,7 @@ body.single-doc .btn-quiz {
 
     if (index >= 0) {
 
-      return { list, record: list[index], index };
+      return { list, record: list[index] };
     }
 
     const record = {
@@ -1410,41 +1998,31 @@ body.single-doc .btn-quiz {
       favoritedAt: null,
       mark: null,
       markedAt: null,
+      updatedAt: new Date().toISOString(),
     };
 
     list.push(record);
 
-    return { list, record, index: list.length - 1 };
+    return { list, record };
   }
 
   /**
-   * 收藏了或评过分的记录才需要保留，两者都清空时从列表里删掉
-   * @param {object[]} list
-   * @param {object} record
-   * @param {number} index
-   * @returns {void}
-   */
-  function pruneItemRecordIfEmpty(list, record, index) {
-
-    if (!record.favorited && !record.mark) {
-      list.splice(index, 1);
-    }
-  }
-
-  /**
-   * 切换单条 item 的收藏状态（收藏 / 评分共用同一条记录，见 ensureItemRecord）
+   * 切换单条 item 的收藏状态（收藏 / 评分共用同一条记录，见 ensureItemRecord）。
+   * 取消收藏不物理删除记录，只是把 favorited 置为 false（跨设备同步需要靠这条"取消"
+   * 记录本身去覆盖别的设备上的旧数据，见 mergeFavoriteLists；真正的物理清理见 gcStaleFavorites）
    * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
    * @returns {void}
    */
   function toggleFavoriteItem(context) {
 
-    const { list, record, index } = ensureItemRecord(context);
+    const { list, record } = ensureItemRecord(context);
+    const now = new Date().toISOString();
 
     record.favorited = !record.favorited;
-    record.favoritedAt = record.favorited ? new Date().toISOString() : null;
+    record.favoritedAt = record.favorited ? now : null;
+    record.updatedAt = now;
 
-    pruneItemRecordIfEmpty(list, record, index);
-    saveFavorites(list);
+    persistFavorites(list);
   }
 
   /**
@@ -1455,25 +2033,28 @@ body.single-doc .btn-quiz {
    */
   function setItemMark(context, level) {
 
-    const { list, record, index } = ensureItemRecord(context);
+    const { list, record } = ensureItemRecord(context);
+    const now = new Date().toISOString();
 
     record.mark = record.mark === level ? null : level;
-    record.markedAt = record.mark ? new Date().toISOString() : null;
+    record.markedAt = record.mark ? now : null;
 
     // 设置了评分（不是取消）就顺带自动收藏，方便测验时顺手标记；取消评分不会跟着取消收藏，
     // 避免误清掉本来手动收藏的记录
     if (record.mark !== null && !record.favorited) {
       record.favorited = true;
-      record.favoritedAt = new Date().toISOString();
+      record.favoritedAt = now;
     }
 
-    pruneItemRecordIfEmpty(list, record, index);
-    saveFavorites(list);
+    record.updatedAt = now;
+
+    persistFavorites(list);
   }
 
   /**
-   * 「我的收藏」视图里取消收藏：doc 记录直接删掉；item 记录只清掉 favorited，
-   * 如果还有评分（mark）就保留这条记录（评分不会因为取消收藏被清掉）
+   * 「我的收藏」视图里取消收藏（doc / item 用同一套逻辑）：只清掉 favorited，
+   * 不物理删除记录——item 如果还有评分（mark）会继续显示评分；doc/item 的"取消"记录本身
+   * 需要保留下来才能在跨设备同步时覆盖别的设备上的旧数据（见 mergeFavoriteLists）
    * @param {'doc'|'item'} kind
    * @param {string} id
    * @returns {void}
@@ -1488,17 +2069,13 @@ body.single-doc .btn-quiz {
       return;
     }
 
-    if (kind === 'doc') {
-      list.splice(index, 1);
-    } else {
-      const record = list[index];
+    const record = list[index];
 
-      record.favorited = false;
-      record.favoritedAt = null;
-      pruneItemRecordIfEmpty(list, record, index);
-    }
+    record.favorited = false;
+    record.favoritedAt = null;
+    record.updatedAt = new Date().toISOString();
 
-    saveFavorites(list);
+    persistFavorites(list);
     renderFavoritesView();
   }
 
@@ -1540,16 +2117,33 @@ body.single-doc .btn-quiz {
   }
 
   /**
-   * 合并导入的收藏记录：按 kind + id 去重，本地已存在的跳过、不覆盖
-   * @param {object[]} incoming
-   * @returns {void}
+   * 取一条收藏记录的"最后修改时间"，没有 updatedAt 的旧数据退化用其它时间字段兜底，
+   * 都没有就当作最旧（合并时优先保留有明确时间戳的一方）
+   * @param {object} fav
+   * @returns {number} 毫秒时间戳
    */
-  function mergeFavorites(incoming) {
+  function favoriteUpdatedAtMs(fav) {
 
-    const list = loadFavorites();
-    let added = 0;
+    const raw = fav.updatedAt || fav.markedAt || fav.favoritedAt || fav.addedAt || null;
 
-    incoming.forEach((fav) => {
+    return raw ? new Date(raw).getTime() : 0;
+  }
+
+  /**
+   * 合并两份收藏列表：按 kind+id 分组，每组只保留 updatedAt 较新的一条（record 级
+   * last-write-wins）。同时用于 Gist 跨设备同步的拉取合并、和手动导入 json 的合并——
+   * 取消收藏/清空评分也是一条"更新"（favorited: false），新的一方照样会覆盖旧的一方，
+   * 不会被对面设备的旧数据复活（见 toggleFavoriteItem/toggleFavoriteDoc/removeFavorite
+   * 不物理删除记录的注释）
+   * @param {object[]} a
+   * @param {object[]} b
+   * @returns {object[]}
+   */
+  function mergeFavoriteLists(a, b) {
+
+    const merged = new Map();
+
+    [...a, ...b].forEach((fav) => {
 
       if (!fav || !fav.kind || !fav.id) {
 
@@ -1564,15 +2158,30 @@ body.single-doc .btn-quiz {
         fav.markedAt = fav.markedAt ?? null;
       }
 
-      if (favoriteIndex(list, fav.kind, fav.id) === -1) {
-        list.push(fav);
-        added += 1;
+      const key = `${fav.kind}:${fav.id}`;
+      const existing = merged.get(key);
+
+      if (!existing || favoriteUpdatedAtMs(fav) >= favoriteUpdatedAtMs(existing)) {
+        merged.set(key, fav);
       }
     });
 
-    saveFavorites(list);
+    return Array.from(merged.values());
+  }
+
+  /**
+   * 合并导入的收藏 json：跟本地数据按 mergeFavoriteLists 的规则合并（record 级
+   * last-write-wins），不是简单的"已存在就跳过"
+   * @param {object[]} incoming
+   * @returns {void}
+   */
+  function mergeFavorites(incoming) {
+
+    const merged = mergeFavoriteLists(loadFavorites(), incoming);
+
+    persistFavorites(merged);
     renderFavoritesView();
-    window.alert(`导入完成：新增 ${added} 条，跳过 ${incoming.length - added} 条已存在的`);
+    window.alert(`导入完成，当前共 ${merged.length} 条收藏记录`);
   }
 
   /**
@@ -1664,7 +2273,8 @@ body.single-doc .btn-quiz {
 
       const linksHtml = group.files.map((file) => {
 
-        const favorited = favoriteIndex(favorites, 'doc', file.slug) >= 0;
+        const docRecord = favorites.find((fav) => fav.kind === 'doc' && fav.id === file.slug);
+        const favorited = Boolean(docRecord && docRecord.favorited);
 
         return `
         <li class="doc-item">
@@ -1784,7 +2394,7 @@ body.single-doc .btn-quiz {
   }
 
   /**
-   * 渲染收藏列表视图顶部的导出/导入工具条
+   * 渲染收藏列表视图顶部的导出/导入/同步工具条 + 展开时的同步设置面板
    * @returns {string}
    */
   function renderFavoritesToolbar() {
@@ -1793,7 +2403,46 @@ body.single-doc .btn-quiz {
       <div class="favorites-toolbar">
         <button type="button" class="btn" data-action="export-favorites">导出收藏</button>
         <button type="button" class="btn" data-action="import-favorites">导入收藏</button>
-        <span class="favorites-hint">导出 / 导入用于在电脑和手机之间手动同步收藏</span>
+        <button type="button" class="btn" data-action="toggle-sync-panel">🔄 同步设置</button>
+        <span class="sync-status sync-status--${state.sync.status}" data-role="sync-status">${escapeHtml(formatSyncStatusText())}</span>
+        <span class="favorites-hint">导出 / 导入用于手动同步；"同步设置"是跨设备自动同步</span>
+      </div>
+      ${renderSyncPanel()}`;
+  }
+
+  /**
+   * 渲染"同步设置"面板（收起时返回空串）：Token/Gist ID 表单 + 退出同步
+   * @returns {string}
+   */
+  function renderSyncPanel() {
+
+    if (!state.syncPanelOpen) {
+
+      return '';
+    }
+
+    const config = loadSyncConfig();
+    const configured = isSyncConfigured();
+
+    return `
+      <div class="sync-panel">
+        <label class="sync-field">
+          <span>GitHub Token（只需要勾 gist 权限）</span>
+          <input type="password" data-role="sync-token-input" value="${escapeAttr(config.token)}" placeholder="ghp_…" autocomplete="off">
+        </label>
+        <label class="sync-field">
+          <span>共享的 Gist ID（第一台设备留空自动创建）</span>
+          <input type="text" data-role="sync-gist-id-input" value="${escapeAttr(config.gistId)}" placeholder="留空自动创建" autocomplete="off">
+        </label>
+        <div class="sync-panel-actions">
+          <button type="button" class="btn" data-action="save-sync-config">保存${configured ? '并同步' : ''}</button>
+          ${configured ? '<button type="button" class="btn" data-action="clear-sync-config">退出同步</button>' : ''}
+        </div>
+        <p class="favorites-hint">
+          Token / Gist ID 只存在这台设备本地，不会出现在收藏数据里。第一台设备保存时把 Gist ID
+          留空会自动创建一个，把生成的 ID 复制到其它设备粘贴进这个输入框——其它设备不要再留空创建，
+          否则会各自建出不同的 Gist，互相不同步。私有 Gist 不会被搜索到，但知道链接的人仍能看到内容。
+        </p>
       </div>`;
   }
 
@@ -1984,7 +2633,7 @@ body.single-doc .btn-quiz {
 
     const contentEl = document.querySelector('[data-role="content"]');
     const favorites = loadFavorites();
-    const docFavs = favorites.filter((fav) => fav.kind === 'doc');
+    const docFavs = favorites.filter((fav) => fav.kind === 'doc' && fav.favorited);
     const itemFavs = favorites.filter((fav) => fav.kind === 'item' && fav.favorited);
 
     if (docFavs.length === 0 && itemFavs.length === 0) {
@@ -2910,6 +3559,12 @@ body.single-doc .btn-quiz {
         if (action === 'jump-to-item') jumpToItem(actionEl.dataset.slug, actionEl.dataset.key);
         if (action === 'export-favorites') exportFavorites();
         if (action === 'import-favorites') document.querySelector('[data-role="favorites-import-input"]').click();
+        if (action === 'toggle-sync-panel') {
+          state.syncPanelOpen = !state.syncPanelOpen;
+          renderFavoritesView();
+        }
+        if (action === 'save-sync-config') handleSaveSyncConfig();
+        if (action === 'clear-sync-config') handleClearSyncConfig();
         if (action === 'toggle-quiz-view') toggleQuizView();
         if (action === 'next-quiz-batch') nextQuizBatch();
         if (action === 'toggle-favorite-quiz-item') handleToggleFavoriteQuizItem(actionEl);
@@ -2956,6 +3611,7 @@ body.single-doc .btn-quiz {
     applyTheme(loadTheme());
     setupThemeSelect();
     setupFavoritesImport();
+    setupFavoritesSync();
     setupSidebarResize();
     setupAutoHideTopbar();
 
