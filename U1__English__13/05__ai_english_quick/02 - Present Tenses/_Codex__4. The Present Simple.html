@@ -189,7 +189,7 @@
  * 消费掉，减少被宿主 App 误判成"点了空白页面"的概率（如果宿主用的是原生手势识别器，
  * 这个也不一定完全压得住，是尽力而为的兼容写法）。
  */
-.item, .doc-link, .btn, .reveal-btn, .fav-btn, .mark-btn, .fav-jump,
+.item, .doc-link, .btn, .fav-btn, .mark-btn, .fav-jump,
 .drawer-toggle, .theme-picker-wrap, .sidebar-resizer {
   touch-action: manipulation;
 }
@@ -586,6 +586,81 @@ body.single-doc .btn-quiz {
 /* ── 内容区 ───────────────────────────────── */
 .doc-header { margin-bottom: 16px; }
 
+/* 标题上方的章节标签（比如"01 - Overview"），小字弱化，帮助区分现在在哪一章 */
+.doc-chapter-label {
+  margin-bottom: 4px;
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+/* 标题两侧带"上一节/下一节"按钮时改成一行：按钮固定宽度不缩，标题占剩余空间、居中，
+   标题长的话自己换行，不会把按钮挤变形 */
+.doc-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-title-row .doc-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+/* 内容区底部单独一排"上一节/下一节"，两端对齐 */
+.doc-pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.doc-pager-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* 翻到列表头/尾时对应按钮禁用：置灰 + 不响应点击，但保留占位不让布局跳动 */
+.doc-pager-btn--disabled {
+  color: var(--color-muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* 悬浮"回到顶部"按钮：固定在右下角，默认淡出 + 不可点（pointer-events: none 避免
+   挡住底下的内容），滚动超过阈值时 app.js 加 .is-visible 才淡入、恢复可点 */
+.back-to-top {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hit-size);
+  height: var(--hit-size);
+  border-radius: 50%;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border: none;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.back-to-top.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.back-to-top:active { transform: translateY(1px); }
+
 /* 内容区最下面的 EN⇄CN / 全部展开收起，跟顶部一样的按钮，划到底不用翻回顶部就能切换 */
 .bottom-controls {
   display: flex;
@@ -622,11 +697,15 @@ body.single-doc .btn-quiz {
   gap: 10px;
 }
 
-/* item：显示侧在左，揭示按钮在右，隐藏侧 / 常驻信息整行排在下方 */
+/* item：内容和操作按钮同属一个可换行的行（.side-cells-row），空间够就同一行、
+   不够才换行，不再用固定两栏 grid 把按钮锁死在单独一行（历史上是两栏 grid，窄屏
+   下按钮被挤到内容下方单独一行，哪怕内容那行还有剩余空间也用不上，改成 flex 换行
+   流之后，按钮会先尝试跟内容拼在同一行，真放不下才换到下一行）；揭示侧 / 常驻
+   信息还是各自整行排在下方，块级元素天然占满宽度，不需要 grid 的 1/-1 跨列写法 */
 .item {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 12px 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -636,49 +715,38 @@ body.single-doc .btn-quiz {
 }
 
 .shown-side {
-  align-self: center;
   overflow-wrap: anywhere;
 }
 
-/* 收藏星标 + 揭示按钮的容器，占 item 网格第二列 */
+/* 内容 cell 和操作按钮同一行、可换行；.item-actions 用 margin-left: auto 顶到
+   这一行的最右边——空间够就跟内容拼在同一行右侧，空间不够整行换行时，
+   margin-left: auto 在新的一行里同样会把按钮顶到右边，效果不受换不换行影响 */
+.side-cells-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+
 .item-actions {
-  grid-column: 2;
-  align-self: center;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 6px;
+  margin-left: auto;
 }
 
-.reveal-btn {
+/* 卡片里的收藏星标单独加宽（桌面端 --hit-size 44px 的 2 倍），移动端另有更大倍数的
+   覆盖（见 @media 区块）。高度维持项目原本统一的 --hit-size，不额外加高 */
+.item-actions .fav-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: var(--hit-size);
-  min-width: var(--hit-size);
-  padding: 4px 12px;
-  font: inherit;
-  color: var(--color-accent);
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  white-space: nowrap;
-  cursor: pointer;
+  justify-content: center;
+  min-width: 88px;
 }
-
-.reveal-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-
-.reveal-arrow {
-  display: inline-block;
-  transition: transform 0.15s ease;
-}
-
-.item.is-expanded .reveal-arrow { transform: rotate(90deg); }
 
 .hidden-side {
   display: none;
-  grid-column: 1 / -1;
   padding: 10px 12px;
   background: color-mix(in srgb, var(--mask-bg) 50%, var(--color-surface));
   border-radius: 8px;
@@ -688,7 +756,6 @@ body.single-doc .btn-quiz {
 .item.is-expanded .hidden-side { display: block; }
 
 .resident {
-  grid-column: 1 / -1;
   color: var(--color-muted);
   font-size: 0.9em;
 }
@@ -760,12 +827,24 @@ body.single-doc .btn-quiz {
 }
 
 /* ── 我的收藏视图 ─────────────────────────── */
+/* "导出/导入收藏"一组、"同步设置/立即同步/状态"另一组，窄屏换行时按组一起换，
+   不会把同步设置跟立即同步拆到两行 */
 .favorites-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   margin-bottom: 20px;
+}
+
+/* 类型 / 对号档位两个筛选下拉，跟工具条分开单独一个类（之前误用 .favorites-toolbar，
+   工具条改成纵向堆叠时筛选条被一起带歪，拆开避免以后互相影响） */
+.favorites-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 /* 收藏页两个筛选下拉给统一宽度，不管并排还是窄屏换行堆叠，头（左边）尾（右边）都能对齐；
@@ -849,11 +928,12 @@ body.single-doc .btn-quiz {
   border-color: #dc2626;
 }
 
-/* 收藏列表行：布局仿 .item，但不复用 .item 类名，避免被「点整行揭示」的事件委托误触发 */
+/* 收藏列表行：布局仿 .item（同样是 flex 纵向堆叠 + .side-cells-row 换行流），
+   但不复用 .item 类名，避免被「点整行揭示」的事件委托误触发 */
 .favorite-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 12px 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -879,16 +959,35 @@ body.single-doc .btn-quiz {
 }
 
 .favorite-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   margin-bottom: 4px;
   color: var(--color-muted);
   font-size: 0.85em;
 }
 
+/* 收藏日期顶到这一行最右边，空间够就跟前面文字同一行、不够才换行（同一套 margin-left: auto 手法） */
+.favorite-time {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* en/cn 各自一行（.favorite-side），不要把两侧的 cell 混在同一个 flex 行里——
+   混在一起时短的 cell（比如释义）会跟上一行内容挤在一起换行，长的 cell（比如读法）
+   又被挤到单独一行，释义和读法这两个本该一起看的字段反而被拆散了 */
 .favorite-both-sides {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
+  flex-direction: column;
+  gap: 4px;
   overflow-wrap: anywhere;
+}
+
+.favorite-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
 }
 
 .cell--chapter {
@@ -975,20 +1074,17 @@ body.single-doc .btn-quiz {
     transform: translateY(-100%);
   }
 
-  /* 词条卡片：操作按钮挪到内容下方单独一行，不跟内容抢横向空间；按钮整体缩小一圈 */
-  .item {
-    grid-template-columns: 1fr;
-  }
-
-  .item-actions {
-    grid-column: 1;
-    justify-content: flex-start;
-  }
-
-  .item-actions .fav-btn,
-  .item-actions .mark-btn,
-  .item-actions .reveal-btn {
+  .item-actions .mark-btn {
     min-width: 36px;
+    min-height: 36px;
+    padding: 2px 8px;
+    font-size: 14px;
+  }
+
+  /* 收藏星标单独加宽（比图标按钮好点按），跟其它按钮一起靠右对齐；192px 太长
+     手感不好，减少 1/3 → 128px；高度维持跟其它移动端按钮一样的 36px，不额外加高撑高卡片 */
+  .item-actions .fav-btn {
+    min-width: 128px;
     min-height: 36px;
     padding: 2px 8px;
     font-size: 14px;
@@ -1027,8 +1123,11 @@ body.single-doc .btn-quiz {
     <main class="content" data-role="content"></main>
   </div>
 
+  <!-- 悬浮的"回到顶部"按钮：滚动超过一定距离才出现，见 app.js 的 setupBackToTop -->
+  <button type="button" class="back-to-top" data-role="back-to-top" aria-label="回到顶部">⤒</button>
+
   <!-- 构建期内嵌的数据：index 为 { docs, tree }，单篇为 { doc } -->
-  <script type="application/json" data-role="livenotes-data">{"doc":{"title":"4 · 一般现在时 — 英语速查表","slug":"_Codex__4. The Present Simple","chapter":"02 - Present Tenses","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__13__Codex_W__English Grammar - All 12 Tenses and verb structures - 1.5h\\05__ai_english_quick\\02 - Present Tenses\\_Codex__4. The Present Simple.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"habitual","pos":"adj.","ipa":"/həˈbɪtʃuəl/"},"cn":{"reading":"赫-【比】-楚-沃尔","meaning":"习惯性的"}},{"en":{"word":"vegetarian","pos":"n.","ipa":"/ˌvedʒəˈteəriən/"},"cn":{"reading":"韦-杰-【泰】-里-恩","meaning":"素食者"}},{"en":{"word":"adverbs","pos":"n.","ipa":"/ˈædvɜːbz/"},"cn":{"reading":"【艾德】-沃布兹","meaning":"副词"}},{"en":{"word":"geography","pos":"n.","ipa":"/dʒiˈɒɡrəfi/"},"cn":{"reading":"吉-【奥】-格若-菲","meaning":"地理"}},{"en":{"word":"physics","pos":"n.","ipa":"/ˈfɪzɪks/"},"cn":{"reading":"【菲】-齐克斯","meaning":"物理"}},{"en":{"word":"Celsius","pos":"adj.","ipa":"/ˈselsiəs/"},"cn":{"reading":"【塞尔】-西-厄斯","meaning":"摄氏的"}},{"en":{"word":"positive","pos":"adj.","ipa":"/ˈpɒzətɪv/"},"cn":{"reading":"【波】-泽-提夫","meaning":"肯定的"}},{"en":{"word":"negatives","pos":"n.","ipa":"/ˈneɡətɪvz/"},"cn":{"reading":"【内】-格-提夫兹","meaning":"否定句"}},{"en":{"word":"either","pos":"adv.","ipa":"/ˈaɪðə/"},"cn":{"reading":"【艾】-泽","meaning":"也不"}},{"en":{"word":"skiing","pos":"n.","ipa":"/ˈskiːɪŋ/"},"cn":{"reading":"【斯基】-英","meaning":"滑雪"}},{"en":{"word":"object","pos":"n.","ipa":"/ˈɒbdʒɪkt/"},"cn":{"reading":"【奥布】-吉克特","meaning":"物体"}},{"en":{"word":"usually","pos":"adv.","ipa":"/ˈjuːʒuəli/"},"cn":{"reading":"【尤】-惹-沃-利","meaning":"通常"}},{"en":{"word":"structure","pos":"n.","ipa":"/ˈstrʌktʃə/"},"cn":{"reading":"【斯特拉克】-彻","meaning":"结构"}},{"en":{"word":"flashcard","pos":"n.","ipa":"/ˈflæʃkɑːd/"},"cn":{"reading":"【弗拉什】-卡德","meaning":"识记卡片"}},{"en":{"word":"degrees","pos":"n.","ipa":"/dɪˈɡriːz/"},"cn":{"reading":"迪-【格里兹】","meaning":"度"}},{"en":{"word":"rises","pos":"v.","ipa":"/ˈraɪzɪz/"},"cn":{"reading":"【赖】-齐兹","meaning":"升起"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"in your free time"},"cn":{"meaning":"在你的空闲时间"},"note":""},{"en":{"phrase":"at the weekends"},"cn":{"meaning":"在周末"},"note":""},{"en":{"phrase":"twice a year"},"cn":{"meaning":"一年两次"},"note":""},{"en":{"phrase":"feel free to"},"cn":{"meaning":"尽管……"},"note":""},{"en":{"phrase":"print it out"},"cn":{"meaning":"把它打印出来"},"note":""},{"en":{"phrase":"be careful"},"cn":{"meaning":"小心；留意"},"note":""},{"en":{"phrase":"once a week"},"cn":{"meaning":"每周一次"},"note":""},{"en":{"phrase":"again and again"},"cn":{"meaning":"一次又一次"},"note":""},{"en":{"phrase":"general truth"},"cn":{"meaning":"普遍真理"},"note":""},{"en":{"phrase":"go skiing"},"cn":{"meaning":"去滑雪"},"note":""},{"en":{"phrase":"in bed"},"cn":{"meaning":"在床上"},"note":""},{"en":{"phrase":"at the end of it"},"cn":{"meaning":"在它的末尾"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"What do you do in your ___ time?"},"cn":{"text_cn":"你在……时间做什么？"},"kind":""},{"en":{"text_en":"Feel free to ___."},"cn":{"text_cn":"尽管……。"},"kind":""},{"en":{"text_en":"We also use ___ when we speak about ___."},"cn":{"text_cn":"谈到……时，我们也使用……。"},"kind":""},{"en":{"text_en":"We have to be careful when we ___."},"cn":{"text_cn":"我们……时必须留意。"},"kind":""},{"en":{"text_en":"Where do you live?"},"cn":{"text_cn":"你住在哪里？"},"kind":""},{"en":{"text_en":"I live in New York."},"cn":{"text_cn":"我住在纽约。"},"kind":""},{"en":{"text_en":"I go out at the weekends."},"cn":{"text_cn":"我周末会出门玩。"},"kind":""},{"en":{"text_en":"I'm a vegetarian, I never eat meat."},"cn":{"text_cn":"我是素食者，从不吃肉。"},"kind":""},{"en":{"text_en":"Does she live in New York?"},"cn":{"text_cn":"她住在纽约吗？"},"kind":""},{"en":{"text_en":"And Tom doesn't smoke either."},"cn":{"text_cn":"汤姆也不抽烟。"},"kind":""},{"en":{"text_en":"What do you do in your free time?"},"cn":{"text_cn":"你空闲时做些什么？"},"kind":""},{"en":{"text_en":"He reads in bed every evening."},"cn":{"text_cn":"他每天晚上都在床上看书。"},"kind":""}]}],"extra":""}}</script>
+  <script type="application/json" data-role="livenotes-data">{"doc":{"title":"4 · 一般现在时 — 英语速查表","slug":"_Codex__4. The Present Simple","chapter":"02 - Present Tenses","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Udemy__Notes\\U1__English__\\U1__English__13__Codex_W__English Grammar - All 12 Tenses and verb structures - 1.5h\\05__ai_english_quick\\02 - Present Tenses\\_Codex__4. The Present Simple.md","sections":[{"type":"vocab","heading":"一、词汇注音表","items":[{"en":{"word":"habitual","pos":"adj.","ipa":"/həˈbɪtʃuəl/"},"cn":{"reading":"赫-【比】-楚-沃尔","meaning":"习惯性的"}},{"en":{"word":"vegetarian","pos":"n.","ipa":"/ˌvedʒəˈteəriən/"},"cn":{"reading":"韦-杰-【泰】-里-恩","meaning":"素食者"}},{"en":{"word":"adverbs","pos":"n.","ipa":"/ˈædvɜːbz/"},"cn":{"reading":"【艾德】-沃布兹","meaning":"副词"}},{"en":{"word":"geography","pos":"n.","ipa":"/dʒiˈɒɡrəfi/"},"cn":{"reading":"吉-【奥】-格若-菲","meaning":"地理"}},{"en":{"word":"physics","pos":"n.","ipa":"/ˈfɪzɪks/"},"cn":{"reading":"【菲】-齐克斯","meaning":"物理"}},{"en":{"word":"Celsius","pos":"adj.","ipa":"/ˈselsiəs/"},"cn":{"reading":"【塞尔】-西-厄斯","meaning":"摄氏的"}},{"en":{"word":"positive","pos":"adj.","ipa":"/ˈpɒzətɪv/"},"cn":{"reading":"【波】-泽-提夫","meaning":"肯定的"}},{"en":{"word":"negatives","pos":"n.","ipa":"/ˈneɡətɪvz/"},"cn":{"reading":"【内】-格-提夫兹","meaning":"否定句"}},{"en":{"word":"either","pos":"adv.","ipa":"/ˈaɪðə/"},"cn":{"reading":"【艾】-泽","meaning":"也不"}},{"en":{"word":"skiing","pos":"n.","ipa":"/ˈskiːɪŋ/"},"cn":{"reading":"【斯基】-英","meaning":"滑雪"}},{"en":{"word":"object","pos":"n.","ipa":"/ˈɒbdʒɪkt/"},"cn":{"reading":"【奥布】-吉克特","meaning":"物体"}},{"en":{"word":"usually","pos":"adv.","ipa":"/ˈjuːʒuəli/"},"cn":{"reading":"【尤】-惹-沃-利","meaning":"通常"}},{"en":{"word":"structure","pos":"n.","ipa":"/ˈstrʌktʃə/"},"cn":{"reading":"【斯特拉克】-彻","meaning":"结构"}},{"en":{"word":"flashcard","pos":"n.","ipa":"/ˈflæʃkɑːd/"},"cn":{"reading":"【弗拉什】-卡德","meaning":"识记卡片"}},{"en":{"word":"degrees","pos":"n.","ipa":"/dɪˈɡriːz/"},"cn":{"reading":"迪-【格里兹】","meaning":"度"}},{"en":{"word":"rises","pos":"v.","ipa":"/ˈraɪzɪz/"},"cn":{"reading":"【赖】-齐兹","meaning":"升起"}}]},{"type":"phrases","heading":"二、短语 & 搭配速查","items":[{"en":{"phrase":"in your free time"},"cn":{"meaning":"在你的空闲时间"},"note":""},{"en":{"phrase":"at the weekends"},"cn":{"meaning":"在周末"},"note":""},{"en":{"phrase":"twice a year"},"cn":{"meaning":"一年两次"},"note":""},{"en":{"phrase":"feel free to"},"cn":{"meaning":"尽管……"},"note":""},{"en":{"phrase":"print it out"},"cn":{"meaning":"把它打印出来"},"note":""},{"en":{"phrase":"be careful"},"cn":{"meaning":"小心；留意"},"note":""},{"en":{"phrase":"once a week"},"cn":{"meaning":"每周一次"},"note":""},{"en":{"phrase":"again and again"},"cn":{"meaning":"一次又一次"},"note":""},{"en":{"phrase":"general truth"},"cn":{"meaning":"普遍真理"},"note":""},{"en":{"phrase":"go skiing"},"cn":{"meaning":"去滑雪"},"note":""},{"en":{"phrase":"in bed"},"cn":{"meaning":"在床上"},"note":""},{"en":{"phrase":"at the end of it"},"cn":{"meaning":"在它的末尾"},"note":""}]},{"type":"sentences","heading":"三、句型 & 金句速查","items":[{"en":{"text_en":"What do you do in your ___ time?"},"cn":{"text_cn":"你在……时间做什么？"},"kind":""},{"en":{"text_en":"Feel free to ___."},"cn":{"text_cn":"尽管……。"},"kind":""},{"en":{"text_en":"We also use ___ when we speak about ___."},"cn":{"text_cn":"谈到……时，我们也使用……。"},"kind":""},{"en":{"text_en":"We have to be careful when we ___."},"cn":{"text_cn":"我们……时必须留意。"},"kind":""},{"en":{"text_en":"Where do you live?"},"cn":{"text_cn":"你住在哪里？"},"kind":""},{"en":{"text_en":"I live in New York."},"cn":{"text_cn":"我住在纽约。"},"kind":""},{"en":{"text_en":"I go out at the weekends."},"cn":{"text_cn":"我周末会出门玩。"},"kind":""},{"en":{"text_en":"I'm a vegetarian, I never eat meat."},"cn":{"text_cn":"我是素食者，从不吃肉。"},"kind":""},{"en":{"text_en":"Does she live in New York?"},"cn":{"text_cn":"她住在纽约吗？"},"kind":""},{"en":{"text_en":"And Tom doesn't smoke either."},"cn":{"text_cn":"汤姆也不抽烟。"},"kind":""},{"en":{"text_en":"What do you do in your free time?"},"cn":{"text_cn":"你空闲时做些什么？"},"kind":""},{"en":{"text_en":"He reads in bed every evening."},"cn":{"text_cn":"他每天晚上都在床上看书。"},"kind":""}]}],"extra":""},"courseLabel":"U1__English__13"}</script>
   <!-- 导入收藏用的隐藏文件选择框，由「导入收藏」按钮触发点击 -->
   <input type="file" accept="application/json" data-role="favorites-import-input" hidden>
   <!-- 导入同步配置（Token/Gist ID）用的隐藏文件选择框，由「导入配置」按钮触发点击 -->
@@ -1170,6 +1269,69 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * 当前页面所属的课程短标识（构建时嵌进页面数据，单篇/index 模式都有），
+   * 没有就返回空串——用于收藏时记录"这条来自哪门课"
+   * @returns {string}
+   */
+  function currentCourseLabel() {
+
+    return state.data.courseLabel || '';
+  }
+
+  /**
+   * 更新顶部标题文字（课程标识 + 当前章节，没有章节就只显示课程标识）和浏览器标签页
+   * 标题；正文视图切换文档、进/出收藏 · 测验视图都要调用这个保持同步
+   * @param {string} [chapter] - 当前章节，不传就只显示课程标识（收藏/测验视图没有
+   *   "当前章节"这个概念）
+   * @returns {void}
+   */
+  function updateAppTitle(chapter) {
+
+    const courseLabel = currentCourseLabel();
+    const text = courseLabel
+      ? (chapter ? `${courseLabel} · ${chapter}` : courseLabel)
+      : (chapter || 'livenotes');
+
+    const titleEl = document.querySelector('.app-title');
+
+    if (titleEl) {
+      titleEl.textContent = text;
+    }
+
+    document.title = text;
+  }
+
+  /**
+   * 收藏记录展示用的"课程 · "前缀；老记录没有 courseLabel 字段，返回空串
+   * （跨课程收藏混在同一个列表里时，用来提示这条是哪门课的）
+   * @param {object} fav
+   * @returns {string}
+   */
+  function formatCoursePrefix(fav) {
+
+    return fav.courseLabel ? `${escapeHtml(fav.courseLabel)} · ` : '';
+  }
+
+  /**
+   * 收藏记录的"收藏于 xxx"展示文字，没有 favoritedAt（比如纯打了评分没收藏）就返回空串
+   * @param {object} fav
+   * @returns {string}
+   */
+  function formatFavoritedAt(fav) {
+
+    if (!fav.favoritedAt) {
+
+      return '';
+    }
+
+    const date = new Date(fav.favoritedAt);
+
+    return `收藏于 ${date.toLocaleDateString('zh-CN', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+    })}`;
+  }
+
+  /**
    * 按 slug 取当前应渲染的 NoteDoc
    * @param {string|null} slug
    * @returns {object|null}
@@ -1182,6 +1344,71 @@ body.single-doc .btn-quiz {
     }
 
     return (state.data.docs || []).find((doc) => doc.slug === slug) || null;
+  }
+
+  /**
+   * 摊平章节树成一条线性的文档顺序列表（按构建时扫描出来的章节 / 文件顺序），
+   * "上一节 / 下一节"就是这条线上的前一个 / 后一个。单篇页面没有 tree 数据，返回空数组
+   * @returns {{slug: string, title: string}[]}
+   */
+  function flattenDocOrder() {
+
+    return (state.data.tree || []).flatMap((group) => group.files);
+  }
+
+  /**
+   * 取某篇文档在摊平顺序里的前一篇 / 后一篇，取不到（在列表头尾，或单篇页面没有
+   * tree 数据）返回 null
+   * @param {string} slug
+   * @param {1|-1} direction
+   * @returns {{slug: string, title: string}|null}
+   */
+  function getAdjacentDoc(slug, direction) {
+
+    const order = flattenDocOrder();
+    const index = order.findIndex((entry) => entry.slug === slug);
+
+    if (index === -1) {
+
+      return null;
+    }
+
+    return order[index + direction] || null;
+  }
+
+  /**
+   * 渲染单个"上一节"或"下一节"按钮；没有对应邻居（在列表头尾）时渲染成禁用态的 span
+   * @param {{slug: string, title: string}|null} entry
+   * @param {-1|1} direction
+   * @returns {string}
+   */
+  function renderDocPagerButton(entry, direction) {
+
+    const label = direction === -1 ? '◀ 上一节' : '下一节 ▶';
+    const action = direction === -1 ? 'prev-doc' : 'next-doc';
+
+    if (!entry) {
+
+      return `<span class="btn doc-pager-btn doc-pager-btn--disabled" aria-disabled="true">${label}</span>`;
+    }
+
+    return `<button type="button" class="btn doc-pager-btn" data-action="${action}" data-slug="${escapeAttr(entry.slug)}" title="${escapeAttr(entry.title)}">${label}</button>`;
+  }
+
+  /**
+   * 渲染"上一节 / 下一节"翻页条（两个按钮一起，用于内容区底部）；单篇页面
+   * （没有 tree 数据）不渲染，返回空串
+   * @param {string} slug - 当前文档 slug
+   * @returns {string}
+   */
+  function renderDocPager(slug) {
+
+    if (!state.data.tree) {
+
+      return '';
+    }
+
+    return `<div class="doc-pager">${renderDocPagerButton(getAdjacentDoc(slug, -1), -1)}${renderDocPagerButton(getAdjacentDoc(slug, 1), 1)}</div>`;
   }
 
   /**
@@ -1977,6 +2204,7 @@ body.single-doc .btn-quiz {
       docSlug: doc.slug,
       docTitle: doc.title || doc.slug,
       chapter: doc.chapter,
+      courseLabel: currentCourseLabel(),
       favorited: false,
       favoritedAt: null,
       addedAt: new Date().toISOString(),
@@ -2004,6 +2232,7 @@ body.single-doc .btn-quiz {
     record.updatedAt = now;
     record.docTitle = doc.title || doc.slug;
     record.chapter = doc.chapter;
+    record.courseLabel = currentCourseLabel();
 
     persistFavorites(list);
   }
@@ -2051,6 +2280,7 @@ body.single-doc .btn-quiz {
       docSlug: context.docSlug,
       docTitle: context.docTitle,
       chapter: context.chapter,
+      courseLabel: currentCourseLabel(),
       sectionType: context.sectionType,
       sectionHeading: context.sectionHeading,
       itemIndex: context.itemIndex,
@@ -2488,7 +2718,6 @@ body.single-doc .btn-quiz {
 
     const shownSide = state.mode;
     const hiddenSide = state.mode === 'en' ? 'cn' : 'en';
-    const revealText = hiddenSide === 'cn' ? '中文' : 'EN';
 
     // 恢复该篇已展开的 item
     const expanded = loadExpanded(doc.slug);
@@ -2508,10 +2737,13 @@ body.single-doc .btn-quiz {
 
         return `
           <li class="item${expandedClass}" data-key="${key}">
-            <div class="shown-side">${formatSide(section.type, shownSide, item[shownSide])}</div>
-            <div class="item-actions">
-              <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
-              <button type="button" class="reveal-btn"><span class="reveal-arrow" aria-hidden="true">▸</span><span class="reveal-text">${revealText}</span></button>
+            <div class="shown-side">
+              <div class="side-cells-row">
+                ${formatSide(section.type, shownSide, item[shownSide])}
+                <div class="item-actions">
+                  <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
+                </div>
+              </div>
             </div>
             <div class="hidden-side">${formatSide(section.type, hiddenSide, item[hiddenSide])}</div>
             ${formatResident(section, item)}
@@ -2525,10 +2757,27 @@ body.single-doc .btn-quiz {
         </section>`;
     }).join('');
 
+    const chapterLabelHtml = doc.chapter
+      ? `<div class="doc-chapter-label">${escapeHtml(doc.chapter)}</div>`
+      : '';
+
+    const titleRowHtml = state.data.tree
+      ? `<div class="doc-title-row">
+          ${renderDocPagerButton(getAdjacentDoc(doc.slug, -1), -1)}
+          <h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2>
+          ${renderDocPagerButton(getAdjacentDoc(doc.slug, 1), 1)}
+        </div>`
+      : `<h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2>`;
+
+    const headerHtml = `<header class="doc-header">${chapterLabelHtml}${titleRowHtml}</header>`;
+
     contentEl.innerHTML = `
-      <header class="doc-header"><h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2></header>
+      ${headerHtml}
       ${sectionsHtml}
-      ${renderBottomControls()}`;
+      ${renderBottomControls()}
+      ${renderDocPager(doc.slug)}`;
+
+    updateAppTitle(doc.chapter);
 
     // 根据这篇实际的展开状态同步"全部展开/收起"切换按钮的图标（+ / −）
     const totalItems = doc.sections.reduce((sum, section) => sum + section.items.length, 0);
@@ -2614,11 +2863,13 @@ body.single-doc .btn-quiz {
     return `
       <li class="favorite-row">
         <div class="shown-side">
-          <span class="cell cell--chapter">${escapeHtml(fav.chapter || '')}</span>
-          ${titleHtml}
-        </div>
-        <div class="item-actions">
-          <button type="button" class="fav-btn is-favorited" data-action="remove-favorite" data-kind="doc" data-id="${escapeAttr(fav.id)}" aria-label="取消收藏">★</button>
+          <div class="side-cells-row">
+            <span class="cell cell--chapter">${formatCoursePrefix(fav)}${escapeHtml(fav.chapter || '')}</span>
+            ${titleHtml}
+            <div class="item-actions">
+              <button type="button" class="fav-btn is-favorited" data-action="remove-favorite" data-kind="doc" data-id="${escapeAttr(fav.id)}" aria-label="取消收藏">★</button>
+            </div>
+          </div>
         </div>
       </li>`;
   }
@@ -2643,17 +2894,22 @@ body.single-doc .btn-quiz {
     return `
       <li class="favorite-row">
         <div class="shown-side">
-          <div class="favorite-meta">${escapeHtml(fav.docTitle)} · ${escapeHtml(fav.sectionHeading || '')}</div>
+          <div class="favorite-meta">
+            <span>${formatCoursePrefix(fav)}${escapeHtml(fav.docTitle)} · ${escapeHtml(fav.sectionHeading || '')}</span>
+            ${formatFavoritedAt(fav) ? `<span class="favorite-time">( ${escapeHtml(formatFavoritedAt(fav))} )</span>` : ''}
+          </div>
           <div class="favorite-both-sides">
-            ${formatSide(fav.sectionType, 'en', snapshot.en || {})}
-            ${formatSide(fav.sectionType, 'cn', snapshot.cn || {})}
+            <div class="favorite-side">${formatSide(fav.sectionType, 'en', snapshot.en || {})}</div>
+            <div class="favorite-side">
+              ${formatSide(fav.sectionType, 'cn', snapshot.cn || {})}
+              <div class="item-actions">
+                ${jumpHtml}
+                ${renderMarkBadges(fav.mark)}
+                <button type="button" class="fav-btn is-favorited" data-action="remove-favorite" data-kind="item" data-id="${escapeAttr(fav.id)}" aria-label="取消收藏">★</button>
+              </div>
+            </div>
           </div>
           ${residentText ? `<div class="resident">${escapeHtml(residentText)}</div>` : ''}
-        </div>
-        <div class="item-actions">
-          ${jumpHtml}
-          ${renderMarkBadges(fav.mark)}
-          <button type="button" class="fav-btn is-favorited" data-action="remove-favorite" data-kind="item" data-id="${escapeAttr(fav.id)}" aria-label="取消收藏">★</button>
         </div>
       </li>`;
   }
@@ -2717,7 +2973,7 @@ body.single-doc .btn-quiz {
     })));
 
     return `
-      <div class="favorites-toolbar">
+      <div class="favorites-filter-bar">
         <select class="btn favorites-filter-select" data-role="favorites-type-filter" aria-label="按类型筛选">${typeOptions}</select>
         <select class="btn favorites-filter-select" data-role="favorites-mark-filter" aria-label="按对号档位筛选">${markOptions}</select>
       </div>`;
@@ -2852,6 +3108,7 @@ body.single-doc .btn-quiz {
 
     if (state.view === 'favorites') {
       renderFavoritesView();
+      updateAppTitle();
 
       return;
     }
@@ -3007,7 +3264,6 @@ body.single-doc .btn-quiz {
 
     const shownSide = state.mode;
     const hiddenSide = state.mode === 'en' ? 'cn' : 'en';
-    const revealText = hiddenSide === 'cn' ? '中文' : 'EN';
     const record = recordsById.get(entry.id);
     const favorited = Boolean(record && record.favorited);
     const mark = record ? record.mark : null;
@@ -3016,12 +3272,13 @@ body.single-doc .btn-quiz {
       <li class="item" data-key="${entry.id}">
         <div class="shown-side">
           <div class="favorite-meta">${escapeHtml(entry.sectionHeading)}</div>
-          ${formatSide(entry.sectionType, shownSide, entry.item[shownSide])}
-        </div>
-        <div class="item-actions">
-          <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-quiz-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
-          ${renderMarkButtons(mark)}
-          <button type="button" class="reveal-btn"><span class="reveal-arrow" aria-hidden="true">▸</span><span class="reveal-text">${revealText}</span></button>
+          <div class="side-cells-row">
+            ${formatSide(entry.sectionType, shownSide, entry.item[shownSide])}
+            <div class="item-actions">
+              <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-quiz-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
+              ${renderMarkButtons(mark)}
+            </div>
+          </div>
         </div>
         <div class="hidden-side">${formatSide(entry.sectionType, hiddenSide, entry.item[hiddenSide])}</div>
         ${formatResident({ type: entry.sectionType }, entry.item)}
@@ -3121,6 +3378,7 @@ body.single-doc .btn-quiz {
     if (state.view === 'quiz') {
       state.quizPool = null;
       renderQuizView();
+      updateAppTitle();
 
       return;
     }
@@ -3495,6 +3753,55 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * 悬浮"回到顶部"按钮：往上滑（回看内容）才出现，往下滑（正常往下看）不出现，
+   * 靠近顶部时也不出现（已经不需要）——跟顶部工具条的自动隐藏是同一套方向判断逻辑，
+   * 点击按钮平滑滚回顶部
+   * @returns {void}
+   */
+  function setupBackToTop() {
+
+    const btnEl = document.querySelector('[data-role="back-to-top"]');
+
+    if (!btnEl) {
+
+      return;
+    }
+
+    let lastScrollY = window.scrollY;
+    let isTicking = false;
+
+    window.addEventListener('scroll', () => {
+
+      if (isTicking) {
+
+        return;
+      }
+
+      isTicking = true;
+
+      requestAnimationFrame(() => {
+
+        const currentScrollY = window.scrollY;
+
+        if (currentScrollY < 8) {
+          btnEl.classList.remove('is-visible');
+        } else if (currentScrollY < lastScrollY) {
+          btnEl.classList.add('is-visible');
+        } else if (currentScrollY > lastScrollY) {
+          btnEl.classList.remove('is-visible');
+        }
+
+        lastScrollY = currentScrollY;
+        isTicking = false;
+      });
+    }, { passive: true });
+
+    btnEl.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  /**
    * 从 localStorage 恢复宽屏下侧边栏是否收起
    * @returns {boolean}
    */
@@ -3707,6 +4014,7 @@ body.single-doc .btn-quiz {
         if (action === 'remove-favorite') removeFavorite(actionEl.dataset.kind, actionEl.dataset.id);
         if (action === 'jump-to-doc') jumpToDoc(actionEl.dataset.slug);
         if (action === 'jump-to-item') jumpToItem(actionEl.dataset.slug, actionEl.dataset.key);
+        if (action === 'prev-doc' || action === 'next-doc') selectDoc(actionEl.dataset.slug);
         if (action === 'export-favorites') exportFavorites();
         if (action === 'import-favorites') document.querySelector('[data-role="favorites-import-input"]').click();
         if (action === 'toggle-sync-panel') {
@@ -3768,6 +4076,7 @@ body.single-doc .btn-quiz {
     setupFavoritesSync();
     setupSidebarResize();
     setupAutoHideTopbar();
+    setupBackToTop();
 
     // 恢复侧边栏宽度与宽屏下的收起状态
     applySidebarWidth(loadSidebarWidth());
