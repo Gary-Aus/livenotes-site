@@ -1083,10 +1083,10 @@ body.single-doc .btn-quiz {
     font-size: 14px;
   }
 
-  /* 收藏星标单独加宽（比图标按钮好点按），跟其它按钮一起靠右对齐；192px 太长
-     手感不好，减少 1/3 → 128px；高度维持跟其它移动端按钮一样的 36px，不额外加高撑高卡片 */
+  /* 收藏星标按钮：128px 太宽容易误触，减半 → 64px；高度维持跟其它移动端按钮
+     一样的 36px，不额外加高撑高卡片 */
   .item-actions .fav-btn {
-    min-width: 128px;
+    min-width: 64px;
     min-height: 36px;
     padding: 2px 8px;
     font-size: 14px;
@@ -3277,8 +3277,8 @@ body.single-doc .btn-quiz {
           <div class="side-cells-row">
             ${formatSide(entry.sectionType, shownSide, entry.item[shownSide])}
             <div class="item-actions">
-              <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-quiz-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
               ${renderMarkButtons(mark)}
+              <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-quiz-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
             </div>
           </div>
         </div>
