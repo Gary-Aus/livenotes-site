@@ -189,7 +189,7 @@
  * 消费掉，减少被宿主 App 误判成"点了空白页面"的概率（如果宿主用的是原生手势识别器，
  * 这个也不一定完全压得住，是尽力而为的兼容写法）。
  */
-.item, .doc-link, .btn, .fav-btn, .mark-btn, .fav-jump,
+.item, .doc-link, .btn, .fav-btn, .mark-btn, .fav-jump, .speak-btn,
 .drawer-toggle, .theme-picker-wrap, .sidebar-resizer {
   touch-action: manipulation;
 }
@@ -326,6 +326,27 @@ body {
   border-color: var(--color-accent);
 }
 
+/* 「🎧 听力」入口按钮：打开听力视图时高亮，跟测验按钮同一套视觉语言 */
+.btn-listening.is-active {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* 朗读语音选择：语音名字长短不一，限个最大宽度，太长的用省略号截断 */
+.voice-select {
+  max-width: 140px;
+  padding: 4px 6px;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /*
  * 测验模式评分按钮：3 个对号，点第几个就点亮到第几个（类似打分条）。
  * 用固定的灰 / 黄两色（不用主题令牌），跟收藏星标的金色区分开，避免混淆成同一种标记。
@@ -350,6 +371,92 @@ body {
   color: #78350f;
   background: #facc15;
   border-color: #facc15;
+}
+
+/*
+ * 听力测试选项：纵向堆叠的整行按钮，点了立刻判对错——答对的选项变绿，
+ * 选错时被点的那个变红、同时把真正的答案也标绿，方便看清正确答案是哪个。
+ * disabled 后不用默认的变灰半透明（会盖掉对/错颜色），保持完全不透明可读。
+ */
+.listening-question { margin-bottom: 10px; }
+
+/* "查看原文"按钮加宽：用固定 width（不是 min-width）保证一定比文字自然宽度大 */
+.listening-reveal-btn { width: 240px; }
+
+.listening-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 按钮内部纵向堆叠：上面一行是文字+图标，下面是展开后的英文解释，
+   两行共用同一个按钮背景色，看起来是一整块 */
+.listening-choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+}
+
+/* 文字靠左，答完题插入的 ✓/✗ 图标（.listening-choice-icon）靠右，
+   flex + space-between 两个都有内容时自动分居两端 */
+.listening-choice-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 对/错只改内部背景色，文字颜色、边框颜色都保持不变 */
+.listening-choice-btn.is-correct {
+  background: #c8f0d9;
+}
+
+.listening-choice-btn.is-wrong {
+  background: #fbd0d0;
+}
+
+/* 答案下面的英文解释现在是按钮的子元素（不再是兄弟节点），用后代选择器
+   让它跟着按钮的对/错背景色走，不用额外加 class */
+.listening-choice-btn.is-correct .listening-choice-en {
+  background: #c8f0d9;
+}
+
+.listening-choice-btn.is-wrong .listening-choice-en {
+  background: #fbd0d0;
+}
+
+/* 圆形描边小徽章，比单纯的文字颜色更醒目，但不像实心色块那么抢眼 */
+.listening-choice-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.listening-choice-icon--correct { color: #16a34a; }
+.listening-choice-icon--wrong { color: #dc2626; }
+
+/* 每个选项对应的英文原文：答完题才会一起露出来（见 handleListeningChoice），
+   再点任意一个选项按钮会一起收起/展开，不是每条单独控制，本身不用单独点击；
+   用原生 hidden 属性控制，不要在这里另外写 display，避免跟 [hidden] 的默认隐藏
+   样式打架（设置菜单那次就是因为这个才卡住的） */
+.listening-choice-en {
+  padding: 4px 10px;
+  color: var(--color-muted);
+  font-size: 0.85em;
+  background: var(--mask-bg);
+  border-radius: var(--radius);
 }
 
 /* 收藏星标按钮：侧边栏文档条目 / item 上通用，已收藏用金色区分（跨主题固定色，保持可辨识） */
@@ -434,6 +541,67 @@ body {
   outline-offset: 2px;
 }
 
+/* 设置菜单：⚙️ 按钮 + 弹出面板，主题/朗读语音这些不常切换的选项收在里面，
+   面板绝对定位悬浮在按钮下方，不占用顶部工具条的常驻宽度 */
+.settings-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* 设置按钮：菜单展开时换成强调色底，跟"点亮/按下"的状态呼应，展开收起一眼能看出来 */
+.settings-menu-wrap > .btn.is-active {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* 用 class 控制显示/隐藏，不用 hidden 属性——原生 [hidden] 是靠 display:none 生效的，
+   跟这里本来就要写的 display:flex 优先级会打架（同优先级时后写的规则赢，[hidden] 的效果
+   反而被盖掉），改成 .is-open 类就没有这个冲突，也是项目里侧边栏抽屉一直用的做法 */
+.settings-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 65;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 200px;
+  padding: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.settings-menu.is-open {
+  display: flex;
+}
+
+/* 文字标签和控件各占一行（而不是同一行左右分布）：面板宽度有限，语音名字这种长文本
+   跟中文标签挤在同一行，标签会因为没有空间被迫一个字一个字往下换行 */
+.settings-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 0.9em;
+}
+
+/* 主题这一项空间够（色块按钮宽度固定，不像语音名字那样长短不一），改回同一行：
+   文字靠左，色块按钮靠右对齐 */
+.settings-menu-item--row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-menu-item .voice-select {
+  width: 100%;
+  max-width: none;
+}
+
 .back-link {
   color: var(--color-accent);
   text-decoration: none;
@@ -506,12 +674,13 @@ body.is-resizing-sidebar {
 
 /*
  * 单篇页面没有章节树数据，侧边栏渲染不出导航内容，连 ☰ 按钮一起隐藏，避免空框和摆设按钮；
- * 测验模式需要全部文档数据摊平抽取，单篇页面也做不到，一并隐藏
+ * 测验 / 听力模式都需要全部文档数据摊平抽取，单篇页面也做不到，一并隐藏
  */
 body.single-doc .drawer-toggle,
 body.single-doc .sidebar,
 body.single-doc .sidebar-resizer,
-body.single-doc .btn-quiz {
+body.single-doc .btn-quiz,
+body.single-doc .btn-listening {
   display: none;
 }
 
@@ -736,9 +905,16 @@ body.single-doc .btn-quiz {
   margin-left: auto;
 }
 
+/* 朗读按钮紧挨着收藏按钮，两个都是容易被拇指扫到的位置，单独加宽间隔防止连续误触
+   （用相邻选择器只加宽这两者之间的间隔，评分对号/跳转链接之间的间隔不受影响） */
+.speak-btn + .fav-btn {
+  margin-left: 12px;
+}
+
 /* 卡片里的收藏星标单独加宽（桌面端 --hit-size 44px 的 2 倍），移动端另有更大倍数的
    覆盖（见 @media 区块）。高度维持项目原本统一的 --hit-size，不额外加高 */
-.item-actions .fav-btn {
+.item-actions .fav-btn,
+.item-actions .speak-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -762,6 +938,25 @@ body.single-doc .btn-quiz {
 
 /* 词汇表单元格排版：单词加大加粗突出主角，词性/音标进一步弱化拉开主次对比 */
 .cell { margin-right: 10px; }
+
+/* 朗读按钮：放在操作按钮区（收藏星标前面），跟收藏按钮同一套视觉语言——
+   带边框的方块按钮、按下有位移反馈，不是内联小图标 */
+.speak-btn {
+  flex: 0 0 auto;
+  min-width: var(--hit-size);
+  min-height: var(--hit-size);
+  padding: 4px 10px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--color-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.speak-btn:active { transform: translateY(1px); }
+.speak-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 .cell--word,
 .cell--phrase {
@@ -827,14 +1022,20 @@ body.single-doc .btn-quiz {
 }
 
 /* ── 我的收藏视图 ─────────────────────────── */
-/* "导出/导入收藏"一组、"同步设置/立即同步/状态"另一组，窄屏换行时按组一起换，
-   不会把同步设置跟立即同步拆到两行 */
+/* "导出/导入收藏"一组、"同步设置/立即同步/状态"另一组，固定分两排，
+   不会把同步设置跟立即同步拆到两行、也不会四个按钮挤一行 */
 .favorites-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.favorites-toolbar-group {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
 }
 
 /* 类型 / 对号档位两个筛选下拉，跟工具条分开单独一个类（之前误用 .favorites-toolbar，
@@ -1081,9 +1282,10 @@ body.single-doc .btn-quiz {
     font-size: 14px;
   }
 
-  /* 收藏星标按钮：128px 太宽容易误触，减半 → 64px；高度维持跟其它移动端按钮
-     一样的 36px，不额外加高撑高卡片 */
-  .item-actions .fav-btn {
+  /* 收藏星标按钮：128px 太宽容易误触，减半 → 64px；朗读按钮宽度跟收藏按钮保持一致；
+     高度维持跟其它移动端按钮一样的 36px，不额外加高撑高卡片 */
+  .item-actions .fav-btn,
+  .item-actions .speak-btn {
     min-width: 64px;
     min-height: 36px;
     padding: 2px 8px;
@@ -1100,14 +1302,30 @@ body.single-doc .btn-quiz {
       <h1 class="app-title" data-action="toggle-sidebar">11. Past Continuous Tense — 过去进行时英语速查表</h1>
     </div>
     <div class="controls">
-      <button data-action="toggle-mode" class="btn btn-mode">EN → CN</button>
+      <button data-action="toggle-mode" class="btn btn-mode" aria-label="切换 EN/CN 默认显示侧">⇄</button>
       <button data-action="toggle-all-expanded" class="btn btn-expand-toggle" title="全部展开" aria-label="全部展开">➕</button>
-      <span class="theme-picker-wrap">
-        <span class="theme-swatch" data-role="theme-swatch" aria-hidden="true">🎨</span>
-        <select class="theme-select" data-role="theme-select" aria-label="主题"></select>
+      <button data-action="toggle-favorites-view" class="btn btn-favorites">收藏</button>
+      <button data-action="toggle-quiz-view" class="btn btn-quiz">测验</button>
+      <button data-action="toggle-listening-view" class="btn btn-listening">听力</button>
+      <!-- 设置菜单：主题、朗读语音这些不常切换的收进弹出面板，节省顶部工具条常驻宽度 -->
+      <span class="settings-menu-wrap">
+        <button type="button" class="btn" data-action="toggle-settings-menu" aria-label="设置">⚙️</button>
+        <div class="settings-menu" data-role="settings-menu">
+          <label class="settings-menu-item settings-menu-item--row">
+            <span>主题：</span>
+            <span class="theme-picker-wrap">
+              <span class="theme-swatch" data-role="theme-swatch" aria-hidden="true">🎨</span>
+              <select class="theme-select" data-role="theme-select" aria-label="主题"></select>
+            </span>
+          </label>
+          <!-- 朗读语音选择：选项在运行时用 setupVoiceSelect 动态填充（语音列表因设备而异，
+               构建时不知道，只能在浏览器里现查） -->
+          <label class="settings-menu-item">
+            <span>朗读语音：</span>
+            <select class="voice-select" data-role="voice-select" aria-label="朗读语音" hidden></select>
+          </label>
+        </div>
       </span>
-      <button data-action="toggle-quiz-view" class="btn btn-quiz">📇 测验</button>
-      <button data-action="toggle-favorites-view" class="btn btn-favorites">★ 收藏</button>
     </div>
     <a class="back-link" href="../index.html">◀ 返回总目录</a>
   </header>
@@ -1155,6 +1373,7 @@ body.single-doc .btn-quiz {
   const STORAGE_SIDEBAR_WIDTH_KEY = 'livenotes:sidebar-width';
   const STORAGE_SYNC_TOKEN_KEY = 'livenotes:sync-token';
   const STORAGE_SYNC_GIST_ID_KEY = 'livenotes:sync-gist-id';
+  const STORAGE_VOICE_KEY = 'livenotes:voice';
 
   // ── 收藏跨设备同步（GitHub Gist）──────────
   const GIST_API_BASE = 'https://api.github.com/gists';
@@ -1192,6 +1411,9 @@ body.single-doc .btn-quiz {
   // 常驻字段（不参与遮挡）：note / kind
   const RESIDENT_FIELD = { phrases: 'note', sentences: 'kind' };
 
+  // 朗读按钮读哪个字段：词汇读单词本身，不读词性/音标；短语读整个短语；句型读整句英文
+  const SPEAK_FIELD = { vocab: 'word', phrases: 'phrase', sentences: 'text_en' };
+
   // 「我的收藏」类型筛选下拉的选项文案，跟 SIDE_FIELDS 的 key 对应
   const SECTION_TYPE_LABELS = { vocab: '词汇', phrases: '短语', sentences: '句型' };
 
@@ -1206,6 +1428,8 @@ body.single-doc .btn-quiz {
     allExpanded: false, // 当前文档是否处于"全部展开"状态，决定切换按钮图标 ➕ / ➖
     quizPool: null,    // 测验模式当前这一轮打乱后的条目池，null 表示需要重新洗牌
     quizBatchOffset: 0, // 当前显示的是池子里第几批（每批 QUIZ_BATCH_SIZE 条）
+    listeningPool: null,    // 听力模式当前这一轮的条目池，结构跟 quizPool 一样
+    listeningBatchOffset: 0, // 当前显示的是听力池子里第几批
     currentSlug: null, // index 模式下当前查看的 NoteDoc
     data: null,        // { docs, tree } 或 { doc }
 
@@ -2322,7 +2546,34 @@ body.single-doc .btn-quiz {
   }
 
   /**
-   * 设置单条 item 的测验评分：再点一次当前档位会清空评分
+   * 间隔重复：根据这次评分算出下次复习间隔（天）。1 档＝不熟悉，明天再看；
+   * 2/3 档在上一次间隔基础上乘 1.5 / 2.5 倍增长，第一次评分（没有上次间隔）给个
+   * 固定起始值。这个函数只管算天数，不碰任何存储，方便以后单独测试/调参
+   * @param {number} previousInterval - 上一次的间隔天数，从没评过是 0
+   * @param {1|2|3} rating
+   * @returns {number} 天数
+   */
+  function computeNextSrsInterval(previousInterval, rating) {
+
+    if (rating === 1) {
+
+      return 1;
+    }
+
+    if (!previousInterval) {
+
+      return rating === 2 ? 2 : 4;
+    }
+
+    const multiplier = rating === 2 ? 1.5 : 2.5;
+
+    return Math.max(1, Math.round(previousInterval * multiplier));
+  }
+
+  /**
+   * 设置单条 item 的测验评分：再点一次当前档位会清空评分。
+   * 顺带维护间隔重复的调度字段（srsInterval / srsDueAt）：评分时更新，清空评分时也
+   * 一起清空（退回"随时都该复习"的状态），供 sortPoolBySrsPriority 用
    * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
    * @param {1|2|3} level
    * @returns {void}
@@ -2334,6 +2585,14 @@ body.single-doc .btn-quiz {
 
     record.mark = record.mark === level ? null : level;
     record.markedAt = record.mark ? now : null;
+
+    if (record.mark !== null) {
+      record.srsInterval = computeNextSrsInterval(record.srsInterval || 0, record.mark);
+      record.srsDueAt = new Date(Date.now() + record.srsInterval * 24 * 60 * 60 * 1000).toISOString();
+    } else {
+      record.srsInterval = null;
+      record.srsDueAt = null;
+    }
 
     // 设置了评分（不是取消）就顺带自动收藏，方便测验时顺手标记；取消评分不会跟着取消收藏，
     // 避免误清掉本来手动收藏的记录
@@ -2616,6 +2875,188 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * 渲染朗读按钮，放在操作按钮区（收藏星标前面），不跟着 EN⇄CN 模式走——不管当前
+   * 显示的是哪一侧，点了永远读这张卡片的英文内容；取不到可读文字就不渲染
+   * @param {string} type - section 类型
+   * @param {object} enSide - item.en 对象（不是"当前显示侧"，固定就是 en）
+   * @returns {string}
+   */
+  function renderSpeakButton(type, enSide) {
+
+    const text = (enSide && enSide[SPEAK_FIELD[type]]) || '';
+
+    if (!text) {
+
+      return '';
+    }
+
+    return `<button type="button" class="speak-btn" data-action="speak" data-text="${escapeAttr(text)}" aria-label="朗读">▶</button>`;
+  }
+
+  /**
+   * 当前设备 / 浏览器可用的英文语音列表（原始对象，未排序）
+   * @returns {SpeechSynthesisVoice[]}
+   */
+  function getEnglishVoices() {
+
+    if (typeof window.speechSynthesis === 'undefined') {
+
+      return [];
+    }
+
+    return window.speechSynthesis.getVoices().filter((voice) => voice.lang.startsWith('en'));
+  }
+
+  /**
+   * 从 localStorage 读用户手动选过的语音 voiceURI，没选过就是空串
+   * @returns {string}
+   */
+  function loadVoicePreference() {
+
+    try {
+
+      return localStorage.getItem(STORAGE_VOICE_KEY) || '';
+    } catch (err) {
+
+      return '';
+    }
+  }
+
+  /**
+   * 持久化用户选的语音 voiceURI
+   * @param {string} voiceURI
+   * @returns {void}
+   */
+  function saveVoicePreference(voiceURI) {
+
+    try {
+      localStorage.setItem(STORAGE_VOICE_KEY, voiceURI || '');
+    } catch (err) {
+      // 静默降级
+    }
+  }
+
+  /**
+   * 挑一个用来朗读的英文语音：用户在下拉框里手动选过就用那个；没选过就自动挑一个
+   * "听起来更自然"的（名字里带 Natural / Neural / Enhanced / Premium 这类标注，
+   * 是现代系统内置的神经网络合成语音，比老式机械音自然很多），都没有就退回第一个
+   * 英文语音；一个英文语音都没有就返回 null（用浏览器的默认语音兜底）
+   * @returns {SpeechSynthesisVoice|null}
+   */
+  function pickBestEnglishVoice() {
+
+    const voices = getEnglishVoices();
+
+    if (voices.length === 0) {
+
+      return null;
+    }
+
+    const savedURI = loadVoicePreference();
+    const savedVoice = savedURI && voices.find((voice) => voice.voiceURI === savedURI);
+
+    if (savedVoice) {
+
+      return savedVoice;
+    }
+
+    const naturalVoice = voices.find((voice) => /natural|neural|enhanced|premium/i.test(voice.name));
+
+    return naturalVoice || voices[0];
+  }
+
+  /**
+   * 填充"朗读语音"下拉框：语音列表在部分浏览器（尤其 Chrome）里是异步加载的，
+   * 先尝试直接填一次，voiceschanged 事件触发时再补填一次；没有可用英文语音就
+   * 保持隐藏（page.html 里默认就是 hidden），不展示一个没用的空下拉框
+   * @returns {void}
+   */
+  function setupVoiceSelect() {
+
+    if (typeof window.speechSynthesis === 'undefined') {
+
+      return;
+    }
+
+    const selectEl = document.querySelector('[data-role="voice-select"]');
+
+    if (!selectEl) {
+
+      return;
+    }
+
+    function populate() {
+
+      const voices = getEnglishVoices();
+
+      if (voices.length === 0) {
+
+        return;
+      }
+
+      const currentVoice = pickBestEnglishVoice();
+
+      selectEl.innerHTML = voices
+        .map((voice) => `<option value="${escapeAttr(voice.voiceURI)}">${escapeHtml(voice.name)}（${escapeHtml(voice.lang)}）</option>`)
+        .join('');
+      selectEl.value = currentVoice ? currentVoice.voiceURI : voices[0].voiceURI;
+      selectEl.hidden = false;
+    }
+
+    populate();
+    window.speechSynthesis.addEventListener('voiceschanged', populate);
+
+    selectEl.addEventListener('change', () => {
+      saveVoicePreference(selectEl.value);
+    });
+  }
+
+  /**
+   * 朗读前清理掉不适合语音合成引擎念的符号：连续下划线（填空线，比如 "I ___ to
+   * school"）会被逐个读成"下划线"，省略号会被读成"点点点"，都会念好几遍很难听——
+   * 下划线直接去掉（留一个空格），省略号换成逗号制造停顿感。只影响朗读，页面上
+   * 显示的原文本不受影响（这个函数只在 speakText 内部用）
+   * @param {string} text
+   * @returns {string}
+   */
+  function sanitizeSpeechText(text) {
+
+    return text
+      .replace(/_{2,}/g, ' ')
+      .replace(/\.{2,}/g, ',')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * 用浏览器自带的语音合成朗读一段英文；不支持的浏览器（极少见）静默跳过
+   * @param {string} text
+   * @returns {void}
+   */
+  function speakText(text) {
+
+    if (!text || typeof window.speechSynthesis === 'undefined') {
+
+      return;
+    }
+
+    // 先打断上一次还没念完的朗读，避免连续点击时声音叠在一起
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(sanitizeSpeechText(text));
+    const voice = pickBestEnglishVoice();
+
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang;
+    } else {
+      utterance.lang = 'en-US';
+    }
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  /**
    * 渲染常驻信息（note / kind）；无内容时返回空串
    * @param {object} section
    * @param {object} item
@@ -2700,10 +3141,11 @@ body.single-doc .btn-quiz {
     return `
       <div class="bottom-controls">
         ${leadingHtml}
-        <button type="button" data-action="toggle-mode" class="btn btn-mode"></button>
+        <button type="button" data-action="toggle-mode" class="btn btn-mode" aria-label="切换 EN/CN 默认显示侧">⇄</button>
         <button type="button" data-action="toggle-all-expanded" class="btn btn-expand-toggle"></button>
-        <button type="button" data-action="toggle-quiz-view" class="btn btn-quiz">📇 测验</button>
-        <button type="button" data-action="toggle-favorites-view" class="btn btn-favorites">★ 收藏</button>
+        <button type="button" data-action="toggle-favorites-view" class="btn btn-favorites">收藏</button>
+        <button type="button" data-action="toggle-quiz-view" class="btn btn-quiz">测验</button>
+        <button type="button" data-action="toggle-listening-view" class="btn btn-listening">听力</button>
       </div>`;
   }
 
@@ -2741,6 +3183,7 @@ body.single-doc .btn-quiz {
               <div class="side-cells-row">
                 ${formatSide(section.type, shownSide, item[shownSide])}
                 <div class="item-actions">
+                  ${renderSpeakButton(section.type, item.en)}
                   <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
                 </div>
               </div>
@@ -2783,7 +3226,6 @@ body.single-doc .btn-quiz {
     const totalItems = doc.sections.reduce((sum, section) => sum + section.items.length, 0);
     state.allExpanded = totalItems > 0 && expanded.size === totalItems;
     updateExpandToggleIcon();
-    updateModeButtonAppearance();
   }
 
   /**
@@ -2794,11 +3236,15 @@ body.single-doc .btn-quiz {
 
     return `
       <div class="favorites-toolbar">
-        <button type="button" class="btn" data-action="export-favorites">导出收藏</button>
-        <button type="button" class="btn" data-action="import-favorites">导入收藏</button>
-        <button type="button" class="btn" data-action="toggle-sync-panel">同步设置 <span aria-hidden="true">${state.syncPanelOpen ? '▾' : '▸'}</span></button>
-        <button type="button" class="btn" data-action="sync-now">🔄 立即同步</button>
-        <span class="sync-status sync-status--${state.sync.status}" data-role="sync-status">${escapeHtml(formatSyncStatusText())}</span>
+        <div class="favorites-toolbar-group">
+          <button type="button" class="btn" data-action="export-favorites">导出收藏</button>
+          <button type="button" class="btn" data-action="import-favorites">导入收藏</button>
+        </div>
+        <div class="favorites-toolbar-group">
+          <button type="button" class="btn" data-action="toggle-sync-panel">同步设置 <span aria-hidden="true">${state.syncPanelOpen ? '▾' : '▸'}</span></button>
+          <button type="button" class="btn" data-action="sync-now">🔄 立即同步</button>
+          <span class="sync-status sync-status--${state.sync.status}" data-role="sync-status">${escapeHtml(formatSyncStatusText())}</span>
+        </div>
       </div>
       ${renderSyncPanel()}`;
   }
@@ -2905,6 +3351,7 @@ body.single-doc .btn-quiz {
               <div class="item-actions">
                 ${jumpHtml}
                 ${renderMarkBadges(fav.mark)}
+                ${renderSpeakButton(fav.sectionType, snapshot.en)}
                 <button type="button" class="fav-btn is-favorited" data-action="remove-favorite" data-kind="item" data-id="${escapeAttr(fav.id)}" aria-label="取消收藏">★</button>
               </div>
             </div>
@@ -3082,12 +3529,16 @@ body.single-doc .btn-quiz {
    */
   function clearViewToggleButtons() {
 
-    // 顶部和内容区底部都有这两个按钮（同一个 data-action），两边都要清
+    // 顶部和内容区底部都有这几个按钮（同一个 data-action），两边都要清
     document.querySelectorAll('[data-action="toggle-favorites-view"]').forEach((btn) => {
       btn.classList.remove('is-active');
     });
 
     document.querySelectorAll('[data-action="toggle-quiz-view"]').forEach((btn) => {
+      btn.classList.remove('is-active');
+    });
+
+    document.querySelectorAll('[data-action="toggle-listening-view"]').forEach((btn) => {
       btn.classList.remove('is-active');
     });
   }
@@ -3219,6 +3670,37 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * 某条评分记录的间隔重复到期时间（毫秒）；没评过分 / 评分已清空的记录返回 0，
+   * 排序时天然排到最前面（当成"现在就该复习"）
+   * @param {object|undefined} record
+   * @returns {number}
+   */
+  function getSrsDueAtMs(record) {
+
+    return record && record.srsDueAt ? new Date(record.srsDueAt).getTime() : 0;
+  }
+
+  /**
+   * 间隔重复排序：先洗牌保证同一优先级内部顺序不固定，再按到期时间从早到晚稳定排序——
+   * 到期的 / 从没复习过的排前面，还没到期的排后面，但因为是稳定排序，不会完全消失，
+   * 池子抽完一轮重新排序时还是能抽到。测验模式和以后的听力模式共用这一个函数，
+   * 保证两边排的是同一套复习计划，不是各算各的
+   * @param {object[]} pool - buildQuizPool() 的结果
+   * @returns {object[]}
+   */
+  function sortPoolBySrsPriority(pool) {
+
+    const recordsById = new Map(
+      loadFavorites().filter((fav) => fav.kind === 'item').map((fav) => [fav.id, fav])
+    );
+
+    return shuffleArray(pool)
+      .map((entry) => ({ entry, dueAtMs: getSrsDueAtMs(recordsById.get(entry.id)) }))
+      .sort((a, b) => a.dueAtMs - b.dueAtMs)
+      .map((scored) => scored.entry);
+  }
+
+  /**
    * 渲染评分用的 3 个对号按钮，点亮到当前评分档位（再点一次已点亮的档位会清空，见 setItemMark）
    * @param {number|null} mark
    * @returns {string}
@@ -3276,6 +3758,7 @@ body.single-doc .btn-quiz {
             ${formatSide(entry.sectionType, shownSide, entry.item[shownSide])}
             <div class="item-actions">
               ${renderMarkButtons(mark)}
+              ${renderSpeakButton(entry.sectionType, entry.item.en)}
               <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-quiz-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
             </div>
           </div>
@@ -3286,12 +3769,12 @@ body.single-doc .btn-quiz {
   }
 
   /**
-   * 开始新一轮测验：重新摊平打乱全部文档的 item，批次从头开始
+   * 开始新一轮测验：重新摊平全部文档的 item，按间隔重复优先级排序，批次从头开始
    * @returns {void}
    */
   function startNewQuizPool() {
 
-    state.quizPool = shuffleArray(buildQuizPool());
+    state.quizPool = sortPoolBySrsPriority(buildQuizPool());
     state.quizBatchOffset = 0;
   }
 
@@ -3315,7 +3798,6 @@ body.single-doc .btn-quiz {
         <header class="doc-header"><h2 class="doc-title">📇 测验模式</h2></header>
         <p class="favorites-empty">没有可供测验的内容。</p>`;
       updateExpandToggleIcon();
-      updateModeButtonAppearance();
 
       return;
     }
@@ -3343,7 +3825,6 @@ body.single-doc .btn-quiz {
       ${renderBottomControls('<button type="button" class="btn bottom-controls-leading" data-action="next-quiz-batch">换一批</button>')}`;
 
     updateExpandToggleIcon();
-    updateModeButtonAppearance();
   }
 
   /**
@@ -3391,6 +3872,263 @@ body.single-doc .btn-quiz {
   }
 
   /**
+   * 切换到「听力测试」视图，或从听力视图切回当前文档
+   * 占位实现：具体的选择题交互（播放音频、干扰选项、判分）还没做，先接通视图切换和
+   * 按钮高亮，跟收藏/测验用同一套模式，方便以后直接在这个函数里补渲染逻辑
+   * @returns {void}
+   */
+  function toggleListeningView() {
+
+    state.view = state.view === 'listening' ? 'doc' : 'listening';
+
+    clearViewToggleButtons();
+
+    document.querySelectorAll('[data-action="toggle-listening-view"]').forEach((btn) => {
+      btn.classList.toggle('is-active', state.view === 'listening');
+    });
+
+    if (state.view === 'listening') {
+      renderListeningView();
+      updateAppTitle();
+
+      return;
+    }
+
+    const doc = findDoc(currentSlug());
+
+    if (doc) {
+      renderContent(doc);
+    }
+  }
+
+  /**
+   * 取一条池子条目的"中文答案文字"（vocab 是释义，phrases 是释义，sentences 是中文译句）——
+   * 都是 SIDE_FIELDS[type].cn 的第一个字段，三种类型的字段名不同但位置规律一致
+   * @param {object} entry - buildQuizPool 里的一条
+   * @returns {string}
+   */
+  function getListeningAnswerText(entry) {
+
+    const field = SIDE_FIELDS[entry.sectionType].cn[0];
+
+    return (entry.item.cn && entry.item.cn[field]) || '';
+  }
+
+  /**
+   * 取一条池子条目完整的"英文说明"文字，答完题后每个选项底下显示用——不止朗读的
+   * 那一个字段，把 en 侧的全部字段都带上（词汇是单词+词性+音标，短语是短语本身，
+   * 句型是整句英文），词汇还额外带上中文读法（reading，虽然存在 cn 侧，但本质是
+   * 给这个单词注音的，放在这里一起显示更完整）
+   * @param {object} entry
+   * @returns {string}
+   */
+  function getListeningEnText(entry) {
+
+    const enFields = SIDE_FIELDS[entry.sectionType].en;
+    const enText = enFields.map((field) => entry.item.en && entry.item.en[field]).filter(Boolean).join('  ');
+    const reading = entry.sectionType === 'vocab' && entry.item.cn ? entry.item.cn.reading : '';
+
+    return reading ? `${enText}  ${reading}` : enText;
+  }
+
+  /**
+   * 给一条听力题生成选项：正确答案 + 3 个同类型的干扰项（干扰项从整个池子里随机抽，
+   * 不跨类型混——词汇的释义不会跟句型的整句翻译放一起选，那样一眼就能排除），
+   * 去重后打乱顺序。每个选项带上对应的英文原文，供答完题后逐个查看。
+   * 池子条目不够 4 个不同答案时，选项数量会少于 4 个
+   * @param {object} entry
+   * @param {object[]} fullPool
+   * @returns {{ text: string, enText: string, isCorrect: boolean }[]}
+   */
+  function buildListeningChoices(entry, fullPool) {
+
+    const correctText = getListeningAnswerText(entry);
+    const seenTexts = new Set([correctText]);
+
+    const distractors = shuffleArray(
+      fullPool.filter((other) => other.sectionType === entry.sectionType && other.id !== entry.id)
+    ).reduce((acc, other) => {
+
+      const text = getListeningAnswerText(other);
+
+      if (acc.length < 3 && text && !seenTexts.has(text)) {
+        seenTexts.add(text);
+        acc.push({ text, enText: getListeningEnText(other), isCorrect: false });
+      }
+
+      return acc;
+    }, []);
+
+    const options = correctText
+      ? [{ text: correctText, enText: getListeningEnText(entry), isCorrect: true }, ...distractors]
+      : distractors;
+
+    return shuffleArray(options);
+  }
+
+  /**
+   * 渲染一条听力题：只有播放按钮 + 选项按钮，不显示任何文字线索
+   * @param {object} entry
+   * @param {object[]} fullPool - 用来生成干扰项
+   * @returns {string}
+   */
+  function renderListeningItemRow(entry, fullPool, recordsById) {
+
+    const choices = buildListeningChoices(entry, fullPool);
+    const record = recordsById.get(entry.id);
+    const favorited = Boolean(record && record.favorited);
+
+    const choicesHtml = choices.map((choice) => `
+      <button type="button" class="btn listening-choice-btn" data-action="listening-choice"
+        data-key="${escapeAttr(entry.id)}" data-correct="${choice.isCorrect ? 'true' : 'false'}">
+        <span class="listening-choice-top">
+          <span class="listening-choice-text">${escapeHtml(choice.text)}</span>
+        </span>
+        <div class="listening-choice-en" hidden>${escapeHtml(choice.enText)}</div>
+      </button>`).join('');
+
+    return `
+      <li class="item listening-item" data-key="${entry.id}">
+        <div class="favorite-meta">${escapeHtml(entry.sectionHeading)}</div>
+        <div class="listening-question side-cells-row">
+          <button type="button" class="btn listening-reveal-btn" data-action="toggle-listening-reveal">查看原文</button>
+          <div class="item-actions">
+            ${renderSpeakButton(entry.sectionType, entry.item.en)}
+            <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-listening-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
+          </div>
+        </div>
+        <div class="hidden-side">${formatSide(entry.sectionType, 'en', entry.item.en)}</div>
+        <div class="listening-choices">${choicesHtml}</div>
+      </li>`;
+  }
+
+  /**
+   * 听力题选了一个选项之后的判分反馈：只改这一条题目的 DOM（禁用全部选项、
+   * 标出对/错），不重渲染整个视图——不然已经答过的其它题目的反馈状态会被冲掉
+   * @param {HTMLElement} actionEl - 被点击的选项按钮
+   * @returns {void}
+   */
+  function handleListeningChoice(actionEl) {
+
+    const itemEl = actionEl.closest('.listening-item');
+
+    if (!itemEl) {
+
+      return;
+    }
+
+    // 这道题已经答过了：再点任意一个选项按钮，不重新判分，只是把 4 个选项的英文
+    // 原文一起切换显示/隐藏（一次性全部展开或全部收起，不是每条单独控制）
+    if (itemEl.classList.contains('is-answered')) {
+      itemEl.querySelectorAll('.listening-choice-en').forEach((enEl) => {
+        enEl.hidden = !enEl.hidden;
+      });
+
+      return;
+    }
+
+    const entry = findListeningEntry(itemEl.dataset.key);
+
+    if (!entry) {
+
+      return;
+    }
+
+    const isCorrect = actionEl.dataset.correct === 'true';
+
+    itemEl.classList.add('is-answered');
+    itemEl.querySelectorAll('.listening-choice-btn').forEach((btnEl) => {
+
+      const topEl = btnEl.querySelector('.listening-choice-top');
+
+      if (btnEl.dataset.correct === 'true') {
+        btnEl.classList.add('is-correct');
+        topEl.insertAdjacentHTML('beforeend', '<span class="listening-choice-icon listening-choice-icon--correct" aria-hidden="true">✓</span>');
+      } else if (btnEl === actionEl) {
+        btnEl.classList.add('is-wrong');
+        topEl.insertAdjacentHTML('beforeend', '<span class="listening-choice-icon listening-choice-icon--wrong" aria-hidden="true">✗</span>');
+      }
+    });
+
+    // 答完之后把 4 个选项对应的英文原文都露出来，方便顺便学一下干扰项的词；
+    // 按钮本身不禁用，再点一下（不管点哪个选项）就是上面那个分支，一起收起
+    itemEl.querySelectorAll('.listening-choice-en').forEach((enEl) => {
+      enEl.hidden = false;
+    });
+
+    // 答对给 3 档、答错给 1 档，接入现有的评分 + 间隔重复调度，测验模式也会看到这次结果
+    setItemMark(entry, isCorrect ? 3 : 1);
+  }
+
+  /**
+   * 开始新一轮听力测试：重新摊平全部文档的 item，按间隔重复优先级排序，批次从头开始
+   * @returns {void}
+   */
+  function startNewListeningPool() {
+
+    state.listeningPool = sortPoolBySrsPriority(buildQuizPool());
+    state.listeningBatchOffset = 0;
+  }
+
+  /**
+   * 「换一批」按钮：按批次顺序往后翻，一轮抽完自动重新排序开始下一轮
+   * @returns {void}
+   */
+  function nextListeningBatch() {
+
+    state.listeningBatchOffset += QUIZ_BATCH_SIZE;
+
+    if (state.listeningBatchOffset >= state.listeningPool.length) {
+      startNewListeningPool();
+    }
+
+    renderListeningView();
+  }
+
+  /**
+   * 渲染「听力测试」视图：播放英文音频，从选项里选中文意思，选完立刻判对错
+   * @returns {void}
+   */
+  function renderListeningView() {
+
+    const contentEl = document.querySelector('[data-role="content"]');
+
+    if (!state.listeningPool) {
+      startNewListeningPool();
+    }
+
+    if (state.listeningPool.length === 0) {
+      contentEl.innerHTML = `
+        <header class="doc-header"><h2 class="doc-title">🎧 听力测试</h2></header>
+        <p class="favorites-empty">没有可供听力测试的内容。</p>`;
+
+      return;
+    }
+
+    const batch = state.listeningPool.slice(state.listeningBatchOffset, state.listeningBatchOffset + QUIZ_BATCH_SIZE);
+
+    // 只读一次 localStorage 建查找表，避免每条 item 都单独读一次
+    const recordsById = new Map(
+      loadFavorites().filter((fav) => fav.kind === 'item').map((fav) => [fav.id, fav])
+    );
+    const itemsHtml = batch.map((entry) => renderListeningItemRow(entry, state.listeningPool, recordsById)).join('');
+
+    const totalBatches = Math.ceil(state.listeningPool.length / QUIZ_BATCH_SIZE);
+    const currentBatch = Math.floor(state.listeningBatchOffset / QUIZ_BATCH_SIZE) + 1;
+
+    contentEl.innerHTML = `
+      <header class="doc-header"><h2 class="doc-title">🎧 听力测试</h2></header>
+      <div class="favorites-toolbar">
+        <button type="button" class="btn" data-action="next-listening-batch">换一批</button>
+        <span class="favorites-hint">
+          第 ${currentBatch}/${totalBatches} 批，共 ${state.listeningPool.length} 条；点🔊听音频，选中文意思
+        </span>
+      </div>
+      <ul class="item-list">${itemsHtml}</ul>
+      ${renderBottomControls('<button type="button" class="btn bottom-controls-leading" data-action="next-listening-batch">换一批</button>')}`;
+  }
+
+  /**
    * 按测验 item 的全局 id 在当前池子里找到对应条目
    * @param {string} id
    * @returns {object|null}
@@ -3409,6 +4147,38 @@ body.single-doc .btn-quiz {
 
     const itemEl = buttonEl.closest('.item');
     const entry = itemEl && findQuizEntry(itemEl.dataset.key);
+
+    if (!entry) {
+
+      return;
+    }
+
+    toggleFavoriteItem(entry);
+
+    const favorited = isItemFavorited(entry.id);
+    buttonEl.classList.toggle('is-favorited', favorited);
+    buttonEl.textContent = favorited ? '★' : '☆';
+  }
+
+  /**
+   * 按听力 item 的全局 id 在当前听力池子里找到对应条目
+   * @param {string} id
+   * @returns {object|null}
+   */
+  function findListeningEntry(id) {
+
+    return (state.listeningPool || []).find((entry) => entry.id === id) || null;
+  }
+
+  /**
+   * 听力视图里 item 上「收藏」按钮点击处理
+   * @param {HTMLElement} buttonEl
+   * @returns {void}
+   */
+  function handleToggleFavoriteListeningItem(buttonEl) {
+
+    const itemEl = buttonEl.closest('.item');
+    const entry = itemEl && findListeningEntry(itemEl.dataset.key);
 
     if (!entry) {
 
@@ -3521,34 +4291,19 @@ body.single-doc .btn-quiz {
   }
 
   /**
-   * 同步 EN⇄CN 按钮的文字：显示"当前显示侧 → 隐藏侧"，点一下文字方向跟着反过来
-   * @returns {void}
-   */
-  function updateModeButtonAppearance() {
-
-    const label = state.mode === 'en' ? 'EN → CN' : 'CN → EN';
-
-    // 顶部和内容区底部都有这个按钮（同一个 data-action），两个都要同步
-    document.querySelectorAll('[data-action="toggle-mode"]').forEach((buttonEl) => {
-      buttonEl.textContent = label;
-    });
-  }
-
-  /**
    * 切换 EN ⇄ CN 模式：交换默认显示/隐藏侧，清空展开态并重渲染
    * @returns {void}
    */
   function toggleMode() {
 
-    // 收藏视图下不响应模式切换
-    if (state.view === 'favorites') {
+    // 收藏 / 听力视图下不响应模式切换（听力模式没有 EN/CN 显示侧的概念）
+    if (state.view === 'favorites' || state.view === 'listening') {
 
       return;
     }
 
     state.mode = state.mode === 'en' ? 'cn' : 'en';
     saveMode(state.mode);
-    updateModeButtonAppearance();
 
     // 测验模式没有单一的"当前文档"，直接用当前池子重渲染，不走 doc 分支
     if (state.view === 'quiz') {
@@ -3579,8 +4334,9 @@ body.single-doc .btn-quiz {
 
     itemEl.classList.toggle('is-expanded');
 
-    // 测验模式的展开状态不持久化：池子每次进入都会重新打乱，记住单条状态没有意义
-    if (state.view === 'quiz') {
+    // 测验 / 听力模式的展开状态不持久化：池子每次进入都会重新排序，记住单条状态没有
+    // 意义；听力模式的 item 也没有可展开的隐藏侧
+    if (state.view === 'quiz' || state.view === 'listening') {
 
       return;
     }
@@ -3623,8 +4379,8 @@ body.single-doc .btn-quiz {
       itemEl.classList.toggle('is-expanded', shouldExpand);
     });
 
-    // 测验模式的展开状态不持久化
-    if (state.view === 'quiz') {
+    // 测验 / 听力模式的展开状态不持久化（听力模式的 item 也没有可展开的隐藏侧）
+    if (state.view === 'quiz' || state.view === 'listening') {
 
       return;
     }
@@ -4000,6 +4756,25 @@ body.single-doc .btn-quiz {
         return;
       }
 
+      const settingsMenuEl = document.querySelector('[data-role="settings-menu"]');
+
+      // 设置菜单展开时，点击菜单之外的地方就收起，这次点击不再触发别的交互
+      if (
+        settingsMenuEl
+        && settingsMenuEl.classList.contains('is-open')
+        && !event.target.closest('.settings-menu-wrap')
+      ) {
+        settingsMenuEl.classList.remove('is-open');
+
+        const settingsBtnEl = document.querySelector('[data-action="toggle-settings-menu"]');
+
+        if (settingsBtnEl) {
+          settingsBtnEl.classList.remove('is-active');
+        }
+
+        return;
+      }
+
       const actionEl = event.target.closest('[data-action]');
 
       if (actionEl) {
@@ -4007,6 +4782,15 @@ body.single-doc .btn-quiz {
 
         if (action === 'toggle-mode') toggleMode();
         if (action === 'toggle-all-expanded') toggleAllExpanded();
+        if (action === 'toggle-settings-menu') {
+          const menuEl = document.querySelector('[data-role="settings-menu"]');
+
+          if (menuEl) {
+            const isOpen = menuEl.classList.toggle('is-open');
+
+            actionEl.classList.toggle('is-active', isOpen);
+          }
+        }
         if (action === 'toggle-sidebar') toggleSidebar();
         if (action === 'toggle-favorites-view') toggleFavoritesView();
         if (action === 'toggle-favorite-doc') handleToggleFavoriteDoc(actionEl);
@@ -4014,6 +4798,7 @@ body.single-doc .btn-quiz {
         if (action === 'remove-favorite') removeFavorite(actionEl.dataset.kind, actionEl.dataset.id);
         if (action === 'jump-to-doc') jumpToDoc(actionEl.dataset.slug);
         if (action === 'jump-to-item') jumpToItem(actionEl.dataset.slug, actionEl.dataset.key);
+        if (action === 'speak') speakText(actionEl.dataset.text);
         if (action === 'prev-doc' || action === 'next-doc') selectDoc(actionEl.dataset.slug);
         if (action === 'export-favorites') exportFavorites();
         if (action === 'import-favorites') document.querySelector('[data-role="favorites-import-input"]').click();
@@ -4027,7 +4812,18 @@ body.single-doc .btn-quiz {
         if (action === 'export-sync-config') exportSyncConfig();
         if (action === 'import-sync-config') document.querySelector('[data-role="sync-config-import-input"]').click();
         if (action === 'toggle-quiz-view') toggleQuizView();
+        if (action === 'toggle-listening-view') toggleListeningView();
         if (action === 'next-quiz-batch') nextQuizBatch();
+        if (action === 'next-listening-batch') nextListeningBatch();
+        if (action === 'listening-choice') handleListeningChoice(actionEl);
+        if (action === 'toggle-favorite-listening-item') handleToggleFavoriteListeningItem(actionEl);
+        if (action === 'toggle-listening-reveal') {
+          const listeningItemEl = actionEl.closest('.listening-item');
+
+          if (listeningItemEl) {
+            toggleItem(listeningItemEl);
+          }
+        }
         if (action === 'toggle-favorite-quiz-item') handleToggleFavoriteQuizItem(actionEl);
         if (action === 'set-quiz-mark') handleSetQuizMark(actionEl);
 
@@ -4043,10 +4839,12 @@ body.single-doc .btn-quiz {
         return;
       }
 
-      // 点击 item 的揭示按钮或整行
+      // 点击 item 的揭示按钮或整行；听力卡片排除在外——里面选项之间空隙多，
+      // 容易点到空白处误触发展开，听力卡片只认"查看原文"这一个专门的按钮
+      // （见上面的 toggle-listening-reveal）
       const itemEl = event.target.closest('.item');
 
-      if (itemEl) {
+      if (itemEl && !itemEl.classList.contains('listening-item')) {
         toggleItem(itemEl);
       }
     });
@@ -4062,8 +4860,6 @@ body.single-doc .btn-quiz {
     state.mode = loadMode();
     state.view = 'doc';
 
-    updateModeButtonAppearance();
-
     // 单篇页面没有章节树数据，侧边栏渲染不出导航内容，直接连 ☰ 按钮一起隐藏
     if (state.data.doc) {
       document.body.classList.add('single-doc');
@@ -4077,6 +4873,7 @@ body.single-doc .btn-quiz {
     setupSidebarResize();
     setupAutoHideTopbar();
     setupBackToTop();
+    setupVoiceSelect();
 
     // 恢复侧边栏宽度与宽屏下的收起状态
     applySidebarWidth(loadSidebarWidth());
