@@ -766,24 +766,17 @@ body.single-doc .btn-listening {
 
 /* 标题两侧带"上一节/下一节"按钮时改成一行：按钮固定宽度不缩，标题占剩余空间、居中，
    标题长的话自己换行，不会把按钮挤变形 */
-.doc-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.doc-title-row .doc-title {
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-}
-
-/* 内容区底部单独一排"上一节/下一节"，两端对齐 */
+/* "上一节/下一节"单独一排，两端对齐——顶部（标题下方）和底部（内容区末尾）共用
+   这一套样式，`--top` 变体只是把间距从"内容之后留白"换成"紧跟标题下方" */
 .doc-pager {
   display: flex;
   justify-content: space-between;
   gap: 8px;
   margin-top: 20px;
+}
+
+.doc-pager--top {
+  margin-top: 10px;
 }
 
 .doc-pager-btn {
@@ -3520,10 +3513,12 @@ body.single-doc .btn-listening {
       ? `<div class="doc-chapter-label">${escapeHtml(doc.chapter)}</div>`
       : '';
 
+    // 标题单独一行、上一节/下一节按钮另起一行——标题长的时候（比如带来源标注）挤在
+    // 同一行里，按钮会把标题挤得很窄，手机上尤其明显，分开两行各自占满宽度更稳
     const titleRowHtml = state.data.tree
-      ? `<div class="doc-title-row">
+      ? `<h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2>
+        <div class="doc-pager doc-pager--top">
           ${renderDocPagerButton(getAdjacentDoc(doc.slug, -1), -1)}
-          <h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2>
           ${renderDocPagerButton(getAdjacentDoc(doc.slug, 1), 1)}
         </div>`
       : `<h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2>`;

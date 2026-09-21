@@ -766,24 +766,17 @@ body.single-doc .btn-listening {
 
 /* 标题两侧带"上一节/下一节"按钮时改成一行：按钮固定宽度不缩，标题占剩余空间、居中，
    标题长的话自己换行，不会把按钮挤变形 */
-.doc-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.doc-title-row .doc-title {
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-}
-
-/* 内容区底部单独一排"上一节/下一节"，两端对齐 */
+/* "上一节/下一节"单独一排，两端对齐——顶部（标题下方）和底部（内容区末尾）共用
+   这一套样式，`--top` 变体只是把间距从"内容之后留白"换成"紧跟标题下方" */
 .doc-pager {
   display: flex;
   justify-content: space-between;
   gap: 8px;
   margin-top: 20px;
+}
+
+.doc-pager--top {
+  margin-top: 10px;
 }
 
 .doc-pager-btn {
@@ -909,7 +902,8 @@ body.single-doc .btn-listening {
 
 /* 朗读按钮紧挨着收藏按钮，两个都是容易被拇指扫到的位置，单独加宽间隔防止连续误触
    （用相邻选择器只加宽这两者之间的间隔，评分对号/跳转链接之间的间隔不受影响） */
-.speak-btn + .fav-btn {
+.speak-btn + .fav-btn,
+.fav-btn + .speak-btn {
   margin-left: 12px;
 }
 
@@ -978,6 +972,60 @@ body.single-doc .btn-listening {
   color: var(--color-muted);
   font-size: 0.85em;
   font-family: ui-monospace, "SF Mono", "Consolas", monospace;
+}
+
+/* 泛读卡片：播放 + 三级顺序揭示（原文→讲解）+ 精选词点击，跟其它类型「EN⇄CN 翻面」
+   是独立的一套显隐规则，不复用 .hidden-side/.is-expanded；卡片本身不整行可点
+   （见 app.js 点击分发里对 .reading-item 的排除），所以不用 .item 默认的 pointer 光标 */
+.reading-item {
+  cursor: default;
+}
+
+.reading-text,
+.reading-explain {
+  display: none;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--mask-bg) 50%, var(--color-surface));
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.reading-item.show-text .reading-text { display: block; }
+.reading-item.show-explain .reading-explain { display: block; }
+
+.reading-gist {
+  margin-bottom: 8px;
+}
+
+.reading-grammar {
+  color: var(--color-muted);
+  font-size: 0.92em;
+}
+
+/* 精选词：原文里下划线高亮标出、可点；点击后说明就地展开另起一段，不做成悬浮
+   气泡/弹窗——手机上定位和触屏体验更稳，也跟本项目全程没有弹窗的风格一致 */
+.vocab-word {
+  cursor: pointer;
+  border-bottom: 1px dashed var(--color-accent);
+}
+
+.vocab-word.is-open {
+  border-bottom-style: solid;
+}
+
+.vocab-note {
+  display: none;
+  margin: 6px 0;
+  padding: 6px 10px;
+  font-size: 0.92em;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+}
+
+.vocab-note.is-open {
+  display: block;
 }
 
 /*
@@ -1414,7 +1462,7 @@ body.single-doc .btn-listening {
   const RESIDENT_FIELD = { phrases: 'note', sentences: 'kind' };
 
   // 朗读按钮读哪个字段：词汇读单词本身，不读词性/音标；短语读整个短语；句型读整句英文
-  const SPEAK_FIELD = { vocab: 'word', phrases: 'phrase', sentences: 'text_en' };
+  const SPEAK_FIELD = { vocab: 'word', phrases: 'phrase', sentences: 'text_en', reading: 'text' };
 
   // 「我的收藏」类型筛选下拉的选项文案，跟 SIDE_FIELDS 的 key 对应
   const SECTION_TYPE_LABELS = { vocab: '词汇', phrases: '短语', sentences: '句型' };
@@ -2945,6 +2993,70 @@ body.single-doc .btn-listening {
    * 英文语音；一个英文语音都没有就返回 null（用浏览器的默认语音兜底）
    * @returns {SpeechSynthesisVoice|null}
    */
+  // 常见 Windows/Edge Natural、iOS Enhanced/Premium、经典系统英文语音的名字 → 性别
+  // 对照表，供"推荐男声/推荐女声"用。接口本身不提供性别字段，只能靠名字猜；遇到
+  // 认不出的名字，调用方（pickBestEnglishVoice）会退回不分性别的通用自动挡，
+  // 不会因为猜不出就没声音——不追求覆盖所有小众语音，够用就行
+  const FEMALE_VOICE_NAMES = new Set([
+    'aria', 'jenny', 'sara', 'emma', 'ava', 'michelle', 'zira', 'hazel', 'susan',
+    'samantha', 'zoe', 'joelle', 'noelle', 'karen', 'moira', 'fiona', 'tessa',
+    'kate', 'serena', 'stephanie', 'victoria', 'allison', 'kathy', 'nicky',
+    'isha', 'sangeeta', 'veena', 'matilda', 'amy', 'salli', 'kimberly', 'ivy',
+  ]);
+
+  const MALE_VOICE_NAMES = new Set([
+    'guy', 'davis', 'tony', 'andrew', 'brian', 'christopher', 'david', 'mark',
+    'george', 'evan', 'nathan', 'tom', 'daniel', 'oliver', 'aaron', 'fred',
+    'alex', 'rishi', 'lee', 'jamie', 'justin', 'eric', 'ryan',
+  ]);
+
+  /**
+   * 从语音名字里猜性别（接口本身不提供性别字段），认不出就返回 null
+   * @param {string} voiceName
+   * @returns {'male'|'female'|null}
+   */
+  function guessVoiceGender(voiceName) {
+
+    const tokens = voiceName.toLowerCase().match(/[a-z]+/g) || [];
+
+    if (tokens.some((token) => FEMALE_VOICE_NAMES.has(token))) {
+
+      return 'female';
+    }
+
+    if (tokens.some((token) => MALE_VOICE_NAMES.has(token))) {
+
+      return 'male';
+    }
+
+    return null;
+  }
+
+  /**
+   * 从候选语音里挑"最自然"的一个：优先命中 Natural/Neural/Enhanced/Premium 命名，
+   * 都没有就用第一个
+   * @param {SpeechSynthesisVoice[]} voices
+   * @returns {SpeechSynthesisVoice|null}
+   */
+  function pickMostNaturalVoice(voices) {
+
+    if (voices.length === 0) {
+
+      return null;
+    }
+
+    const naturalVoice = voices.find((voice) => /natural|neural|enhanced|premium/i.test(voice.name));
+
+    return naturalVoice || voices[0];
+  }
+
+  /**
+   * 挑一个用来朗读的英文语音。保存的偏好设置有三种形态：
+   * 具体 voiceURI（手动选过某个语音）、"auto:male"/"auto:female"（推荐男声/女声，
+   * 按名字猜性别，每次都从当前可用语音里动态挑，不锁定成固定某个语音）、
+   * 空串（自动，不分性别，优先 Natural/Neural/Enhanced/Premium）
+   * @returns {SpeechSynthesisVoice|null}
+   */
   function pickBestEnglishVoice() {
 
     const voices = getEnglishVoices();
@@ -2954,17 +3066,25 @@ body.single-doc .btn-listening {
       return null;
     }
 
-    const savedURI = loadVoicePreference();
-    const savedVoice = savedURI && voices.find((voice) => voice.voiceURI === savedURI);
+    const saved = loadVoicePreference();
+
+    if (saved === 'auto:male' || saved === 'auto:female') {
+
+      const targetGender = saved === 'auto:male' ? 'male' : 'female';
+      const matched = voices.filter((voice) => guessVoiceGender(voice.name) === targetGender);
+
+      // 名字对照表认不出可用语音里任何一个是这个性别时，退回不分性别的通用自动挡
+      return pickMostNaturalVoice(matched.length > 0 ? matched : voices);
+    }
+
+    const savedVoice = saved && voices.find((voice) => voice.voiceURI === saved);
 
     if (savedVoice) {
 
       return savedVoice;
     }
 
-    const naturalVoice = voices.find((voice) => /natural|neural|enhanced|premium/i.test(voice.name));
-
-    return naturalVoice || voices[0];
+    return pickMostNaturalVoice(voices);
   }
 
   /**
@@ -2996,12 +3116,23 @@ body.single-doc .btn-listening {
         return;
       }
 
-      const currentVoice = pickBestEnglishVoice();
+      // 前面 3 个是"动态挡位"（不锁定成具体某个语音，每次朗读时按当前可用语音重新
+      // 挑），后面才是可以手动锁定的具体语音列表
+      const optionsHtml = [
+        '<option value="">自动（推荐）</option>',
+        '<option value="auto:female">推荐女声</option>',
+        '<option value="auto:male">推荐男声</option>',
+        ...voices.map((voice) => `<option value="${escapeAttr(voice.voiceURI)}">${escapeHtml(voice.name)}（${escapeHtml(voice.lang)}）</option>`),
+      ].join('');
 
-      selectEl.innerHTML = voices
-        .map((voice) => `<option value="${escapeAttr(voice.voiceURI)}">${escapeHtml(voice.name)}（${escapeHtml(voice.lang)}）</option>`)
-        .join('');
-      selectEl.value = currentVoice ? currentVoice.voiceURI : voices[0].voiceURI;
+      selectEl.innerHTML = optionsHtml;
+
+      const saved = loadVoicePreference();
+      const isDynamicSlot = saved === '' || saved === 'auto:male' || saved === 'auto:female';
+
+      // 手动锁定的具体语音如果在当前设备上已经不存在了（比如换了台电脑），退回
+      // "自动（推荐）"，不要把下拉框的值设成一个选项列表里根本没有的 voiceURI
+      selectEl.value = isDynamicSlot || voices.some((voice) => voice.voiceURI === saved) ? saved : '';
       selectEl.hidden = false;
     }
 
@@ -3152,6 +3283,171 @@ body.single-doc .btn-listening {
   }
 
   /**
+   * 渲染"泛读精读"卡片列表：播放 + 三级顺序揭示（原文→讲解）+ 精选词点击，
+   * 跟其它类型的"EN⇄CN 翻面"完全独立，不复用 formatSide/RESIDENT_FIELD/SPEAK_FIELD
+   * @param {object} doc - NoteDoc
+   * @param {object} section - type 为 'reading' 的 Section
+   * @param {Set<string>} expanded - 该篇已展开的 key 集合（loadExpanded 结果，同一套持久化机制）
+   * @param {Set<string>} favoriteIds - 该篇已收藏的 item id 集合（`${docSlug}::${key}` 形式）
+   * @returns {string}
+   */
+  function renderReadingItems(doc, section, expanded, favoriteIds) {
+
+    const itemsHtml = section.items.map((item, index) => {
+
+      const baseKey = `reading:${index}`;
+      const showText = expanded.has(`${baseKey}:text`);
+      const showExplain = expanded.has(`${baseKey}:explain`);
+      const favorited = favoriteIds.has(`${doc.slug}::${baseKey}`);
+
+      const originalHtml = renderReadingOriginal(item.en.text || '', item.vocab, baseKey, expanded);
+      const grammarHtml = item.grammar
+        ? `<div class="reading-grammar">${escapeHtml(item.grammar)}</div>`
+        : '';
+
+      // 播放/收藏按钮放进 .item-actions（margin-left: auto 顶到最右边），跟听力页面
+      // 卡片是同一套布局类（.side-cells-row + .item-actions），样式尺寸自动保持一致
+      return `
+        <li class="item reading-item${showText ? ' show-text' : ''}${showExplain ? ' show-explain' : ''}" data-key="${baseKey}">
+          <div class="reading-controls side-cells-row">
+            <button type="button" class="btn reading-reveal-btn" data-action="reveal-reading-text">查看原文</button>
+            <button type="button" class="btn reading-reveal-btn" data-action="reveal-reading-explain">查看讲解</button>
+            <div class="item-actions">
+              <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
+              ${renderSpeakButton('reading', item.en)}
+            </div>
+          </div>
+          <div class="reading-text">${originalHtml}</div>
+          <div class="reading-explain">
+            <div class="reading-gist">${escapeHtml(item.cn.gist || '')}</div>
+            ${grammarHtml}
+          </div>
+        </li>`;
+    }).join('');
+
+    return `<ul class="item-list reading-list">${itemsHtml}</ul>`;
+  }
+
+  /**
+   * 渲染原文，把 vocab 列表里的词/短语在原文中原地标出、做成可点击展开
+   * @param {string} text - 原文（item.en.text）
+   * @param {{word: string, note: string}[]} vocabList - item.vocab，解析器已拆好的词汇点
+   * @param {string} baseKey - 该 item 的 key（形如 "reading:0"）
+   * @param {Set<string>} expanded - 该篇已展开的 key 集合，用于恢复词汇点的展开状态
+   * @returns {string}
+   */
+  function renderReadingOriginal(text, vocabList, baseKey, expanded) {
+
+    if (!vocabList || vocabList.length === 0) {
+
+      return `<span class="reading-original">${escapeHtml(text)}</span>`;
+    }
+
+    // 按词在原文中第一次出现的位置排序；原文里找不到的词（比如大小写没对上）直接跳过，
+    // 不影响其它词的高亮，也不影响原文本身的显示
+    const matches = vocabList
+      .map((entry, vocabIndex) => ({ ...entry, vocabIndex, start: text.indexOf(entry.word) }))
+      .filter((entry) => entry.start !== -1)
+      .sort((a, b) => a.start - b.start);
+
+    let cursor = 0;
+    let html = '';
+
+    for (const match of matches) {
+
+      // 跳过与上一个已处理片段重叠的词（比如一个词是另一个已标注词的子串）
+      if (match.start < cursor) {
+
+        continue;
+      }
+
+      html += escapeHtml(text.slice(cursor, match.start));
+
+      const vocabKey = `${baseKey}:vocab:${match.vocabIndex}`;
+      const isOpen = expanded.has(vocabKey);
+
+      html += `<span class="vocab-word${isOpen ? ' is-open' : ''}" data-action="toggle-reading-vocab" data-vocab-key="${escapeAttr(vocabKey)}">${escapeHtml(match.word)}</span>`;
+      html += `<span class="vocab-note${isOpen ? ' is-open' : ''}">${escapeHtml(match.note)}</span>`;
+
+      cursor = match.start + match.word.length;
+    }
+
+    html += escapeHtml(text.slice(cursor));
+
+    return `<span class="reading-original">${html}</span>`;
+  }
+
+  /**
+   * 展开/收起阅读卡片的"原文"或"讲解"区块——可反复开合（跟"查看原文"按钮本身
+   * 常驻不消失是配套的：按钮一直在，点它就是切换这个区块的显隐）
+   * @param {HTMLElement} actionEl - 被点击的按钮
+   * @param {'text'|'explain'} stage
+   * @returns {void}
+   */
+  function handleRevealReadingStage(actionEl, stage) {
+
+    const itemEl = actionEl.closest('.reading-item');
+
+    if (!itemEl) {
+
+      return;
+    }
+
+    const isShown = itemEl.classList.toggle(stage === 'text' ? 'show-text' : 'show-explain');
+
+    const slug = currentSlug();
+
+    if (!slug) {
+
+      return;
+    }
+
+    const expanded = loadExpanded(slug);
+    const key = `${itemEl.dataset.key}:${stage}`;
+
+    if (isShown) {
+      expanded.add(key);
+    } else {
+      expanded.delete(key);
+    }
+
+    saveExpanded(slug, expanded);
+  }
+
+  /**
+   * 展开/收起某个精选词的解释——可反复开合，跟原文/讲解的单向揭示不同
+   * @param {HTMLElement} actionEl - 被点击的词（.vocab-word）
+   * @returns {void}
+   */
+  function handleToggleReadingVocab(actionEl) {
+
+    const isOpen = actionEl.classList.toggle('is-open');
+    const noteEl = actionEl.nextElementSibling;
+
+    if (noteEl && noteEl.classList.contains('vocab-note')) {
+      noteEl.classList.toggle('is-open', isOpen);
+    }
+
+    const slug = currentSlug();
+    const vocabKey = actionEl.dataset.vocabKey;
+
+    if (!slug || !vocabKey) {
+
+      return;
+    }
+
+    const expanded = loadExpanded(slug);
+
+    if (isOpen) {
+      expanded.add(vocabKey);
+    } else {
+      expanded.delete(vocabKey);
+    }
+
+    saveExpanded(slug, expanded);
+  }
+
+  /**
    * 渲染内容区：某个 NoteDoc 的三段表格
    * @param {object} doc - NoteDoc
    * @returns {void}
@@ -3172,6 +3468,17 @@ body.single-doc .btn-listening {
     );
 
     const sectionsHtml = doc.sections.map((section) => {
+
+      // 泛读精读表是完全独立的一套渲染逻辑（播放 + 三级顺序揭示 + 点词），不走下面
+      // 「EN⇄CN 翻面」这套通用逻辑，提前返回
+      if (section.type === 'reading') {
+
+        return `
+        <section class="section section--reading">
+          <h2 class="section-title">${escapeHtml(section.heading)}</h2>
+          ${renderReadingItems(doc, section, expanded, favoriteIds)}
+        </section>`;
+      }
 
       const itemsHtml = section.items.map((item, index) => {
 
@@ -3206,10 +3513,12 @@ body.single-doc .btn-listening {
       ? `<div class="doc-chapter-label">${escapeHtml(doc.chapter)}</div>`
       : '';
 
+    // 标题单独一行、上一节/下一节按钮另起一行——标题长的时候（比如带来源标注）挤在
+    // 同一行里，按钮会把标题挤得很窄，手机上尤其明显，分开两行各自占满宽度更稳
     const titleRowHtml = state.data.tree
-      ? `<div class="doc-title-row">
+      ? `<h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2>
+        <div class="doc-pager doc-pager--top">
           ${renderDocPagerButton(getAdjacentDoc(doc.slug, -1), -1)}
-          <h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2>
           ${renderDocPagerButton(getAdjacentDoc(doc.slug, 1), 1)}
         </div>`
       : `<h2 class="doc-title">${escapeHtml(doc.title || doc.slug)}</h2>`;
@@ -4828,6 +5137,9 @@ body.single-doc .btn-listening {
         }
         if (action === 'toggle-favorite-quiz-item') handleToggleFavoriteQuizItem(actionEl);
         if (action === 'set-quiz-mark') handleSetQuizMark(actionEl);
+        if (action === 'reveal-reading-text') handleRevealReadingStage(actionEl, 'text');
+        if (action === 'reveal-reading-explain') handleRevealReadingStage(actionEl, 'explain');
+        if (action === 'toggle-reading-vocab') handleToggleReadingVocab(actionEl);
 
         return;
       }
@@ -4841,12 +5153,13 @@ body.single-doc .btn-listening {
         return;
       }
 
-      // 点击 item 的揭示按钮或整行；听力卡片排除在外——里面选项之间空隙多，
-      // 容易点到空白处误触发展开，听力卡片只认"查看原文"这一个专门的按钮
-      // （见上面的 toggle-listening-reveal）
+      // 点击 item 的揭示按钮或整行；听力卡片、泛读卡片排除在外——听力卡片里选项之间
+      // 空隙多，容易点到空白处误触发展开（只认"查看原文"这个专门按钮，见上面的
+      // toggle-listening-reveal）；泛读卡片是单向顺序揭示，只认卡片里的专门按钮
+      // （查看原文/查看讲解/点词），点卡片空白处不应该有任何反应
       const itemEl = event.target.closest('.item');
 
-      if (itemEl && !itemEl.classList.contains('listening-item')) {
+      if (itemEl && !itemEl.classList.contains('listening-item') && !itemEl.classList.contains('reading-item')) {
         toggleItem(itemEl);
       }
     });
