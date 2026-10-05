@@ -752,6 +752,73 @@ body.single-doc .btn-listening {
   font-weight: 600;
 }
 
+/* ── 阅读进度 ───────────────────────────────── */
+/* 侧边栏已看文档标题前的 ✓：没看过时不占位，标题不会因为预留空位而缩进 */
+.doc-read-mark {
+  display: none;
+  margin-right: 6px;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.doc-item.is-read .doc-read-mark { display: inline; }
+
+/* 章节标题后的 "3/5"，全部看完时换强调色 */
+.chapter-progress {
+  margin-left: 8px;
+  color: var(--color-muted);
+  font-size: 0.8em;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.chapter-progress.is-done { color: var(--color-accent); }
+
+/* 侧边栏顶部整门课进度 */
+.course-progress {
+  padding: 8px 6px;
+  color: var(--color-muted);
+  font-size: 0.85em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.course-progress:empty { display: none; }
+
+/* 正文顶部"上次看到"提示条：文字和按钮一行放不下时按钮换到下一行 */
+.resume-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+}
+
+.resume-hint-text { min-width: 0; overflow-wrap: anywhere; }
+
+.resume-hint-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* 正文末尾"已看完"按钮，居中；已看时用强调色描边提示状态 */
+.read-toggle-row {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0 8px;
+}
+
+.read-toggle.is-read {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  font-weight: 600;
+}
+
 /* ── 内容区 ───────────────────────────────── */
 .doc-header { margin-bottom: 16px; }
 
@@ -1440,7 +1507,7 @@ body.single-doc .btn-listening {
   <button type="button" class="back-to-top" data-role="back-to-top" aria-label="回到顶部">⤒</button>
 
   <!-- 构建期内嵌的数据：index 为 { docs, tree }，单篇为 { doc } -->
-  <script type="application/json" data-role="livenotes-data">{"doc":{"title":"商务英语：办公室常用语","slug":"1. Office English Phrases","chapter":"01 - Office Communication","sourcePath":"output\\office-english-source\\01 - Office Communication\\1. Office English Phrases.md","sections":[{"type":"sentences","heading":"句型中英对照表","items":[{"en":{"text_en":"Could you help me prepare the presentation for tomorrow's meeting?"},"cn":{"text_cn":"你能帮我准备明天会议的发言稿吗？"},"kind":""},{"en":{"text_en":"I'll need the latest sales figures and the quarterly report as well."},"cn":{"text_cn":"我还需要最新的销售数据和季度报告。"},"kind":""},{"en":{"text_en":"Make sure to check the data accuracy, we can't afford any mistakes."},"cn":{"text_cn":"请务必检查数据的准确性，我们不能出任何差错。"},"kind":""},{"en":{"text_en":"Has anyone seen the new email guidelines circulated by HR?"},"cn":{"text_cn":"有人看到人力资源部发的新电子邮件指南了吗？"},"kind":""},{"en":{"text_en":"Yes, they mentioned something about stricter password policies as well."},"cn":{"text_cn":"有，他们还提到了更严格的密码政策。"},"kind":""},{"en":{"text_en":"Could we schedule a quick call to discuss the new project timeline?"},"cn":{"text_cn":"我们能否安排一次快速通话，讨论新的项目时间表？"},"kind":""},{"en":{"text_en":"Let's aim for Thursday, my mornings are relatively free then."},"cn":{"text_cn":"就定在周四吧，那时候我早上相对比较空闲。"},"kind":""},{"en":{"text_en":"I booked the conference room for our brainstorming session."},"cn":{"text_cn":"我已经为我们的头脑风暴会议预定了会议室。"},"kind":""},{"en":{"text_en":"Can everyone bring their own laptops? We might need to access some files online."},"cn":{"text_cn":"大家能带上自己的笔记本电脑吗？我们可能需要在线访问一些文件。"},"kind":""},{"en":{"text_en":"The client moved the deadline, does everyone understand the new priorities?"},"cn":{"text_cn":"客户将截止日期提前了，大家都了解新的优先事项吗？"},"kind":""},{"en":{"text_en":"We need to update our project management software with these changes."},"cn":{"text_cn":"我们需要根据这些变化，更新项目管理软件。"},"kind":""},{"en":{"text_en":"I think a training session might be helpful for the new software update."},"cn":{"text_cn":"我认为举办一次培训课程，可能会对新软件的更新有所帮助。"},"kind":""},{"en":{"text_en":"Lunch at the new cafe downstairs today."},"cn":{"text_cn":"今天在楼下的新咖啡馆吃午餐吧。"},"kind":""},{"en":{"text_en":"I hear their salads are great, but I might go for the burger."},"cn":{"text_cn":"我听说他们的沙拉很棒，但我还是想吃汉堡。"},"kind":""},{"en":{"text_en":"Did anyone complete the compliance training due this month?"},"cn":{"text_cn":"有人完成了本月到期的合规培训吗？"},"kind":""},{"en":{"text_en":"Almost, I've been swamped, but I'll finish it by Friday."},"cn":{"text_cn":"快了，我一直忙得不可开交，但我会在周五前完成的。"},"kind":""},{"en":{"text_en":"How's the reception planning going for the new interns?"},"cn":{"text_cn":"新实习生的接待计划进行的如何？"},"kind":""},{"en":{"text_en":"We've ordered name badges and set up a welcome kit for each of them."},"cn":{"text_cn":"我们已经订购了名牌，并为她们每人准备了一套欢迎用品。"},"kind":""},{"en":{"text_en":"Remember to submit your expense reports by the end of the week."},"cn":{"text_cn":"记得在本周末前提交费用报告。"},"kind":""},{"en":{"text_en":"Can someone help me troubleshoot this printer? It's jammed again."},"cn":{"text_cn":"谁能帮我排除一下打印机的故障，它又卡纸了。"},"kind":""},{"en":{"text_en":"Have you seen the memo about the parking lot changes?"},"cn":{"text_cn":"你看到关于停车场变更的备忘录了吗？"},"kind":""},{"en":{"text_en":"Yes, there are assigned spots now based on seniority."},"cn":{"text_cn":"是的，他们现在根据资历来分配停车位。"},"kind":""},{"en":{"text_en":"We need to finalize the agenda for our team meeting next week."},"cn":{"text_cn":"我们需要确定下周团队会议的议程。"},"kind":""},{"en":{"text_en":"Let's add a point about the annual budget review, it's critical."},"cn":{"text_cn":"让我们补充一点关于年度预算审查的内容，这一点至关重要。"},"kind":""},{"en":{"text_en":"Did you get feedback on your report from the manager?"},"cn":{"text_cn":"你的报告得到经理的反馈了吗？"},"kind":""},{"en":{"text_en":"He asked for some revisions, but overall it was well received."},"cn":{"text_cn":"他要求做了一些修改，但总体来说还是不错的。"},"kind":""},{"en":{"text_en":"Is the Wi-Fi acting up, or is it just my laptop?"},"cn":{"text_cn":"是 Wi-Fi 出了问题，还是我的笔记本电脑出了问题？"},"kind":""},{"en":{"text_en":"It's been slow all morning, IT is looking into it."},"cn":{"text_cn":"整个早上都很慢，IT 部门正在调查。"},"kind":""},{"en":{"text_en":"Who's leading the client call at 2 pm?"},"cn":{"text_cn":"下午 2 点的客户电话由谁接听？"},"kind":""},{"en":{"text_en":"I am, but feel free to join if you have any updates for the client."},"cn":{"text_cn":"是我，但如果您有任何客户方面的最新信息，请随时加入。"},"kind":""},{"en":{"text_en":"Can you cover for me in tomorrow's update meeting? I have a doctor's appointment."},"cn":{"text_cn":"明天的更新会议你能帮我代班吗？我约了医生。"},"kind":""},{"en":{"text_en":"Sure, just send me your notes and I'll handle it."},"cn":{"text_cn":"当然可以，把你的笔记发给我，我来处理。"},"kind":""},{"en":{"text_en":"Does anyone need anything from the supply room?"},"cn":{"text_cn":"有人需要供应室的东西吗？"},"kind":""},{"en":{"text_en":"Could you grab me a pack of highlighters and sticky notes?"},"cn":{"text_cn":"能帮我拿一包荧光笔和便签吗？"},"kind":""},{"en":{"text_en":"The water cooler on this floor is out of service, you might want to use the one upstairs."},"cn":{"text_cn":"这层楼的饮水机已经停用，您可以使用楼上的饮水机。"},"kind":""},{"en":{"text_en":"Thanks for letting me know, I was about to take a break."},"cn":{"text_cn":"谢谢你告诉我，我正要休息一下。"},"kind":""},{"en":{"text_en":"We should compile a list of key points from the client feedback."},"cn":{"text_cn":"我们应该从客户反馈中整理出一份要点清单。"},"kind":""},{"en":{"text_en":"I've already started on that, should have it ready by the afternoon."},"cn":{"text_cn":"我已经开始做了，应该下午就能完成。"},"kind":""},{"en":{"text_en":"Anyone up for a coffee break around three?"},"cn":{"text_cn":"有人想在 3 点左右喝杯咖啡吗？"},"kind":""},{"en":{"text_en":"Count me in, I need a caffeine boost to get through these spreadsheets."},"cn":{"text_cn":"算我一个，我需要来点咖啡因才能完成这些电子表格。"},"kind":""},{"en":{"text_en":"Let's ensure our out-of-office replies are set before the holiday break."},"cn":{"text_cn":"让我们确保在放假前完成办公室外的回复。"},"kind":""},{"en":{"text_en":"Good reminder, I almost forgot with the year-end rush."},"cn":{"text_cn":"提醒的好，年终匆忙，我差点忘了。"},"kind":""},{"en":{"text_en":"Are we updating the team on the new health and safety protocols?"},"cn":{"text_cn":"我们是否向团队通报了新的健康和安全协议？"},"kind":""},{"en":{"text_en":"Yes, there's a meeting next Tuesday about it."},"cn":{"text_cn":"是的，下周二有相关会议。"},"kind":""},{"en":{"text_en":"How did the budget review go?"},"cn":{"text_cn":"预算审查进行的如何？"},"kind":""},{"en":{"text_en":"It was intense, but we managed to get approval for next year's funding."},"cn":{"text_cn":"很紧张，但我们成功地批准了明年的经费。"},"kind":""},{"en":{"text_en":"Is the copier fixed, or should I head to the other building to print?"},"cn":{"text_cn":"复印机修好了吗？还是我应该去其他大楼打印？"},"kind":""},{"en":{"text_en":"It's still down, better use the one in building B."},"cn":{"text_cn":"还是坏了，最好用 B 楼的复印机。"},"kind":""},{"en":{"text_en":"I need someone to double check my calculations on this financial model."},"cn":{"text_cn":"我需要有人再检查一下我对这个财务模型的计算。"},"kind":""},{"en":{"text_en":"I'll take a look after lunch, fresh eyes might spot something."},"cn":{"text_cn":"午餐后我再去看看，也许会有新发现。"},"kind":""},{"en":{"text_en":"Has anyone prepared the slides for the shareholder meeting?"},"cn":{"text_cn":"有人准备好股东大会的幻灯片了吗？"},"kind":""},{"en":{"text_en":"I'm on it, but could you help with the design aspect?"},"cn":{"text_cn":"我正在做，但在设计方面需要一些帮助。"},"kind":""},{"en":{"text_en":"Do we have any dietary restrictions for the upcoming team event?"},"cn":{"text_cn":"即将举行的团队活动有饮食限制吗？"},"kind":""},{"en":{"text_en":"Yes, two vegans and one gluten-free, I've notified the caterers."},"cn":{"text_cn":"有两名素食者和一名无麸质食物者，我已经通知了餐饮供应商。"},"kind":""},{"en":{"text_en":"Could you explain the new filing system? I'm a bit lost."},"cn":{"text_cn":"您能解释一下新的档案系统吗？我有点不明白。"},"kind":""},{"en":{"text_en":"Sure, let's walk through it together after you're done with your current task."},"cn":{"text_cn":"当然可以，等你忙完现在的工作，我们一起去看看。"},"kind":""},{"en":{"text_en":"I heard we might be getting a new coffee machine."},"cn":{"text_cn":"我听说我们可能要换新咖啡机了。"},"kind":""},{"en":{"text_en":"Really? I hope it has a good espresso option."},"cn":{"text_cn":"真的吗？我希望它有一个很好的浓缩咖啡选项。"},"kind":""},{"en":{"text_en":"Can we discuss the new marketing strategy you proposed?"},"cn":{"text_cn":"我们能讨论一下你提出的新营销策略吗？"},"kind":""},{"en":{"text_en":"Definitely, let's set up a time tomorrow to dive deep into it."},"cn":{"text_cn":"当然可以，明天我们约个时间深入探讨一下。"},"kind":""},{"en":{"text_en":"Is there any update on the server maintenance?"},"cn":{"text_cn":"伺服器维护有什么新进展吗？"},"kind":""},{"en":{"text_en":"It's scheduled for this weekend, so no access to some systems from Friday evening."},"cn":{"text_cn":"计划在本周末进行，所以从周五晚上开始，将无法访问某些系统。"},"kind":""},{"en":{"text_en":"We need to acknowledge the team's hard work in the last project at the next meeting."},"cn":{"text_cn":"我们需要在下次会议上感谢团队在上一个项目中的辛勤工作。"},"kind":""},{"en":{"text_en":"Absolutely, I'll make sure to highlight everyone's contributions."},"cn":{"text_cn":"当然，我一定会强调每个人的贡献。"},"kind":""},{"en":{"text_en":"The break room needs a cleanup, it's been overlooked for weeks."},"cn":{"text_cn":"休息室需要清理一下，它已经被忽视好几周了。"},"kind":""},{"en":{"text_en":"I'll mention it to facilities, thanks for pointing it out."},"cn":{"text_cn":"我会向设备部门提及此事，谢谢您的指出。"},"kind":""},{"en":{"text_en":"Who can update the database with the new client information?"},"cn":{"text_cn":"谁能用新客户信息更新数据库？"},"kind":""},{"en":{"text_en":"I can handle that before the end of the day."},"cn":{"text_cn":"我可以在下班前处理。"},"kind":""},{"en":{"text_en":"It's someone's birthday today, right? Should we sing or just do cake in the break room?"},"cn":{"text_cn":"今天是某人的生日吧，我们是唱歌还是在休息室做蛋糕？"},"kind":""},{"en":{"text_en":"Let's do cake, we can save the singing for the team lunch."},"cn":{"text_cn":"我们吃蛋糕吧，唱歌的事可以留到团队午餐时再说。"},"kind":""},{"en":{"text_en":"Are you attending the webinar on data security?"},"cn":{"text_cn":"您是否参加数据安全网络研讨会？"},"kind":""},{"en":{"text_en":"Yes, it's mandatory for our department."},"cn":{"text_cn":"是的，这是我们部门的必修课。"},"kind":""},{"en":{"text_en":"We need to cut costs, any suggestions on unnecessary expenses we can eliminate?"},"cn":{"text_cn":"我们需要消减成本，对于我们可以取消的不必要开支，有什么建议吗？"},"kind":""},{"en":{"text_en":"Let's review all our subscriptions, we might find some that are seldom used."},"cn":{"text_cn":"让我们回顾一下我们所有的订阅，我们可能会发现一些很少使用的订阅。"},"kind":""},{"en":{"text_en":"The elevator's out of order again, so use the stairs today."},"cn":{"text_cn":"电梯又坏了，今天走楼梯吧。"},"kind":""},{"en":{"text_en":"Thanks for the heads up, it's good exercise anyway."},"cn":{"text_cn":"谢谢你的提醒，不管怎样，这都是很好的锻炼。"},"kind":""},{"en":{"text_en":"Has the agenda for the overseas video conference been set?"},"cn":{"text_cn":"海外视频会议的议程确定了吗？"},"kind":""},{"en":{"text_en":"Yes, I emailed it yesterday, please review before the meeting."},"cn":{"text_cn":"是的，我昨天通过电子邮件发送了，请在会前审阅。"},"kind":""},{"en":{"text_en":"Can we allocate some budget for team building activities?"},"cn":{"text_cn":"我们能否拨出一些预算，用于团队建设活动？"},"kind":""},{"en":{"text_en":"That sounds like a great idea, I'll see what can be arranged."},"cn":{"text_cn":"这听起来是个好主意，我看看能安排些什么。"},"kind":""},{"en":{"text_en":"Did you complete the risk assessment for the new project?"},"cn":{"text_cn":"您完成新项目的风险评估了吗？"},"kind":""},{"en":{"text_en":"Working on it, but I'll need some input on a few points."},"cn":{"text_cn":"正在做，但我需要一些意见。"},"kind":""},{"en":{"text_en":"How long do you think the meeting will last?"},"cn":{"text_cn":"您认为会议将持续多久？"},"kind":""},{"en":{"text_en":"Not more than an hour, we need to keep it concise."},"cn":{"text_cn":"不超过一个小时，我们需要简明扼要。"},"kind":""},{"en":{"text_en":"Has anyone backed up the team's work for this month?"},"cn":{"text_cn":"是否有人备份了团队本月的工作？"},"kind":""},{"en":{"text_en":"It's automated, but I'll double check that everything's been saved correctly."},"cn":{"text_cn":"已经自动备份了，但我会仔细检查是否保存正确。"},"kind":""},{"en":{"text_en":"We're out of toner, can someone order more?"},"cn":{"text_cn":"墨粉用完了，谁能再订一些？"},"kind":""},{"en":{"text_en":"I'll add it to the office supply order list."},"cn":{"text_cn":"我会把它添加到办公用品订购单上。"},"kind":""},{"en":{"text_en":"Did the intern settle in OK?"},"cn":{"text_cn":"实习生适应的好吗？"},"kind":""},{"en":{"text_en":"Yes, they're catching on fast and seem eager to learn."},"cn":{"text_cn":"是的，他们学的很快，似乎很想学。"},"kind":""},{"en":{"text_en":"Can you help me analyze this data? I think there's a trend we're missing."},"cn":{"text_cn":"你能帮我分析一下这些数据吗？我觉得我们遗漏了一个趋势。"},"kind":""},{"en":{"text_en":"Let's plot it out and see if we can spot any patterns."},"cn":{"text_cn":"让我们把它绘制出来，看看能不能发现什么规律。"},"kind":""},{"en":{"text_en":"Who's handling the client follow up?"},"cn":{"text_cn":"谁在跟进客户？"},"kind":""},{"en":{"text_en":"I am, I'll send an update by the end of the day."},"cn":{"text_cn":"是我，我将在今天下班前发送更新信息。"},"kind":""},{"en":{"text_en":"We need to improve our weekly reports, they lack critical details."},"cn":{"text_cn":"我们需要改进我们的周报，它们缺乏关键细节。"},"kind":""},{"en":{"text_en":"Agreed, let's discuss how to enhance them in our next team huddle."},"cn":{"text_cn":"同意，让我们在下次团队会议上讨论如何改进。"},"kind":""},{"en":{"text_en":"The printer is finally fixed, no need to go upstairs anymore."},"cn":{"text_cn":"打印机终于修好了，不用再上楼了。"},"kind":""},{"en":{"text_en":"Great news, that's going to save us a lot of time."},"cn":{"text_cn":"好消息，这将为我们节省很多时间。"},"kind":""},{"en":{"text_en":"Can we review the emergency evacuation plan again? I'm not sure about a couple of things."},"cn":{"text_cn":"我们能再复习一遍紧急疏散计划吗？有几件事我不太确定。"},"kind":""},{"en":{"text_en":"Sure, let's ensure everyone is clear on it, safety first."},"cn":{"text_cn":"当然，让我们确保每个人都清楚这一点，安全第一。"},"kind":""},{"en":{"text_en":"Did anyone volunteer for the charity event next weekend?"},"cn":{"text_cn":"有人自愿参加下周末的慈善活动吗？"},"kind":""},{"en":{"text_en":"I did, and I could use some help setting things up."},"cn":{"text_cn":"我有，我需要一些帮助来布置现场。"},"kind":""},{"en":{"text_en":"Is the air conditioning too cold for anyone else?"},"cn":{"text_cn":"还有人觉得空调太冷吗？"},"kind":""},{"en":{"text_en":"It's a bit chilly, maybe we could adjust the thermostat."},"cn":{"text_cn":"有点冷，也许我们可以调一下恒温器。"},"kind":""},{"en":{"text_en":"We need a volunteer to lead the training session on the new software."},"cn":{"text_cn":"我们需要一名志愿者，来主持新软件的培训课程。"},"kind":""},{"en":{"text_en":"I can do it, I've been exploring its features lately."},"cn":{"text_cn":"我能做到，我最近一直在探索它的功能。"},"kind":""},{"en":{"text_en":"Who took the last of the coffee and didn't make a new pot?"},"cn":{"text_cn":"谁喝完了最后一壶咖啡，却没有重新煮一壶？"},"kind":""},{"en":{"text_en":"Sorry, that was me, I'll go brew another one right now."},"cn":{"text_cn":"对不起，是我，我现在就去再煮一壶。"},"kind":""},{"en":{"text_en":"Could you resend the invitation for tomorrow's webinar? I can't find it."},"cn":{"text_cn":"您能重新发送明天网络研讨会的邀请函吗？我找不到了。"},"kind":""},{"en":{"text_en":"Sure, I'll send it to your email and Slack just in case."},"cn":{"text_cn":"当然可以，我会发到你的邮箱和 Slack，以防万一。"},"kind":""},{"en":{"text_en":"How do we handle the feedback from the last project review?"},"cn":{"text_cn":"我们如何处理上次项目审查的反馈？"},"kind":""},{"en":{"text_en":"Let's address the critical points in a meeting and assign tasks to address them."},"cn":{"text_cn":"让我们在会议上讨论关键点，并分配任务来解决它们。"},"kind":""},{"en":{"text_en":"Did the boss say anything about hiring more staff?"},"cn":{"text_cn":"老板有没有说要招聘更多的员工？"},"kind":""},{"en":{"text_en":"Yes, two new positions are opening to help with our workload."},"cn":{"text_cn":"是的，有两个新职位，可以帮助我们完成工作量。"},"kind":""},{"en":{"text_en":"Is there a system outage, or is my computer just slow?"},"cn":{"text_cn":"是系统故障还是我的电脑太慢了？"},"kind":""},{"en":{"text_en":"It's a scheduled maintenance, should be back to normal by noon."},"cn":{"text_cn":"这是一次定期维护，中午前应该能恢复正常。"},"kind":""},{"en":{"text_en":"Can we celebrate the project's success at lunch today?"},"cn":{"text_cn":"我们能在今天午餐时庆祝项目成功吗？"},"kind":""},{"en":{"text_en":"Great idea, let's order pizza for the team."},"cn":{"text_cn":"好主意，我们为团队订一份披萨吧。"},"kind":""},{"en":{"text_en":"Who's responsible for updating the contact list for our department?"},"cn":{"text_cn":"谁负责更新我们部门的联络人名单？"},"kind":""},{"en":{"text_en":"I am, and I'll make sure it's done by the end of the week."},"cn":{"text_cn":"我，我会确保在周末前完成。"},"kind":""},{"en":{"text_en":"Any tips on how to deal with a difficult client?"},"cn":{"text_cn":"有对付难缠客户的秘诀吗？"},"kind":""},{"en":{"text_en":"Stay patient and listen more than you speak, it usually helps."},"cn":{"text_cn":"保持耐心，多听多说，这通常会有帮助。"},"kind":""},{"en":{"text_en":"Could you check the conference room availability for next Wednesday?"},"cn":{"text_cn":"你能查一下下周三的会议室空闲情况吗？"},"kind":""},{"en":{"text_en":"Will do, I'll email you the times that are free."},"cn":{"text_cn":"好的，我会把空闲的时间发邮件给你。"},"kind":""},{"en":{"text_en":"Has anyone seen the stapler? It's missing from my desk."},"cn":{"text_cn":"有人看到订书机了吗？我桌子上的订书机不见了。"},"kind":""},{"en":{"text_en":"Check the meeting room, it might still be there from the presentation."},"cn":{"text_cn":"去会议室看看，演讲时用过的，可能还在。"},"kind":""},{"en":{"text_en":"We should update our emergency contact information."},"cn":{"text_cn":"我们应该更新紧急联络人信息。"},"kind":""},{"en":{"text_en":"Good point, I'll send out a form for everyone to fill out."},"cn":{"text_cn":"说得好，我会发一份表格让大家填写。"},"kind":""},{"en":{"text_en":"Can we streamline our report process? It seems a bit redundant."},"cn":{"text_cn":"我们能简化报告程序吗？似乎有点多余。"},"kind":""},{"en":{"text_en":"Let's discuss this in our next efficiency meeting."},"cn":{"text_cn":"让我们在下次效率会议上讨论这个问题。"},"kind":""},{"en":{"text_en":"The copier is low on ink, should I order more?"},"cn":{"text_cn":"复印机的墨水不够用了，要不要再订一些？"},"kind":""},{"en":{"text_en":"Yes, and check if we need paper as well."},"cn":{"text_cn":"是的，还要看看是否需要纸张。"},"kind":""},{"en":{"text_en":"Do we have any current data on market trends?"},"cn":{"text_cn":"我们有关于市场趋势的最新数据吗？"},"kind":""},{"en":{"text_en":"I'll pull up the latest reports and share them with the team."},"cn":{"text_cn":"我会调出最新报告并与团队分享。"},"kind":""},{"en":{"text_en":"Has everyone completed their part of the project?"},"cn":{"text_cn":"每个人都完成自己的项目了吗？"},"kind":""},{"en":{"text_en":"I'm still waiting on a few numbers, but we should be ready soon."},"cn":{"text_cn":"我还在等一些数字，但我们应该很快就能准备好。"},"kind":""},{"en":{"text_en":"Can we arrange a demo for the new software next week?"},"cn":{"text_cn":"下周能安排新软件的演示吗？"},"kind":""},{"en":{"text_en":"I'll set it up and confirm with everyone."},"cn":{"text_cn":"我会安排并与大家确认。"},"kind":""},{"en":{"text_en":"Does anyone need help with their tasks today?"},"cn":{"text_cn":"今天的任务有人需要帮助吗？"},"kind":""},{"en":{"text_en":"I could use a second opinion on this design layout."},"cn":{"text_cn":"在设计布局方面，我需要第二个意见。"},"kind":""},{"en":{"text_en":"Remember to log your hours by the end of the day."},"cn":{"text_cn":"记得在一天结束前记录你的工时。"},"kind":""},{"en":{"text_en":"Will do, thanks for the reminder."},"cn":{"text_cn":"会的，谢谢提醒。"},"kind":""},{"en":{"text_en":"Who's on call for client issues this weekend?"},"cn":{"text_cn":"本周末谁值班处理客户问题？"},"kind":""},{"en":{"text_en":"I am, just forward any urgent emails my way."},"cn":{"text_cn":"我，有紧急邮件就转给我。"},"kind":""},{"en":{"text_en":"Can we update the break room rules? They seem outdated."},"cn":{"text_cn":"我们能更新一下休息室的规定吗？它们似乎已经过时了。"},"kind":""},{"en":{"text_en":"Sure, let's put together a proposal for management."},"cn":{"text_cn":"当然可以，我们给管理层写一份建议书吧。"},"kind":""},{"en":{"text_en":"Is the internet back up? I need to send an urgent email."},"cn":{"text_cn":"网络恢复了吗？我需要发一封紧急邮件。"},"kind":""},{"en":{"text_en":"It's still down, but you can connect to the mobile hotspot for now."},"cn":{"text_cn":"还在停机，但您可以暂时连接到移动热点。"},"kind":""},{"en":{"text_en":"How should we organize the files for easier access?"},"cn":{"text_cn":"我们应该如何整理文件以方便访问？"},"kind":""},{"en":{"text_en":"Let's categorize them by year and then by project."},"cn":{"text_cn":"先按年份分类，再按项目分类。"},"kind":""},{"en":{"text_en":"Could you help me with this budget forecast? I'm not sure about some items."},"cn":{"text_cn":"您能帮我做一下预算预测吗？有些项目我不确定。"},"kind":""},{"en":{"text_en":"Of course, let's go through it after lunch."},"cn":{"text_cn":"当然可以，午餐后再看吧。"},"kind":""},{"en":{"text_en":"We need to discuss the layout for the new office space."},"cn":{"text_cn":"我们需要讨论一下新办公空间的布局。"},"kind":""},{"en":{"text_en":"Agreed, let's make sure it promotes a good workflow."},"cn":{"text_cn":"同意，我们要确保它能促进良好的工作流程。"},"kind":""},{"en":{"text_en":"The client requested changes to the contract, who can look into this?"},"cn":{"text_cn":"客户要求修改合同，谁能调查一下？"},"kind":""},{"en":{"text_en":"I'll review it and draft an amendment."},"cn":{"text_cn":"我会审查并起草一份修正案。"},"kind":""},{"en":{"text_en":"Can we get a status update on the server upgrade?"},"cn":{"text_cn":"我们能得到服务器升级的最新情况吗？"},"kind":""},{"en":{"text_en":"I'll check with IT and get back to you by tomorrow."},"cn":{"text_cn":"我会与 IT 部联系，明天给你们答复。"},"kind":""},{"en":{"text_en":"Is the quarterly team outing planned yet?"},"cn":{"text_cn":"季度团队郊游计划好了吗？"},"kind":""},{"en":{"text_en":"Not yet, but we're thinking of something outdoors."},"cn":{"text_cn":"还没有，但我们正在考虑户外活动。"},"kind":""},{"en":{"text_en":"Who's handling the presentation at the expo next month?"},"cn":{"text_cn":"谁负责下个月博览会上的演示？"},"kind":""},{"en":{"text_en":"I am, but I could use some help preparing the materials."},"cn":{"text_cn":"我，但我需要一些帮助来准备材料。"},"kind":""},{"en":{"text_en":"Did you complete the risk assessment report?"},"cn":{"text_cn":"风险评估报告完成了吗？"},"kind":""},{"en":{"text_en":"I'm finalizing it, should be ready for review tomorrow."},"cn":{"text_cn":"我正在定稿，明天就可以提交审核了。"},"kind":""},{"en":{"text_en":"Can anyone recommend a good place for a team lunch?"},"cn":{"text_cn":"谁能推荐一个团队午餐的好去处？"},"kind":""},{"en":{"text_en":"How about that new Thai place around the corner?"},"cn":{"text_cn":"街角那家新开的泰国餐馆怎么样？"},"kind":""},{"en":{"text_en":"We need a new point of contact for our supplier, any volunteers?"},"cn":{"text_cn":"我们需要一个新的供应商联系人，有志愿者吗？"},"kind":""},{"en":{"text_en":"I'll handle it, I've already got a good rapport with them."},"cn":{"text_cn":"我会处理的，我已经和他们建立了良好的关系。"},"kind":""},{"en":{"text_en":"How do we access the archived project files?"},"cn":{"text_cn":"我们如何访问存档的项目文件？"},"kind":""},{"en":{"text_en":"I'll send you the link to the database, it's all stored there."},"cn":{"text_cn":"我会把数据库的链接发给你，所有文件都存储在那里。"},"kind":""},{"en":{"text_en":"Has the newsletter gone out yet?"},"cn":{"text_cn":"通讯发出了吗？"},"kind":""},{"en":{"text_en":"Yes, it was emailed this morning."},"cn":{"text_cn":"是的，今天早上通过电子邮件发送了。"},"kind":""},{"en":{"text_en":"We should consider upgrading our project management tools."},"cn":{"text_cn":"我们应该考虑升级我们的项目管理工具。"},"kind":""},{"en":{"text_en":"Agreed, let's schedule a meeting to review our options."},"cn":{"text_cn":"同意，让我们安排一次会议来审查我们的选择。"},"kind":""},{"en":{"text_en":"Can someone assist me with the projector? It's not connecting."},"cn":{"text_cn":"谁能帮我看看投影机连接不上？"},"kind":""},{"en":{"text_en":"I'll be right there, sometimes it's tricky to set up."},"cn":{"text_cn":"我马上就来，有时安装起来很麻烦。"},"kind":""},{"en":{"text_en":"Are we meeting our sustainability goals?"},"cn":{"text_cn":"我们是否实现了可持续发展目标？"},"kind":""},{"en":{"text_en":"We are on track, but let's discuss more initiatives we can implement."},"cn":{"text_cn":"我们已步入正轨，但让我们讨论一下可以实施的更多举措。"},"kind":""},{"en":{"text_en":"The water dispenser is empty, can someone replace it?"},"cn":{"text_cn":"饮水机是空的，谁能更换一下？"},"kind":""},{"en":{"text_en":"I'll grab a new bottle from the storeroom."},"cn":{"text_cn":"我去储藏室拿一瓶新的。"},"kind":""},{"en":{"text_en":"Has everyone signed the new health policy form?"},"cn":{"text_cn":"新的健康政策表格大家都签了吗？"},"kind":""},{"en":{"text_en":"I think a few people are still missing, I'll send a reminder."},"cn":{"text_cn":"我想还缺几个人，我会发一封提醒函。"},"kind":""},{"en":{"text_en":"What time is the team meeting tomorrow?"},"cn":{"text_cn":"明天的团队会议是几点？"},"kind":""},{"en":{"text_en":"It's at ten am, I'll send out an agenda soon."},"cn":{"text_cn":"上午 10 点，我很快就会发送议程。"},"kind":""},{"en":{"text_en":"Did we get approval for the new marketing budget?"},"cn":{"text_cn":"新的营销预算批准了吗？"},"kind":""},{"en":{"text_en":"Yes, it was approved this morning."},"cn":{"text_cn":"是的，今天上午批准了。"},"kind":""},{"en":{"text_en":"Can we introduce a casual Friday policy?"},"cn":{"text_cn":"我们能否推出周五休闲政策？"},"kind":""},{"en":{"text_en":"That's a good idea, let's propose it to HR."},"cn":{"text_cn":"这是个好主意，让我们向人力资源部提议吧。"},"kind":""},{"en":{"text_en":"Who knows how to fix the error in the spreadsheet formula?"},"cn":{"text_cn":"谁知道如何修正电子表格公式中的错误？"},"kind":""},{"en":{"text_en":"Let me take a look, I'm good with Excel."},"cn":{"text_cn":"我来看看，我对 Excel 很在行。"},"kind":""},{"en":{"text_en":"Are there any updates on the health insurance changes?"},"cn":{"text_cn":"医疗保险有什么新变化吗？"},"kind":""},{"en":{"text_en":"There's a meeting next week to go over everything."},"cn":{"text_cn":"下周会开会讨论一切。"},"kind":""},{"en":{"text_en":"Can we get some new art for the office walls? They look a bit bare."},"cn":{"text_cn":"我们能为办公室的墙壁添置一些新的艺术品吗？它们看起来有点光秃秃的。"},"kind":""},{"en":{"text_en":"Sure, let's pick something that brightens up the space."},"cn":{"text_cn":"当然可以，我们就挑些能让空间明亮起来的吧。"},"kind":""},{"en":{"text_en":"Does anyone know where the extra keyboards are stored?"},"cn":{"text_cn":"有人知道多余的键盘放在哪里吗？"},"kind":""},{"en":{"text_en":"Check the supply closet on the second floor."},"cn":{"text_cn":"去二楼的供应柜看看。"},"kind":""},{"en":{"text_en":"We should start planning for the end-of-year party."},"cn":{"text_cn":"我们应该开始计划年终聚会了。"},"kind":""},{"en":{"text_en":"Let's form a committee to handle the arrangements."},"cn":{"text_cn":"让我们成立一个委员会来处理安排事宜。"},"kind":""},{"en":{"text_en":"Is the air quality monitor working? It feels stuffy in here."},"cn":{"text_cn":"空气质量监测仪在工作吗？这里感觉很闷。"},"kind":""},{"en":{"text_en":"I'll check it and see if it needs new batteries or adjustments."},"cn":{"text_cn":"我去检查一下，看是否需要更换电池或进行调整。"},"kind":""}]}],"extra":""},"courseLabel":"商务英语 · 办公室常用语"}</script>
+  <script type="application/json" data-role="livenotes-data">{"doc":{"title":"商务英语：办公室常用语","slug":"1. Office English Phrases","chapter":"01 - Office Communication","sourcePath":"C:\\Users\\lmj_0\\OneDrive\\Business_English__Notes\\Office_English_Phrases\\01 - Office Communication\\1. Office English Phrases.md","sections":[{"type":"sentences","heading":"句型中英对照表","items":[{"en":{"text_en":"Could you help me prepare the presentation for tomorrow's meeting?"},"cn":{"text_cn":"你能帮我准备明天会议的发言稿吗？"},"kind":""},{"en":{"text_en":"I'll need the latest sales figures and the quarterly report as well."},"cn":{"text_cn":"我还需要最新的销售数据和季度报告。"},"kind":""},{"en":{"text_en":"Make sure to check the data accuracy, we can't afford any mistakes."},"cn":{"text_cn":"请务必检查数据的准确性，我们不能出任何差错。"},"kind":""},{"en":{"text_en":"Has anyone seen the new email guidelines circulated by HR?"},"cn":{"text_cn":"有人看到人力资源部发的新电子邮件指南了吗？"},"kind":""},{"en":{"text_en":"Yes, they mentioned something about stricter password policies as well."},"cn":{"text_cn":"有，他们还提到了更严格的密码政策。"},"kind":""},{"en":{"text_en":"Could we schedule a quick call to discuss the new project timeline?"},"cn":{"text_cn":"我们能否安排一次快速通话，讨论新的项目时间表？"},"kind":""},{"en":{"text_en":"Let's aim for Thursday, my mornings are relatively free then."},"cn":{"text_cn":"就定在周四吧，那时候我早上相对比较空闲。"},"kind":""},{"en":{"text_en":"I booked the conference room for our brainstorming session."},"cn":{"text_cn":"我已经为我们的头脑风暴会议预定了会议室。"},"kind":""},{"en":{"text_en":"Can everyone bring their own laptops? We might need to access some files online."},"cn":{"text_cn":"大家能带上自己的笔记本电脑吗？我们可能需要在线访问一些文件。"},"kind":""},{"en":{"text_en":"The client moved the deadline, does everyone understand the new priorities?"},"cn":{"text_cn":"客户将截止日期提前了，大家都了解新的优先事项吗？"},"kind":""},{"en":{"text_en":"We need to update our project management software with these changes."},"cn":{"text_cn":"我们需要根据这些变化，更新项目管理软件。"},"kind":""},{"en":{"text_en":"I think a training session might be helpful for the new software update."},"cn":{"text_cn":"我认为举办一次培训课程，可能会对新软件的更新有所帮助。"},"kind":""},{"en":{"text_en":"Lunch at the new cafe downstairs today."},"cn":{"text_cn":"今天在楼下的新咖啡馆吃午餐吧。"},"kind":""},{"en":{"text_en":"I hear their salads are great, but I might go for the burger."},"cn":{"text_cn":"我听说他们的沙拉很棒，但我还是想吃汉堡。"},"kind":""},{"en":{"text_en":"Did anyone complete the compliance training due this month?"},"cn":{"text_cn":"有人完成了本月到期的合规培训吗？"},"kind":""},{"en":{"text_en":"Almost, I've been swamped, but I'll finish it by Friday."},"cn":{"text_cn":"快了，我一直忙得不可开交，但我会在周五前完成的。"},"kind":""},{"en":{"text_en":"How's the reception planning going for the new interns?"},"cn":{"text_cn":"新实习生的接待计划进行的如何？"},"kind":""},{"en":{"text_en":"We've ordered name badges and set up a welcome kit for each of them."},"cn":{"text_cn":"我们已经订购了名牌，并为她们每人准备了一套欢迎用品。"},"kind":""},{"en":{"text_en":"Remember to submit your expense reports by the end of the week."},"cn":{"text_cn":"记得在本周末前提交费用报告。"},"kind":""},{"en":{"text_en":"Can someone help me troubleshoot this printer? It's jammed again."},"cn":{"text_cn":"谁能帮我排除一下打印机的故障，它又卡纸了。"},"kind":""},{"en":{"text_en":"Have you seen the memo about the parking lot changes?"},"cn":{"text_cn":"你看到关于停车场变更的备忘录了吗？"},"kind":""},{"en":{"text_en":"Yes, there are assigned spots now based on seniority."},"cn":{"text_cn":"是的，他们现在根据资历来分配停车位。"},"kind":""},{"en":{"text_en":"We need to finalize the agenda for our team meeting next week."},"cn":{"text_cn":"我们需要确定下周团队会议的议程。"},"kind":""},{"en":{"text_en":"Let's add a point about the annual budget review, it's critical."},"cn":{"text_cn":"让我们补充一点关于年度预算审查的内容，这一点至关重要。"},"kind":""},{"en":{"text_en":"Did you get feedback on your report from the manager?"},"cn":{"text_cn":"你的报告得到经理的反馈了吗？"},"kind":""},{"en":{"text_en":"He asked for some revisions, but overall it was well received."},"cn":{"text_cn":"他要求做了一些修改，但总体来说还是不错的。"},"kind":""},{"en":{"text_en":"Is the Wi-Fi acting up, or is it just my laptop?"},"cn":{"text_cn":"是 Wi-Fi 出了问题，还是我的笔记本电脑出了问题？"},"kind":""},{"en":{"text_en":"It's been slow all morning, IT is looking into it."},"cn":{"text_cn":"整个早上都很慢，IT 部门正在调查。"},"kind":""},{"en":{"text_en":"Who's leading the client call at 2 pm?"},"cn":{"text_cn":"下午 2 点的客户电话由谁接听？"},"kind":""},{"en":{"text_en":"I am, but feel free to join if you have any updates for the client."},"cn":{"text_cn":"是我，但如果您有任何客户方面的最新信息，请随时加入。"},"kind":""},{"en":{"text_en":"Can you cover for me in tomorrow's update meeting? I have a doctor's appointment."},"cn":{"text_cn":"明天的更新会议你能帮我代班吗？我约了医生。"},"kind":""},{"en":{"text_en":"Sure, just send me your notes and I'll handle it."},"cn":{"text_cn":"当然可以，把你的笔记发给我，我来处理。"},"kind":""},{"en":{"text_en":"Does anyone need anything from the supply room?"},"cn":{"text_cn":"有人需要供应室的东西吗？"},"kind":""},{"en":{"text_en":"Could you grab me a pack of highlighters and sticky notes?"},"cn":{"text_cn":"能帮我拿一包荧光笔和便签吗？"},"kind":""},{"en":{"text_en":"The water cooler on this floor is out of service, you might want to use the one upstairs."},"cn":{"text_cn":"这层楼的饮水机已经停用，您可以使用楼上的饮水机。"},"kind":""},{"en":{"text_en":"Thanks for letting me know, I was about to take a break."},"cn":{"text_cn":"谢谢你告诉我，我正要休息一下。"},"kind":""},{"en":{"text_en":"We should compile a list of key points from the client feedback."},"cn":{"text_cn":"我们应该从客户反馈中整理出一份要点清单。"},"kind":""},{"en":{"text_en":"I've already started on that, should have it ready by the afternoon."},"cn":{"text_cn":"我已经开始做了，应该下午就能完成。"},"kind":""},{"en":{"text_en":"Anyone up for a coffee break around three?"},"cn":{"text_cn":"有人想在 3 点左右喝杯咖啡吗？"},"kind":""},{"en":{"text_en":"Count me in, I need a caffeine boost to get through these spreadsheets."},"cn":{"text_cn":"算我一个，我需要来点咖啡因才能完成这些电子表格。"},"kind":""},{"en":{"text_en":"Let's ensure our out-of-office replies are set before the holiday break."},"cn":{"text_cn":"让我们确保在放假前完成办公室外的回复。"},"kind":""},{"en":{"text_en":"Good reminder, I almost forgot with the year-end rush."},"cn":{"text_cn":"提醒的好，年终匆忙，我差点忘了。"},"kind":""},{"en":{"text_en":"Are we updating the team on the new health and safety protocols?"},"cn":{"text_cn":"我们是否向团队通报了新的健康和安全协议？"},"kind":""},{"en":{"text_en":"Yes, there's a meeting next Tuesday about it."},"cn":{"text_cn":"是的，下周二有相关会议。"},"kind":""},{"en":{"text_en":"How did the budget review go?"},"cn":{"text_cn":"预算审查进行的如何？"},"kind":""},{"en":{"text_en":"It was intense, but we managed to get approval for next year's funding."},"cn":{"text_cn":"很紧张，但我们成功地批准了明年的经费。"},"kind":""},{"en":{"text_en":"Is the copier fixed, or should I head to the other building to print?"},"cn":{"text_cn":"复印机修好了吗？还是我应该去其他大楼打印？"},"kind":""},{"en":{"text_en":"It's still down, better use the one in building B."},"cn":{"text_cn":"还是坏了，最好用 B 楼的复印机。"},"kind":""},{"en":{"text_en":"I need someone to double check my calculations on this financial model."},"cn":{"text_cn":"我需要有人再检查一下我对这个财务模型的计算。"},"kind":""},{"en":{"text_en":"I'll take a look after lunch, fresh eyes might spot something."},"cn":{"text_cn":"午餐后我再去看看，也许会有新发现。"},"kind":""},{"en":{"text_en":"Has anyone prepared the slides for the shareholder meeting?"},"cn":{"text_cn":"有人准备好股东大会的幻灯片了吗？"},"kind":""},{"en":{"text_en":"I'm on it, but could you help with the design aspect?"},"cn":{"text_cn":"我正在做，但在设计方面需要一些帮助。"},"kind":""},{"en":{"text_en":"Do we have any dietary restrictions for the upcoming team event?"},"cn":{"text_cn":"即将举行的团队活动有饮食限制吗？"},"kind":""},{"en":{"text_en":"Yes, two vegans and one gluten-free, I've notified the caterers."},"cn":{"text_cn":"有两名素食者和一名无麸质食物者，我已经通知了餐饮供应商。"},"kind":""},{"en":{"text_en":"Could you explain the new filing system? I'm a bit lost."},"cn":{"text_cn":"您能解释一下新的档案系统吗？我有点不明白。"},"kind":""},{"en":{"text_en":"Sure, let's walk through it together after you're done with your current task."},"cn":{"text_cn":"当然可以，等你忙完现在的工作，我们一起去看看。"},"kind":""},{"en":{"text_en":"I heard we might be getting a new coffee machine."},"cn":{"text_cn":"我听说我们可能要换新咖啡机了。"},"kind":""},{"en":{"text_en":"Really? I hope it has a good espresso option."},"cn":{"text_cn":"真的吗？我希望它有一个很好的浓缩咖啡选项。"},"kind":""},{"en":{"text_en":"Can we discuss the new marketing strategy you proposed?"},"cn":{"text_cn":"我们能讨论一下你提出的新营销策略吗？"},"kind":""},{"en":{"text_en":"Definitely, let's set up a time tomorrow to dive deep into it."},"cn":{"text_cn":"当然可以，明天我们约个时间深入探讨一下。"},"kind":""},{"en":{"text_en":"Is there any update on the server maintenance?"},"cn":{"text_cn":"伺服器维护有什么新进展吗？"},"kind":""},{"en":{"text_en":"It's scheduled for this weekend, so no access to some systems from Friday evening."},"cn":{"text_cn":"计划在本周末进行，所以从周五晚上开始，将无法访问某些系统。"},"kind":""},{"en":{"text_en":"We need to acknowledge the team's hard work in the last project at the next meeting."},"cn":{"text_cn":"我们需要在下次会议上感谢团队在上一个项目中的辛勤工作。"},"kind":""},{"en":{"text_en":"Absolutely, I'll make sure to highlight everyone's contributions."},"cn":{"text_cn":"当然，我一定会强调每个人的贡献。"},"kind":""},{"en":{"text_en":"The break room needs a cleanup, it's been overlooked for weeks."},"cn":{"text_cn":"休息室需要清理一下，它已经被忽视好几周了。"},"kind":""},{"en":{"text_en":"I'll mention it to facilities, thanks for pointing it out."},"cn":{"text_cn":"我会向设备部门提及此事，谢谢您的指出。"},"kind":""},{"en":{"text_en":"Who can update the database with the new client information?"},"cn":{"text_cn":"谁能用新客户信息更新数据库？"},"kind":""},{"en":{"text_en":"I can handle that before the end of the day."},"cn":{"text_cn":"我可以在下班前处理。"},"kind":""},{"en":{"text_en":"It's someone's birthday today, right? Should we sing or just do cake in the break room?"},"cn":{"text_cn":"今天是某人的生日吧，我们是唱歌还是在休息室做蛋糕？"},"kind":""},{"en":{"text_en":"Let's do cake, we can save the singing for the team lunch."},"cn":{"text_cn":"我们吃蛋糕吧，唱歌的事可以留到团队午餐时再说。"},"kind":""},{"en":{"text_en":"Are you attending the webinar on data security?"},"cn":{"text_cn":"您是否参加数据安全网络研讨会？"},"kind":""},{"en":{"text_en":"Yes, it's mandatory for our department."},"cn":{"text_cn":"是的，这是我们部门的必修课。"},"kind":""},{"en":{"text_en":"We need to cut costs, any suggestions on unnecessary expenses we can eliminate?"},"cn":{"text_cn":"我们需要消减成本，对于我们可以取消的不必要开支，有什么建议吗？"},"kind":""},{"en":{"text_en":"Let's review all our subscriptions, we might find some that are seldom used."},"cn":{"text_cn":"让我们回顾一下我们所有的订阅，我们可能会发现一些很少使用的订阅。"},"kind":""},{"en":{"text_en":"The elevator's out of order again, so use the stairs today."},"cn":{"text_cn":"电梯又坏了，今天走楼梯吧。"},"kind":""},{"en":{"text_en":"Thanks for the heads up, it's good exercise anyway."},"cn":{"text_cn":"谢谢你的提醒，不管怎样，这都是很好的锻炼。"},"kind":""},{"en":{"text_en":"Has the agenda for the overseas video conference been set?"},"cn":{"text_cn":"海外视频会议的议程确定了吗？"},"kind":""},{"en":{"text_en":"Yes, I emailed it yesterday, please review before the meeting."},"cn":{"text_cn":"是的，我昨天通过电子邮件发送了，请在会前审阅。"},"kind":""},{"en":{"text_en":"Can we allocate some budget for team building activities?"},"cn":{"text_cn":"我们能否拨出一些预算，用于团队建设活动？"},"kind":""},{"en":{"text_en":"That sounds like a great idea, I'll see what can be arranged."},"cn":{"text_cn":"这听起来是个好主意，我看看能安排些什么。"},"kind":""},{"en":{"text_en":"Did you complete the risk assessment for the new project?"},"cn":{"text_cn":"您完成新项目的风险评估了吗？"},"kind":""},{"en":{"text_en":"Working on it, but I'll need some input on a few points."},"cn":{"text_cn":"正在做，但我需要一些意见。"},"kind":""},{"en":{"text_en":"How long do you think the meeting will last?"},"cn":{"text_cn":"您认为会议将持续多久？"},"kind":""},{"en":{"text_en":"Not more than an hour, we need to keep it concise."},"cn":{"text_cn":"不超过一个小时，我们需要简明扼要。"},"kind":""},{"en":{"text_en":"Has anyone backed up the team's work for this month?"},"cn":{"text_cn":"是否有人备份了团队本月的工作？"},"kind":""},{"en":{"text_en":"It's automated, but I'll double check that everything's been saved correctly."},"cn":{"text_cn":"已经自动备份了，但我会仔细检查是否保存正确。"},"kind":""},{"en":{"text_en":"We're out of toner, can someone order more?"},"cn":{"text_cn":"墨粉用完了，谁能再订一些？"},"kind":""},{"en":{"text_en":"I'll add it to the office supply order list."},"cn":{"text_cn":"我会把它添加到办公用品订购单上。"},"kind":""},{"en":{"text_en":"Did the intern settle in OK?"},"cn":{"text_cn":"实习生适应的好吗？"},"kind":""},{"en":{"text_en":"Yes, they're catching on fast and seem eager to learn."},"cn":{"text_cn":"是的，他们学的很快，似乎很想学。"},"kind":""},{"en":{"text_en":"Can you help me analyze this data? I think there's a trend we're missing."},"cn":{"text_cn":"你能帮我分析一下这些数据吗？我觉得我们遗漏了一个趋势。"},"kind":""},{"en":{"text_en":"Let's plot it out and see if we can spot any patterns."},"cn":{"text_cn":"让我们把它绘制出来，看看能不能发现什么规律。"},"kind":""},{"en":{"text_en":"Who's handling the client follow up?"},"cn":{"text_cn":"谁在跟进客户？"},"kind":""},{"en":{"text_en":"I am, I'll send an update by the end of the day."},"cn":{"text_cn":"是我，我将在今天下班前发送更新信息。"},"kind":""},{"en":{"text_en":"We need to improve our weekly reports, they lack critical details."},"cn":{"text_cn":"我们需要改进我们的周报，它们缺乏关键细节。"},"kind":""},{"en":{"text_en":"Agreed, let's discuss how to enhance them in our next team huddle."},"cn":{"text_cn":"同意，让我们在下次团队会议上讨论如何改进。"},"kind":""},{"en":{"text_en":"The printer is finally fixed, no need to go upstairs anymore."},"cn":{"text_cn":"打印机终于修好了，不用再上楼了。"},"kind":""},{"en":{"text_en":"Great news, that's going to save us a lot of time."},"cn":{"text_cn":"好消息，这将为我们节省很多时间。"},"kind":""},{"en":{"text_en":"Can we review the emergency evacuation plan again? I'm not sure about a couple of things."},"cn":{"text_cn":"我们能再复习一遍紧急疏散计划吗？有几件事我不太确定。"},"kind":""},{"en":{"text_en":"Sure, let's ensure everyone is clear on it, safety first."},"cn":{"text_cn":"当然，让我们确保每个人都清楚这一点，安全第一。"},"kind":""},{"en":{"text_en":"Did anyone volunteer for the charity event next weekend?"},"cn":{"text_cn":"有人自愿参加下周末的慈善活动吗？"},"kind":""},{"en":{"text_en":"I did, and I could use some help setting things up."},"cn":{"text_cn":"我有，我需要一些帮助来布置现场。"},"kind":""},{"en":{"text_en":"Is the air conditioning too cold for anyone else?"},"cn":{"text_cn":"还有人觉得空调太冷吗？"},"kind":""},{"en":{"text_en":"It's a bit chilly, maybe we could adjust the thermostat."},"cn":{"text_cn":"有点冷，也许我们可以调一下恒温器。"},"kind":""},{"en":{"text_en":"We need a volunteer to lead the training session on the new software."},"cn":{"text_cn":"我们需要一名志愿者，来主持新软件的培训课程。"},"kind":""},{"en":{"text_en":"I can do it, I've been exploring its features lately."},"cn":{"text_cn":"我能做到，我最近一直在探索它的功能。"},"kind":""},{"en":{"text_en":"Who took the last of the coffee and didn't make a new pot?"},"cn":{"text_cn":"谁喝完了最后一壶咖啡，却没有重新煮一壶？"},"kind":""},{"en":{"text_en":"Sorry, that was me, I'll go brew another one right now."},"cn":{"text_cn":"对不起，是我，我现在就去再煮一壶。"},"kind":""},{"en":{"text_en":"Could you resend the invitation for tomorrow's webinar? I can't find it."},"cn":{"text_cn":"您能重新发送明天网络研讨会的邀请函吗？我找不到了。"},"kind":""},{"en":{"text_en":"Sure, I'll send it to your email and Slack just in case."},"cn":{"text_cn":"当然可以，我会发到你的邮箱和 Slack，以防万一。"},"kind":""},{"en":{"text_en":"How do we handle the feedback from the last project review?"},"cn":{"text_cn":"我们如何处理上次项目审查的反馈？"},"kind":""},{"en":{"text_en":"Let's address the critical points in a meeting and assign tasks to address them."},"cn":{"text_cn":"让我们在会议上讨论关键点，并分配任务来解决它们。"},"kind":""},{"en":{"text_en":"Did the boss say anything about hiring more staff?"},"cn":{"text_cn":"老板有没有说要招聘更多的员工？"},"kind":""},{"en":{"text_en":"Yes, two new positions are opening to help with our workload."},"cn":{"text_cn":"是的，有两个新职位，可以帮助我们完成工作量。"},"kind":""},{"en":{"text_en":"Is there a system outage, or is my computer just slow?"},"cn":{"text_cn":"是系统故障还是我的电脑太慢了？"},"kind":""},{"en":{"text_en":"It's a scheduled maintenance, should be back to normal by noon."},"cn":{"text_cn":"这是一次定期维护，中午前应该能恢复正常。"},"kind":""},{"en":{"text_en":"Can we celebrate the project's success at lunch today?"},"cn":{"text_cn":"我们能在今天午餐时庆祝项目成功吗？"},"kind":""},{"en":{"text_en":"Great idea, let's order pizza for the team."},"cn":{"text_cn":"好主意，我们为团队订一份披萨吧。"},"kind":""},{"en":{"text_en":"Who's responsible for updating the contact list for our department?"},"cn":{"text_cn":"谁负责更新我们部门的联络人名单？"},"kind":""},{"en":{"text_en":"I am, and I'll make sure it's done by the end of the week."},"cn":{"text_cn":"我，我会确保在周末前完成。"},"kind":""},{"en":{"text_en":"Any tips on how to deal with a difficult client?"},"cn":{"text_cn":"有对付难缠客户的秘诀吗？"},"kind":""},{"en":{"text_en":"Stay patient and listen more than you speak, it usually helps."},"cn":{"text_cn":"保持耐心，多听多说，这通常会有帮助。"},"kind":""},{"en":{"text_en":"Could you check the conference room availability for next Wednesday?"},"cn":{"text_cn":"你能查一下下周三的会议室空闲情况吗？"},"kind":""},{"en":{"text_en":"Will do, I'll email you the times that are free."},"cn":{"text_cn":"好的，我会把空闲的时间发邮件给你。"},"kind":""},{"en":{"text_en":"Has anyone seen the stapler? It's missing from my desk."},"cn":{"text_cn":"有人看到订书机了吗？我桌子上的订书机不见了。"},"kind":""},{"en":{"text_en":"Check the meeting room, it might still be there from the presentation."},"cn":{"text_cn":"去会议室看看，演讲时用过的，可能还在。"},"kind":""},{"en":{"text_en":"We should update our emergency contact information."},"cn":{"text_cn":"我们应该更新紧急联络人信息。"},"kind":""},{"en":{"text_en":"Good point, I'll send out a form for everyone to fill out."},"cn":{"text_cn":"说得好，我会发一份表格让大家填写。"},"kind":""},{"en":{"text_en":"Can we streamline our report process? It seems a bit redundant."},"cn":{"text_cn":"我们能简化报告程序吗？似乎有点多余。"},"kind":""},{"en":{"text_en":"Let's discuss this in our next efficiency meeting."},"cn":{"text_cn":"让我们在下次效率会议上讨论这个问题。"},"kind":""},{"en":{"text_en":"The copier is low on ink, should I order more?"},"cn":{"text_cn":"复印机的墨水不够用了，要不要再订一些？"},"kind":""},{"en":{"text_en":"Yes, and check if we need paper as well."},"cn":{"text_cn":"是的，还要看看是否需要纸张。"},"kind":""},{"en":{"text_en":"Do we have any current data on market trends?"},"cn":{"text_cn":"我们有关于市场趋势的最新数据吗？"},"kind":""},{"en":{"text_en":"I'll pull up the latest reports and share them with the team."},"cn":{"text_cn":"我会调出最新报告并与团队分享。"},"kind":""},{"en":{"text_en":"Has everyone completed their part of the project?"},"cn":{"text_cn":"每个人都完成自己的项目了吗？"},"kind":""},{"en":{"text_en":"I'm still waiting on a few numbers, but we should be ready soon."},"cn":{"text_cn":"我还在等一些数字，但我们应该很快就能准备好。"},"kind":""},{"en":{"text_en":"Can we arrange a demo for the new software next week?"},"cn":{"text_cn":"下周能安排新软件的演示吗？"},"kind":""},{"en":{"text_en":"I'll set it up and confirm with everyone."},"cn":{"text_cn":"我会安排并与大家确认。"},"kind":""},{"en":{"text_en":"Does anyone need help with their tasks today?"},"cn":{"text_cn":"今天的任务有人需要帮助吗？"},"kind":""},{"en":{"text_en":"I could use a second opinion on this design layout."},"cn":{"text_cn":"在设计布局方面，我需要第二个意见。"},"kind":""},{"en":{"text_en":"Remember to log your hours by the end of the day."},"cn":{"text_cn":"记得在一天结束前记录你的工时。"},"kind":""},{"en":{"text_en":"Will do, thanks for the reminder."},"cn":{"text_cn":"会的，谢谢提醒。"},"kind":""},{"en":{"text_en":"Who's on call for client issues this weekend?"},"cn":{"text_cn":"本周末谁值班处理客户问题？"},"kind":""},{"en":{"text_en":"I am, just forward any urgent emails my way."},"cn":{"text_cn":"我，有紧急邮件就转给我。"},"kind":""},{"en":{"text_en":"Can we update the break room rules? They seem outdated."},"cn":{"text_cn":"我们能更新一下休息室的规定吗？它们似乎已经过时了。"},"kind":""},{"en":{"text_en":"Sure, let's put together a proposal for management."},"cn":{"text_cn":"当然可以，我们给管理层写一份建议书吧。"},"kind":""},{"en":{"text_en":"Is the internet back up? I need to send an urgent email."},"cn":{"text_cn":"网络恢复了吗？我需要发一封紧急邮件。"},"kind":""},{"en":{"text_en":"It's still down, but you can connect to the mobile hotspot for now."},"cn":{"text_cn":"还在停机，但您可以暂时连接到移动热点。"},"kind":""},{"en":{"text_en":"How should we organize the files for easier access?"},"cn":{"text_cn":"我们应该如何整理文件以方便访问？"},"kind":""},{"en":{"text_en":"Let's categorize them by year and then by project."},"cn":{"text_cn":"先按年份分类，再按项目分类。"},"kind":""},{"en":{"text_en":"Could you help me with this budget forecast? I'm not sure about some items."},"cn":{"text_cn":"您能帮我做一下预算预测吗？有些项目我不确定。"},"kind":""},{"en":{"text_en":"Of course, let's go through it after lunch."},"cn":{"text_cn":"当然可以，午餐后再看吧。"},"kind":""},{"en":{"text_en":"We need to discuss the layout for the new office space."},"cn":{"text_cn":"我们需要讨论一下新办公空间的布局。"},"kind":""},{"en":{"text_en":"Agreed, let's make sure it promotes a good workflow."},"cn":{"text_cn":"同意，我们要确保它能促进良好的工作流程。"},"kind":""},{"en":{"text_en":"The client requested changes to the contract, who can look into this?"},"cn":{"text_cn":"客户要求修改合同，谁能调查一下？"},"kind":""},{"en":{"text_en":"I'll review it and draft an amendment."},"cn":{"text_cn":"我会审查并起草一份修正案。"},"kind":""},{"en":{"text_en":"Can we get a status update on the server upgrade?"},"cn":{"text_cn":"我们能得到服务器升级的最新情况吗？"},"kind":""},{"en":{"text_en":"I'll check with IT and get back to you by tomorrow."},"cn":{"text_cn":"我会与 IT 部联系，明天给你们答复。"},"kind":""},{"en":{"text_en":"Is the quarterly team outing planned yet?"},"cn":{"text_cn":"季度团队郊游计划好了吗？"},"kind":""},{"en":{"text_en":"Not yet, but we're thinking of something outdoors."},"cn":{"text_cn":"还没有，但我们正在考虑户外活动。"},"kind":""},{"en":{"text_en":"Who's handling the presentation at the expo next month?"},"cn":{"text_cn":"谁负责下个月博览会上的演示？"},"kind":""},{"en":{"text_en":"I am, but I could use some help preparing the materials."},"cn":{"text_cn":"我，但我需要一些帮助来准备材料。"},"kind":""},{"en":{"text_en":"Did you complete the risk assessment report?"},"cn":{"text_cn":"风险评估报告完成了吗？"},"kind":""},{"en":{"text_en":"I'm finalizing it, should be ready for review tomorrow."},"cn":{"text_cn":"我正在定稿，明天就可以提交审核了。"},"kind":""},{"en":{"text_en":"Can anyone recommend a good place for a team lunch?"},"cn":{"text_cn":"谁能推荐一个团队午餐的好去处？"},"kind":""},{"en":{"text_en":"How about that new Thai place around the corner?"},"cn":{"text_cn":"街角那家新开的泰国餐馆怎么样？"},"kind":""},{"en":{"text_en":"We need a new point of contact for our supplier, any volunteers?"},"cn":{"text_cn":"我们需要一个新的供应商联系人，有志愿者吗？"},"kind":""},{"en":{"text_en":"I'll handle it, I've already got a good rapport with them."},"cn":{"text_cn":"我会处理的，我已经和他们建立了良好的关系。"},"kind":""},{"en":{"text_en":"How do we access the archived project files?"},"cn":{"text_cn":"我们如何访问存档的项目文件？"},"kind":""},{"en":{"text_en":"I'll send you the link to the database, it's all stored there."},"cn":{"text_cn":"我会把数据库的链接发给你，所有文件都存储在那里。"},"kind":""},{"en":{"text_en":"Has the newsletter gone out yet?"},"cn":{"text_cn":"通讯发出了吗？"},"kind":""},{"en":{"text_en":"Yes, it was emailed this morning."},"cn":{"text_cn":"是的，今天早上通过电子邮件发送了。"},"kind":""},{"en":{"text_en":"We should consider upgrading our project management tools."},"cn":{"text_cn":"我们应该考虑升级我们的项目管理工具。"},"kind":""},{"en":{"text_en":"Agreed, let's schedule a meeting to review our options."},"cn":{"text_cn":"同意，让我们安排一次会议来审查我们的选择。"},"kind":""},{"en":{"text_en":"Can someone assist me with the projector? It's not connecting."},"cn":{"text_cn":"谁能帮我看看投影机连接不上？"},"kind":""},{"en":{"text_en":"I'll be right there, sometimes it's tricky to set up."},"cn":{"text_cn":"我马上就来，有时安装起来很麻烦。"},"kind":""},{"en":{"text_en":"Are we meeting our sustainability goals?"},"cn":{"text_cn":"我们是否实现了可持续发展目标？"},"kind":""},{"en":{"text_en":"We are on track, but let's discuss more initiatives we can implement."},"cn":{"text_cn":"我们已步入正轨，但让我们讨论一下可以实施的更多举措。"},"kind":""},{"en":{"text_en":"The water dispenser is empty, can someone replace it?"},"cn":{"text_cn":"饮水机是空的，谁能更换一下？"},"kind":""},{"en":{"text_en":"I'll grab a new bottle from the storeroom."},"cn":{"text_cn":"我去储藏室拿一瓶新的。"},"kind":""},{"en":{"text_en":"Has everyone signed the new health policy form?"},"cn":{"text_cn":"新的健康政策表格大家都签了吗？"},"kind":""},{"en":{"text_en":"I think a few people are still missing, I'll send a reminder."},"cn":{"text_cn":"我想还缺几个人，我会发一封提醒函。"},"kind":""},{"en":{"text_en":"What time is the team meeting tomorrow?"},"cn":{"text_cn":"明天的团队会议是几点？"},"kind":""},{"en":{"text_en":"It's at ten am, I'll send out an agenda soon."},"cn":{"text_cn":"上午 10 点，我很快就会发送议程。"},"kind":""},{"en":{"text_en":"Did we get approval for the new marketing budget?"},"cn":{"text_cn":"新的营销预算批准了吗？"},"kind":""},{"en":{"text_en":"Yes, it was approved this morning."},"cn":{"text_cn":"是的，今天上午批准了。"},"kind":""},{"en":{"text_en":"Can we introduce a casual Friday policy?"},"cn":{"text_cn":"我们能否推出周五休闲政策？"},"kind":""},{"en":{"text_en":"That's a good idea, let's propose it to HR."},"cn":{"text_cn":"这是个好主意，让我们向人力资源部提议吧。"},"kind":""},{"en":{"text_en":"Who knows how to fix the error in the spreadsheet formula?"},"cn":{"text_cn":"谁知道如何修正电子表格公式中的错误？"},"kind":""},{"en":{"text_en":"Let me take a look, I'm good with Excel."},"cn":{"text_cn":"我来看看，我对 Excel 很在行。"},"kind":""},{"en":{"text_en":"Are there any updates on the health insurance changes?"},"cn":{"text_cn":"医疗保险有什么新变化吗？"},"kind":""},{"en":{"text_en":"There's a meeting next week to go over everything."},"cn":{"text_cn":"下周会开会讨论一切。"},"kind":""},{"en":{"text_en":"Can we get some new art for the office walls? They look a bit bare."},"cn":{"text_cn":"我们能为办公室的墙壁添置一些新的艺术品吗？它们看起来有点光秃秃的。"},"kind":""},{"en":{"text_en":"Sure, let's pick something that brightens up the space."},"cn":{"text_cn":"当然可以，我们就挑些能让空间明亮起来的吧。"},"kind":""},{"en":{"text_en":"Does anyone know where the extra keyboards are stored?"},"cn":{"text_cn":"有人知道多余的键盘放在哪里吗？"},"kind":""},{"en":{"text_en":"Check the supply closet on the second floor."},"cn":{"text_cn":"去二楼的供应柜看看。"},"kind":""},{"en":{"text_en":"We should start planning for the end-of-year party."},"cn":{"text_cn":"我们应该开始计划年终聚会了。"},"kind":""},{"en":{"text_en":"Let's form a committee to handle the arrangements."},"cn":{"text_cn":"让我们成立一个委员会来处理安排事宜。"},"kind":""},{"en":{"text_en":"Is the air quality monitor working? It feels stuffy in here."},"cn":{"text_cn":"空气质量监测仪在工作吗？这里感觉很闷。"},"kind":""},{"en":{"text_en":"I'll check it and see if it needs new batteries or adjustments."},"cn":{"text_cn":"我去检查一下，看是否需要更换电池或进行调整。"},"kind":""}]}],"extra":""},"courseLabel":"商务英语 · 办公室常用语"}</script>
   <!-- 导入收藏用的隐藏文件选择框，由「导入收藏」按钮触发点击 -->
   <input type="file" accept="application/json" data-role="favorites-import-input" hidden>
   <!-- 导入同步配置（Token/Gist ID）用的隐藏文件选择框，由「导入配置」按钮触发点击 -->
@@ -1480,6 +1547,7 @@ body.single-doc .btn-listening {
   const QUIZ_BATCH_SIZE = 10; // 测验模式一批显示多少条，内容多时避免一次性渲染几百条卡顿
   const FAVORITES_PAGE_SIZE = 20; // 「我的收藏」词条列表每页条数，收藏多时避免一次性渲染几百条
   const FAVORITES_SEARCH_DEBOUNCE_MS = 150; // 收藏搜索框停止输入多久后才刷新列表
+  const AUTO_READ_DELAY_MS = 3000; // 一篇至少停留这么久、且滚动到底部，才自动标记为已看
 
   // 可选主题（id 与 style.css 的 :root[data-theme="id"] 一一对应）；light 为基础主题，不写 data-theme
   // swatch：收起态色块的背景，跟对应主题 style.css 里的 --color-bg 保持一致（改主题配色时这里也要同步改）
@@ -1551,6 +1619,14 @@ body.single-doc .btn-listening {
     favoritesSearchTimer: null, // 搜索框 debounce 用的 setTimeout 句柄
 
     syncPanelOpen: false, // "同步设置"面板是否展开，只存内存，刷新页面重置为收起
+
+    // 阅读进度：以下都只存内存，持久化的数据在收藏列表里的 read / position / course 记录
+    resumeHint: null, // 打开页面时"上次看到"提示条要指向的位置记录，null 表示不显示
+    isResumeHintDismissed: false, // 用户点过"继续"或"×"、或自己选了别的文档后不再显示提示
+    docOpenedAt: 0, // 当前这篇是什么时候打开的，用来判断停留够不够 AUTO_READ_DELAY_MS
+    manualUnreadSlugs: new Set(), // 本次打开期间手动取消过"已看"的文档，不再被自动标回去
+    isPositionDirty: false, // 用户在本页有过切换文档 / 滚动，才需要在离开时记录位置
+    autoReadTimer: null, // 打开文档后 AUTO_READ_DELAY_MS 检查一次（短文档一屏就看完，不会触发滚动）
 
     // 收藏跨设备同步状态，只存内存不持久化
     sync: {
@@ -2011,6 +2087,18 @@ body.single-doc .btn-listening {
       return !fav.favorited;
     }
 
+    // 取消"已看"的记录只是为了同步覆盖别的设备，跟取消收藏一样过期后可以清理
+    if (fav.kind === 'read') {
+
+      return !fav.read;
+    }
+
+    // 上次看到的位置、课程总篇数是每门课一条的状态记录，永远不清理
+    if (fav.kind === 'position' || fav.kind === 'course') {
+
+      return false;
+    }
+
     return !fav.favorited && !fav.mark;
   }
 
@@ -2246,6 +2334,12 @@ body.single-doc .btn-listening {
    * @returns {void}
    */
   function refreshAfterSync() {
+
+    // 别的设备的"已看"和"上次看到"可能刚合并进来
+    if (state.data.tree) {
+      updateReadProgressUI();
+      refreshResumeHint();
+    }
 
     if (state.view === 'favorites') {
       renderFavoritesView();
@@ -3270,6 +3364,442 @@ body.single-doc .btn-listening {
     return `<div class="resident resident--${field}">${escapeHtml(item[field])}</div>`;
   }
 
+  // ── 阅读进度（已看标记 + 上次看到的位置） ───────────────────────────
+  // 跟收藏存在同一个 localStorage 列表里（livenotes:favorites），借用收藏的 Gist 同步 / 导出导入，
+  // 用三种 kind 区分：
+  //   read     每篇一条，id = <课程>::<文档 slug>，read: true/false（取消标记保留 false 用于同步覆盖）
+  //   position 每门课一条，id = <课程>，上次看到的文档 + 滚动比例
+  //   course   每门课一条，id = <课程>，总篇数，给网站首页算"已看 x / 总数"
+  // 收藏的 doc / item 记录是按文档 slug 区分的，不同课程同名文档会串；进度记录都带课程前缀，不会串
+
+  /**
+   * 当前课程在进度记录里的标识：课程短标识为空（本地临时构建没传 --title）时用固定兜底，
+   * 因为同步合并会丢弃 id 为空的记录
+   * @returns {string}
+   */
+  function getCourseKey() {
+
+    return currentCourseLabel() || 'livenotes';
+  }
+
+  /**
+   * 当前课程已看过的文档 slug 集合
+   * @returns {Set<string>}
+   */
+  function loadReadSlugs() {
+
+    const courseKey = getCourseKey();
+
+    return new Set(
+      loadFavorites()
+        .filter((fav) => fav.kind === 'read' && fav.read && fav.courseLabel === courseKey)
+        .map((fav) => fav.docSlug)
+    );
+  }
+
+  /**
+   * 设置某篇的已看状态，状态没变就不写（避免无意义地触发同步推送）
+   * @param {string} slug
+   * @param {boolean} isRead
+   * @returns {void}
+   */
+  function setDocRead(slug, isRead) {
+
+    const courseKey = getCourseKey();
+    const id = `${courseKey}::${slug}`;
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'read', id);
+    const now = new Date().toISOString();
+
+
+    if (index >= 0 && Boolean(list[index].read) === isRead) {
+
+      return;
+    }
+
+    const record = { kind: 'read', id, courseLabel: courseKey, docSlug: slug, read: isRead, readAt: isRead ? now : null, updatedAt: now };
+
+    if (index >= 0) {
+      list[index] = record;
+    } else {
+      list.push(record);
+    }
+
+    persistFavorites(list);
+    updateReadProgressUI();
+  }
+
+  /**
+   * 底部"已看完"按钮：手动切换；手动取消后本次打开期间不再自动标回去
+   * @param {string} slug
+   * @returns {void}
+   */
+  function toggleDocRead(slug) {
+
+    const isRead = loadReadSlugs().has(slug);
+
+    if (isRead) {
+      state.manualUnreadSlugs.add(slug);
+    } else {
+      state.manualUnreadSlugs.delete(slug);
+    }
+
+    setDocRead(slug, !isRead);
+  }
+
+  /**
+   * 渲染正文末尾的"已看完"切换按钮（也是自动标记判断"滚动到底部"的参照位置）
+   * @param {string} slug
+   * @returns {string}
+   */
+  function renderReadToggle(slug) {
+
+    const isRead = loadReadSlugs().has(slug);
+
+    return `
+      <div class="read-toggle-row" data-role="read-toggle">
+        <button type="button" class="btn read-toggle${isRead ? ' is-read' : ''}" data-action="toggle-read" data-slug="${escapeAttr(slug)}">${isRead ? '✓ 已看完' : '标记为已看完'}</button>
+      </div>`;
+  }
+
+  /**
+   * 按当前记录刷新所有进度显示：侧边栏 ✓、章节 x/y、整门课进度、正文底部按钮。
+   * 原地改 DOM，不重绘侧边栏（重绘会丢掉章节展开状态和当前高亮）
+   * @returns {void}
+   */
+  function updateReadProgressUI() {
+
+    if (!state.data.tree) {
+
+      return;
+    }
+
+    const readSlugs = loadReadSlugs();
+
+
+    document.querySelectorAll('.doc-item[data-slug]').forEach((itemEl) => {
+      itemEl.classList.toggle('is-read', readSlugs.has(itemEl.dataset.slug));
+    });
+
+    document.querySelectorAll('.chapter[data-chapter-index]').forEach((chapterEl) => {
+      const group = state.data.tree[Number(chapterEl.dataset.chapterIndex)];
+      const readCount = group ? group.files.filter((file) => readSlugs.has(file.slug)).length : 0;
+      const progressEl = chapterEl.querySelector('.chapter-progress');
+
+      if (progressEl && group) {
+        progressEl.textContent = `${readCount}/${group.files.length}`;
+        progressEl.classList.toggle('is-done', readCount === group.files.length);
+      }
+    });
+
+    const courseProgressEl = document.querySelector('[data-role="course-progress"]');
+
+    if (courseProgressEl) {
+      const readCount = state.data.docs.filter((doc) => readSlugs.has(doc.slug)).length;
+
+      courseProgressEl.textContent = `已看 ${readCount} / ${state.data.docs.length}`;
+    }
+
+    // 正文底部按钮可能是同步合并后状态变了，原地更新文字
+    const toggleEl = document.querySelector('[data-action="toggle-read"]');
+
+    if (toggleEl) {
+      const isRead = readSlugs.has(toggleEl.dataset.slug);
+
+      toggleEl.classList.toggle('is-read', isRead);
+      toggleEl.textContent = isRead ? '✓ 已看完' : '标记为已看完';
+    }
+  }
+
+  /**
+   * 自动标记判断：正文视图、停留够 AUTO_READ_DELAY_MS、底部"已看完"按钮已经进入可视区域
+   * @returns {void}
+   */
+  function checkAutoRead() {
+
+    if (state.view !== 'doc' || !state.data.tree) {
+
+      return;
+    }
+
+    const slug = currentSlug();
+
+    if (!slug || state.manualUnreadSlugs.has(slug) || Date.now() - state.docOpenedAt < AUTO_READ_DELAY_MS) {
+
+      return;
+    }
+
+    const toggleRowEl = document.querySelector('[data-role="read-toggle"]');
+
+    if (toggleRowEl && toggleRowEl.getBoundingClientRect().top <= window.innerHeight) {
+      setDocRead(slug, true);
+    }
+  }
+
+  /**
+   * 打开文档后等停留时间够了再检查一次——短文档一屏就显示完，不会有滚动事件触发检查
+   * @returns {void}
+   */
+  function scheduleAutoReadCheck() {
+
+    clearTimeout(state.autoReadTimer);
+
+    const remaining = Math.max(0, AUTO_READ_DELAY_MS - (Date.now() - state.docOpenedAt));
+
+    state.autoReadTimer = setTimeout(checkAutoRead, remaining + 50);
+  }
+
+  /**
+   * 当前页面滚动到了全文的百分之多少（0～1）
+   * @returns {number}
+   */
+  function getCurrentScrollRatio() {
+
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+
+    if (scrollable <= 0) {
+
+      return 0;
+    }
+
+    return Math.min(1, Math.max(0, window.scrollY / scrollable));
+  }
+
+  /**
+   * 当前课程的"上次看到"记录
+   * @returns {object|null}
+   */
+  function loadPositionRecord() {
+
+    const courseKey = getCourseKey();
+
+    return loadFavorites().find((fav) => fav.kind === 'position' && fav.id === courseKey) || null;
+  }
+
+  /**
+   * 记录当前课程看到哪一篇、滚动到哪；跟已有记录基本一样就不写，避免频繁触发同步推送
+   * @param {number} scrollRatio - 0～1
+   * @returns {void}
+   */
+  function saveReadingPosition(scrollRatio) {
+
+    const doc = findDoc(currentSlug());
+
+    if (!state.data.tree || !doc) {
+
+      return;
+    }
+
+    const courseKey = getCourseKey();
+    const ratio = Math.round(scrollRatio * 1000) / 1000;
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'position', courseKey);
+    const existing = index >= 0 ? list[index] : null;
+
+
+    if (existing && existing.docSlug === doc.slug && Math.abs((existing.scrollRatio || 0) - ratio) < 0.01) {
+
+      return;
+    }
+
+    const record = {
+      kind: 'position', id: courseKey, courseLabel: courseKey, docSlug: doc.slug, docTitle: doc.title,
+      chapter: doc.chapter, scrollRatio: ratio, updatedAt: new Date().toISOString(),
+    };
+
+    if (index >= 0) {
+      list[index] = record;
+    } else {
+      list.push(record);
+    }
+
+    persistFavorites(list);
+  }
+
+  /**
+   * 写入 / 更新当前课程的总篇数记录（网站首页算进度用），没变就不写
+   * @returns {void}
+   */
+  function ensureCourseMeta() {
+
+    const courseKey = getCourseKey();
+    const docCount = state.data.docs.length;
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'course', courseKey);
+
+
+    if (index >= 0 && list[index].docCount === docCount) {
+
+      return;
+    }
+
+    const record = { kind: 'course', id: courseKey, courseLabel: courseKey, docCount, updatedAt: new Date().toISOString() };
+
+    if (index >= 0) {
+      list[index] = record;
+    } else {
+      list.push(record);
+    }
+
+    persistFavorites(list);
+  }
+
+  /**
+   * 渲染正文顶部的"上次看到"提示条，没有要提示的就返回空串
+   * @returns {string}
+   */
+  function renderResumeHint() {
+
+    const hint = state.resumeHint;
+
+    if (!hint || state.isResumeHintDismissed) {
+
+      return '';
+    }
+
+    const percent = Math.round((hint.scrollRatio || 0) * 100);
+    const label = [hint.chapter, hint.docTitle].filter(Boolean).join(' · ');
+
+    return `
+      <div class="resume-hint" data-role="resume-hint">
+        <span class="resume-hint-text">上次看到：${escapeHtml(label)}${percent > 0 ? `（${percent}%）` : ''}</span>
+        <span class="resume-hint-actions">
+          <button type="button" class="btn btn-sync-primary" data-action="resume-continue">继续</button>
+          <button type="button" class="btn" data-action="resume-dismiss" aria-label="关闭提示">×</button>
+        </span>
+      </div>`;
+  }
+
+  /**
+   * 按最新的位置记录重新决定要不要提示，并原地更新提示条（页面初始化、同步拉取合并后调用）。
+   * 上次看到的就是现在打开的第一篇开头时不提示
+   * @returns {void}
+   */
+  function refreshResumeHint() {
+
+    if (state.isResumeHintDismissed) {
+
+      return;
+    }
+
+    const record = loadPositionRecord();
+    const isSameAsNow = record && record.docSlug === currentSlug() && (record.scrollRatio || 0) < 0.05;
+
+    state.resumeHint = record && findDoc(record.docSlug) && !isSameAsNow ? record : null;
+
+    const existingEl = document.querySelector('[data-role="resume-hint"]');
+
+    if (existingEl) {
+      existingEl.remove();
+    }
+
+    const contentEl = document.querySelector('[data-role="content"]');
+
+    if (state.view === 'doc' && contentEl) {
+      contentEl.insertAdjacentHTML('afterbegin', renderResumeHint());
+    }
+  }
+
+  /**
+   * 点"继续"：跳到上次那一篇，展开它所在的章节，并滚动到上次的位置
+   * @returns {void}
+   */
+  function continueFromResumeHint() {
+
+    const hint = state.resumeHint;
+
+    if (!hint) {
+
+      return;
+    }
+
+    selectDoc(hint.docSlug);
+
+    const itemEl = document.querySelector(`.doc-item[data-slug="${CSS.escape(hint.docSlug)}"]`);
+    const chapterEl = itemEl ? itemEl.closest('.chapter') : null;
+
+    if (chapterEl) {
+      chapterEl.open = true;
+    }
+
+    const ratio = hint.scrollRatio || 0;
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+
+    window.scrollTo({ top: Math.max(0, scrollable * ratio) });
+    saveReadingPosition(ratio);
+  }
+
+  /**
+   * 点"×"：关闭提示，本次打开期间不再出现
+   * @returns {void}
+   */
+  function dismissResumeHint() {
+
+    state.isResumeHintDismissed = true;
+    state.resumeHint = null;
+
+    const hintEl = document.querySelector('[data-role="resume-hint"]');
+
+    if (hintEl) {
+      hintEl.remove();
+    }
+  }
+
+  /**
+   * 页面初始化时接入阅读进度：写课程总篇数、决定要不要提示上次位置、监听滚动和离开页面
+   * @returns {void}
+   */
+  function setupReadingProgress() {
+
+    let isScrollCheckQueued = false;
+
+
+    // 刷新页面时浏览器默认会恢复到原来的滚动位置，顶部的"上次看到"提示就被滚出视野；
+    // 位置由提示条的"继续"负责恢复，这里关掉浏览器的自动恢复
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+
+    ensureCourseMeta();
+    refreshResumeHint();
+
+    // 滚动：自动标记检查用 requestAnimationFrame 合并；提示条还在时滚动不算"开始在这里读"
+    window.addEventListener('scroll', () => {
+
+      if (!state.resumeHint || state.isResumeHintDismissed) {
+        state.isPositionDirty = true;
+      }
+
+      if (isScrollCheckQueued) {
+        return;
+      }
+
+      isScrollCheckQueued = true;
+
+      requestAnimationFrame(() => {
+        isScrollCheckQueued = false;
+        checkAutoRead();
+      });
+    }, { passive: true });
+
+    // 切到别的标签页 / App、关闭页面时记录看到哪；不在滚动时实时写，避免频繁触发同步
+    const savePositionOnLeave = () => {
+
+      if (state.isPositionDirty && state.view === 'doc') {
+        saveReadingPosition(getCurrentScrollRatio());
+      }
+    };
+
+    document.addEventListener('visibilitychange', () => {
+
+      if (document.visibilityState === 'hidden') {
+        savePositionOnLeave();
+      }
+    });
+
+    window.addEventListener('pagehide', savePositionOnLeave);
+  }
+
   /**
    * 渲染侧边栏章节树（仅 index 模式）
    * @param {{ chapter: string, files: object[] }[]} tree
@@ -3288,16 +3818,16 @@ body.single-doc .btn-listening {
         const favorited = Boolean(docRecord && docRecord.favorited);
 
         return `
-        <li class="doc-item">
-          <button type="button" class="doc-link" data-slug="${escapeAttr(file.slug)}">${escapeHtml(file.title || file.slug)}</button>
+        <li class="doc-item" data-slug="${escapeAttr(file.slug)}">
+          <button type="button" class="doc-link" data-slug="${escapeAttr(file.slug)}"><span class="doc-read-mark" aria-hidden="true">✓</span>${escapeHtml(file.title || file.slug)}</button>
           <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-doc" data-slug="${escapeAttr(file.slug)}" aria-label="收藏整篇">${favorited ? '★' : '☆'}</button>
         </li>`;
       }).join('');
 
       // 默认展开第一个章节
       return `
-        <details class="chapter"${groupIndex === 0 ? ' open' : ''}>
-          <summary class="chapter-title">${escapeHtml(group.chapter)}</summary>
+        <details class="chapter"${groupIndex === 0 ? ' open' : ''} data-chapter-index="${groupIndex}">
+          <summary class="chapter-title">${escapeHtml(group.chapter)}<span class="chapter-progress"></span></summary>
           <ul class="doc-list">${linksHtml}</ul>
         </details>`;
     }).join('');
@@ -3310,7 +3840,8 @@ body.single-doc .btn-listening {
       ? `<a class="sidebar-home" href="${escapeAttr(homeLink)}">◀ 全部课程</a>`
       : '';
 
-    sidebarEl.innerHTML = `<div class="sidebar-scroll">${groupsHtml}</div>${homeLinkHtml}`;
+    sidebarEl.innerHTML = `<div class="sidebar-scroll"><div class="course-progress" data-role="course-progress"></div>${groupsHtml}</div>${homeLinkHtml}`;
+    updateReadProgressUI();
   }
 
   /**
@@ -3589,10 +4120,14 @@ body.single-doc .btn-listening {
     const headerHtml = `<header class="doc-header">${chapterLabelHtml}${titleRowHtml}</header>`;
 
     contentEl.innerHTML = `
+      ${renderResumeHint()}
       ${headerHtml}
       ${sectionsHtml}
+      ${state.data.tree ? renderReadToggle(doc.slug) : ''}
       ${renderBottomControls()}
       ${renderDocPager(doc.slug)}`;
+
+    scheduleAutoReadCheck();
 
     updateAppTitle(doc.chapter);
 
@@ -5352,9 +5887,11 @@ body.single-doc .btn-listening {
   /**
    * 切换当前查看的 NoteDoc（index 模式）
    * @param {string} slug
+   * @param {{ isInitial?: boolean }} [options] - isInitial：页面初始化时默认打开第一篇，
+   *   不算用户操作，不关闭"上次看到"提示、不覆盖已记录的位置
    * @returns {void}
    */
-  function selectDoc(slug) {
+  function selectDoc(slug, { isInitial = false } = {}) {
 
     const doc = findDoc(slug);
 
@@ -5365,6 +5902,15 @@ body.single-doc .btn-listening {
 
     state.currentSlug = slug;
     state.view = 'doc';
+    state.docOpenedAt = Date.now();
+
+    // 用户自己选了一篇，"上次看到"提示就没意义了；位置记下来，离开页面时保存
+    if (!isInitial) {
+      state.isResumeHintDismissed = true;
+      state.resumeHint = null;
+      state.isPositionDirty = true;
+      saveReadingPosition(0);
+    }
 
     clearViewToggleButtons();
 
@@ -5474,6 +6020,9 @@ body.single-doc .btn-listening {
         if (action === 'next-quiz-batch') nextQuizBatch();
         if (action === 'next-listening-batch') nextListeningBatch();
         if (action === 'favorites-page-prev') changeFavoritesPage(-1);
+        if (action === 'toggle-read') toggleDocRead(actionEl.dataset.slug);
+        if (action === 'resume-continue') continueFromResumeHint();
+        if (action === 'resume-dismiss') dismissResumeHint();
         if (action === 'favorites-page-next') changeFavoritesPage(1);
         if (action === 'listening-choice') handleListeningChoice(actionEl);
         if (action === 'toggle-favorite-listening-item') handleToggleFavoriteListeningItem(actionEl);
@@ -5558,8 +6107,10 @@ body.single-doc .btn-listening {
     const firstSlug = firstDocSlug(state.data.tree);
 
     if (firstSlug) {
-      selectDoc(firstSlug);
+      selectDoc(firstSlug, { isInitial: true });
     }
+
+    setupReadingProgress();
   }
 
   init();

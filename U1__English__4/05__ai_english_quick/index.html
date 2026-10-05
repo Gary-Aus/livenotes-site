@@ -754,6 +754,73 @@ body.single-doc .btn-listening {
   font-weight: 600;
 }
 
+/* ── 阅读进度 ───────────────────────────────── */
+/* 侧边栏已看文档标题前的 ✓：没看过时不占位，标题不会因为预留空位而缩进 */
+.doc-read-mark {
+  display: none;
+  margin-right: 6px;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.doc-item.is-read .doc-read-mark { display: inline; }
+
+/* 章节标题后的 "3/5"，全部看完时换强调色 */
+.chapter-progress {
+  margin-left: 8px;
+  color: var(--color-muted);
+  font-size: 0.8em;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.chapter-progress.is-done { color: var(--color-accent); }
+
+/* 侧边栏顶部整门课进度 */
+.course-progress {
+  padding: 8px 6px;
+  color: var(--color-muted);
+  font-size: 0.85em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.course-progress:empty { display: none; }
+
+/* 正文顶部"上次看到"提示条：文字和按钮一行放不下时按钮换到下一行 */
+.resume-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+}
+
+.resume-hint-text { min-width: 0; overflow-wrap: anywhere; }
+
+.resume-hint-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* 正文末尾"已看完"按钮，居中；已看时用强调色描边提示状态 */
+.read-toggle-row {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0 8px;
+}
+
+.read-toggle.is-read {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  font-weight: 600;
+}
+
 /* ── 内容区 ───────────────────────────────── */
 .doc-header { margin-bottom: 16px; }
 
@@ -1482,6 +1549,7 @@ body.single-doc .btn-listening {
   const QUIZ_BATCH_SIZE = 10; // 测验模式一批显示多少条，内容多时避免一次性渲染几百条卡顿
   const FAVORITES_PAGE_SIZE = 20; // 「我的收藏」词条列表每页条数，收藏多时避免一次性渲染几百条
   const FAVORITES_SEARCH_DEBOUNCE_MS = 150; // 收藏搜索框停止输入多久后才刷新列表
+  const AUTO_READ_DELAY_MS = 3000; // 一篇至少停留这么久、且滚动到底部，才自动标记为已看
 
   // 可选主题（id 与 style.css 的 :root[data-theme="id"] 一一对应）；light 为基础主题，不写 data-theme
   // swatch：收起态色块的背景，跟对应主题 style.css 里的 --color-bg 保持一致（改主题配色时这里也要同步改）
@@ -1553,6 +1621,14 @@ body.single-doc .btn-listening {
     favoritesSearchTimer: null, // 搜索框 debounce 用的 setTimeout 句柄
 
     syncPanelOpen: false, // "同步设置"面板是否展开，只存内存，刷新页面重置为收起
+
+    // 阅读进度：以下都只存内存，持久化的数据在收藏列表里的 read / position / course 记录
+    resumeHint: null, // 打开页面时"上次看到"提示条要指向的位置记录，null 表示不显示
+    isResumeHintDismissed: false, // 用户点过"继续"或"×"、或自己选了别的文档后不再显示提示
+    docOpenedAt: 0, // 当前这篇是什么时候打开的，用来判断停留够不够 AUTO_READ_DELAY_MS
+    manualUnreadSlugs: new Set(), // 本次打开期间手动取消过"已看"的文档，不再被自动标回去
+    isPositionDirty: false, // 用户在本页有过切换文档 / 滚动，才需要在离开时记录位置
+    autoReadTimer: null, // 打开文档后 AUTO_READ_DELAY_MS 检查一次（短文档一屏就看完，不会触发滚动）
 
     // 收藏跨设备同步状态，只存内存不持久化
     sync: {
@@ -2013,6 +2089,18 @@ body.single-doc .btn-listening {
       return !fav.favorited;
     }
 
+    // 取消"已看"的记录只是为了同步覆盖别的设备，跟取消收藏一样过期后可以清理
+    if (fav.kind === 'read') {
+
+      return !fav.read;
+    }
+
+    // 上次看到的位置、课程总篇数是每门课一条的状态记录，永远不清理
+    if (fav.kind === 'position' || fav.kind === 'course') {
+
+      return false;
+    }
+
     return !fav.favorited && !fav.mark;
   }
 
@@ -2248,6 +2336,12 @@ body.single-doc .btn-listening {
    * @returns {void}
    */
   function refreshAfterSync() {
+
+    // 别的设备的"已看"和"上次看到"可能刚合并进来
+    if (state.data.tree) {
+      updateReadProgressUI();
+      refreshResumeHint();
+    }
 
     if (state.view === 'favorites') {
       renderFavoritesView();
@@ -3272,6 +3366,442 @@ body.single-doc .btn-listening {
     return `<div class="resident resident--${field}">${escapeHtml(item[field])}</div>`;
   }
 
+  // ── 阅读进度（已看标记 + 上次看到的位置） ───────────────────────────
+  // 跟收藏存在同一个 localStorage 列表里（livenotes:favorites），借用收藏的 Gist 同步 / 导出导入，
+  // 用三种 kind 区分：
+  //   read     每篇一条，id = <课程>::<文档 slug>，read: true/false（取消标记保留 false 用于同步覆盖）
+  //   position 每门课一条，id = <课程>，上次看到的文档 + 滚动比例
+  //   course   每门课一条，id = <课程>，总篇数，给网站首页算"已看 x / 总数"
+  // 收藏的 doc / item 记录是按文档 slug 区分的，不同课程同名文档会串；进度记录都带课程前缀，不会串
+
+  /**
+   * 当前课程在进度记录里的标识：课程短标识为空（本地临时构建没传 --title）时用固定兜底，
+   * 因为同步合并会丢弃 id 为空的记录
+   * @returns {string}
+   */
+  function getCourseKey() {
+
+    return currentCourseLabel() || 'livenotes';
+  }
+
+  /**
+   * 当前课程已看过的文档 slug 集合
+   * @returns {Set<string>}
+   */
+  function loadReadSlugs() {
+
+    const courseKey = getCourseKey();
+
+    return new Set(
+      loadFavorites()
+        .filter((fav) => fav.kind === 'read' && fav.read && fav.courseLabel === courseKey)
+        .map((fav) => fav.docSlug)
+    );
+  }
+
+  /**
+   * 设置某篇的已看状态，状态没变就不写（避免无意义地触发同步推送）
+   * @param {string} slug
+   * @param {boolean} isRead
+   * @returns {void}
+   */
+  function setDocRead(slug, isRead) {
+
+    const courseKey = getCourseKey();
+    const id = `${courseKey}::${slug}`;
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'read', id);
+    const now = new Date().toISOString();
+
+
+    if (index >= 0 && Boolean(list[index].read) === isRead) {
+
+      return;
+    }
+
+    const record = { kind: 'read', id, courseLabel: courseKey, docSlug: slug, read: isRead, readAt: isRead ? now : null, updatedAt: now };
+
+    if (index >= 0) {
+      list[index] = record;
+    } else {
+      list.push(record);
+    }
+
+    persistFavorites(list);
+    updateReadProgressUI();
+  }
+
+  /**
+   * 底部"已看完"按钮：手动切换；手动取消后本次打开期间不再自动标回去
+   * @param {string} slug
+   * @returns {void}
+   */
+  function toggleDocRead(slug) {
+
+    const isRead = loadReadSlugs().has(slug);
+
+    if (isRead) {
+      state.manualUnreadSlugs.add(slug);
+    } else {
+      state.manualUnreadSlugs.delete(slug);
+    }
+
+    setDocRead(slug, !isRead);
+  }
+
+  /**
+   * 渲染正文末尾的"已看完"切换按钮（也是自动标记判断"滚动到底部"的参照位置）
+   * @param {string} slug
+   * @returns {string}
+   */
+  function renderReadToggle(slug) {
+
+    const isRead = loadReadSlugs().has(slug);
+
+    return `
+      <div class="read-toggle-row" data-role="read-toggle">
+        <button type="button" class="btn read-toggle${isRead ? ' is-read' : ''}" data-action="toggle-read" data-slug="${escapeAttr(slug)}">${isRead ? '✓ 已看完' : '标记为已看完'}</button>
+      </div>`;
+  }
+
+  /**
+   * 按当前记录刷新所有进度显示：侧边栏 ✓、章节 x/y、整门课进度、正文底部按钮。
+   * 原地改 DOM，不重绘侧边栏（重绘会丢掉章节展开状态和当前高亮）
+   * @returns {void}
+   */
+  function updateReadProgressUI() {
+
+    if (!state.data.tree) {
+
+      return;
+    }
+
+    const readSlugs = loadReadSlugs();
+
+
+    document.querySelectorAll('.doc-item[data-slug]').forEach((itemEl) => {
+      itemEl.classList.toggle('is-read', readSlugs.has(itemEl.dataset.slug));
+    });
+
+    document.querySelectorAll('.chapter[data-chapter-index]').forEach((chapterEl) => {
+      const group = state.data.tree[Number(chapterEl.dataset.chapterIndex)];
+      const readCount = group ? group.files.filter((file) => readSlugs.has(file.slug)).length : 0;
+      const progressEl = chapterEl.querySelector('.chapter-progress');
+
+      if (progressEl && group) {
+        progressEl.textContent = `${readCount}/${group.files.length}`;
+        progressEl.classList.toggle('is-done', readCount === group.files.length);
+      }
+    });
+
+    const courseProgressEl = document.querySelector('[data-role="course-progress"]');
+
+    if (courseProgressEl) {
+      const readCount = state.data.docs.filter((doc) => readSlugs.has(doc.slug)).length;
+
+      courseProgressEl.textContent = `已看 ${readCount} / ${state.data.docs.length}`;
+    }
+
+    // 正文底部按钮可能是同步合并后状态变了，原地更新文字
+    const toggleEl = document.querySelector('[data-action="toggle-read"]');
+
+    if (toggleEl) {
+      const isRead = readSlugs.has(toggleEl.dataset.slug);
+
+      toggleEl.classList.toggle('is-read', isRead);
+      toggleEl.textContent = isRead ? '✓ 已看完' : '标记为已看完';
+    }
+  }
+
+  /**
+   * 自动标记判断：正文视图、停留够 AUTO_READ_DELAY_MS、底部"已看完"按钮已经进入可视区域
+   * @returns {void}
+   */
+  function checkAutoRead() {
+
+    if (state.view !== 'doc' || !state.data.tree) {
+
+      return;
+    }
+
+    const slug = currentSlug();
+
+    if (!slug || state.manualUnreadSlugs.has(slug) || Date.now() - state.docOpenedAt < AUTO_READ_DELAY_MS) {
+
+      return;
+    }
+
+    const toggleRowEl = document.querySelector('[data-role="read-toggle"]');
+
+    if (toggleRowEl && toggleRowEl.getBoundingClientRect().top <= window.innerHeight) {
+      setDocRead(slug, true);
+    }
+  }
+
+  /**
+   * 打开文档后等停留时间够了再检查一次——短文档一屏就显示完，不会有滚动事件触发检查
+   * @returns {void}
+   */
+  function scheduleAutoReadCheck() {
+
+    clearTimeout(state.autoReadTimer);
+
+    const remaining = Math.max(0, AUTO_READ_DELAY_MS - (Date.now() - state.docOpenedAt));
+
+    state.autoReadTimer = setTimeout(checkAutoRead, remaining + 50);
+  }
+
+  /**
+   * 当前页面滚动到了全文的百分之多少（0～1）
+   * @returns {number}
+   */
+  function getCurrentScrollRatio() {
+
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+
+    if (scrollable <= 0) {
+
+      return 0;
+    }
+
+    return Math.min(1, Math.max(0, window.scrollY / scrollable));
+  }
+
+  /**
+   * 当前课程的"上次看到"记录
+   * @returns {object|null}
+   */
+  function loadPositionRecord() {
+
+    const courseKey = getCourseKey();
+
+    return loadFavorites().find((fav) => fav.kind === 'position' && fav.id === courseKey) || null;
+  }
+
+  /**
+   * 记录当前课程看到哪一篇、滚动到哪；跟已有记录基本一样就不写，避免频繁触发同步推送
+   * @param {number} scrollRatio - 0～1
+   * @returns {void}
+   */
+  function saveReadingPosition(scrollRatio) {
+
+    const doc = findDoc(currentSlug());
+
+    if (!state.data.tree || !doc) {
+
+      return;
+    }
+
+    const courseKey = getCourseKey();
+    const ratio = Math.round(scrollRatio * 1000) / 1000;
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'position', courseKey);
+    const existing = index >= 0 ? list[index] : null;
+
+
+    if (existing && existing.docSlug === doc.slug && Math.abs((existing.scrollRatio || 0) - ratio) < 0.01) {
+
+      return;
+    }
+
+    const record = {
+      kind: 'position', id: courseKey, courseLabel: courseKey, docSlug: doc.slug, docTitle: doc.title,
+      chapter: doc.chapter, scrollRatio: ratio, updatedAt: new Date().toISOString(),
+    };
+
+    if (index >= 0) {
+      list[index] = record;
+    } else {
+      list.push(record);
+    }
+
+    persistFavorites(list);
+  }
+
+  /**
+   * 写入 / 更新当前课程的总篇数记录（网站首页算进度用），没变就不写
+   * @returns {void}
+   */
+  function ensureCourseMeta() {
+
+    const courseKey = getCourseKey();
+    const docCount = state.data.docs.length;
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'course', courseKey);
+
+
+    if (index >= 0 && list[index].docCount === docCount) {
+
+      return;
+    }
+
+    const record = { kind: 'course', id: courseKey, courseLabel: courseKey, docCount, updatedAt: new Date().toISOString() };
+
+    if (index >= 0) {
+      list[index] = record;
+    } else {
+      list.push(record);
+    }
+
+    persistFavorites(list);
+  }
+
+  /**
+   * 渲染正文顶部的"上次看到"提示条，没有要提示的就返回空串
+   * @returns {string}
+   */
+  function renderResumeHint() {
+
+    const hint = state.resumeHint;
+
+    if (!hint || state.isResumeHintDismissed) {
+
+      return '';
+    }
+
+    const percent = Math.round((hint.scrollRatio || 0) * 100);
+    const label = [hint.chapter, hint.docTitle].filter(Boolean).join(' · ');
+
+    return `
+      <div class="resume-hint" data-role="resume-hint">
+        <span class="resume-hint-text">上次看到：${escapeHtml(label)}${percent > 0 ? `（${percent}%）` : ''}</span>
+        <span class="resume-hint-actions">
+          <button type="button" class="btn btn-sync-primary" data-action="resume-continue">继续</button>
+          <button type="button" class="btn" data-action="resume-dismiss" aria-label="关闭提示">×</button>
+        </span>
+      </div>`;
+  }
+
+  /**
+   * 按最新的位置记录重新决定要不要提示，并原地更新提示条（页面初始化、同步拉取合并后调用）。
+   * 上次看到的就是现在打开的第一篇开头时不提示
+   * @returns {void}
+   */
+  function refreshResumeHint() {
+
+    if (state.isResumeHintDismissed) {
+
+      return;
+    }
+
+    const record = loadPositionRecord();
+    const isSameAsNow = record && record.docSlug === currentSlug() && (record.scrollRatio || 0) < 0.05;
+
+    state.resumeHint = record && findDoc(record.docSlug) && !isSameAsNow ? record : null;
+
+    const existingEl = document.querySelector('[data-role="resume-hint"]');
+
+    if (existingEl) {
+      existingEl.remove();
+    }
+
+    const contentEl = document.querySelector('[data-role="content"]');
+
+    if (state.view === 'doc' && contentEl) {
+      contentEl.insertAdjacentHTML('afterbegin', renderResumeHint());
+    }
+  }
+
+  /**
+   * 点"继续"：跳到上次那一篇，展开它所在的章节，并滚动到上次的位置
+   * @returns {void}
+   */
+  function continueFromResumeHint() {
+
+    const hint = state.resumeHint;
+
+    if (!hint) {
+
+      return;
+    }
+
+    selectDoc(hint.docSlug);
+
+    const itemEl = document.querySelector(`.doc-item[data-slug="${CSS.escape(hint.docSlug)}"]`);
+    const chapterEl = itemEl ? itemEl.closest('.chapter') : null;
+
+    if (chapterEl) {
+      chapterEl.open = true;
+    }
+
+    const ratio = hint.scrollRatio || 0;
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+
+    window.scrollTo({ top: Math.max(0, scrollable * ratio) });
+    saveReadingPosition(ratio);
+  }
+
+  /**
+   * 点"×"：关闭提示，本次打开期间不再出现
+   * @returns {void}
+   */
+  function dismissResumeHint() {
+
+    state.isResumeHintDismissed = true;
+    state.resumeHint = null;
+
+    const hintEl = document.querySelector('[data-role="resume-hint"]');
+
+    if (hintEl) {
+      hintEl.remove();
+    }
+  }
+
+  /**
+   * 页面初始化时接入阅读进度：写课程总篇数、决定要不要提示上次位置、监听滚动和离开页面
+   * @returns {void}
+   */
+  function setupReadingProgress() {
+
+    let isScrollCheckQueued = false;
+
+
+    // 刷新页面时浏览器默认会恢复到原来的滚动位置，顶部的"上次看到"提示就被滚出视野；
+    // 位置由提示条的"继续"负责恢复，这里关掉浏览器的自动恢复
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+
+    ensureCourseMeta();
+    refreshResumeHint();
+
+    // 滚动：自动标记检查用 requestAnimationFrame 合并；提示条还在时滚动不算"开始在这里读"
+    window.addEventListener('scroll', () => {
+
+      if (!state.resumeHint || state.isResumeHintDismissed) {
+        state.isPositionDirty = true;
+      }
+
+      if (isScrollCheckQueued) {
+        return;
+      }
+
+      isScrollCheckQueued = true;
+
+      requestAnimationFrame(() => {
+        isScrollCheckQueued = false;
+        checkAutoRead();
+      });
+    }, { passive: true });
+
+    // 切到别的标签页 / App、关闭页面时记录看到哪；不在滚动时实时写，避免频繁触发同步
+    const savePositionOnLeave = () => {
+
+      if (state.isPositionDirty && state.view === 'doc') {
+        saveReadingPosition(getCurrentScrollRatio());
+      }
+    };
+
+    document.addEventListener('visibilitychange', () => {
+
+      if (document.visibilityState === 'hidden') {
+        savePositionOnLeave();
+      }
+    });
+
+    window.addEventListener('pagehide', savePositionOnLeave);
+  }
+
   /**
    * 渲染侧边栏章节树（仅 index 模式）
    * @param {{ chapter: string, files: object[] }[]} tree
@@ -3290,16 +3820,16 @@ body.single-doc .btn-listening {
         const favorited = Boolean(docRecord && docRecord.favorited);
 
         return `
-        <li class="doc-item">
-          <button type="button" class="doc-link" data-slug="${escapeAttr(file.slug)}">${escapeHtml(file.title || file.slug)}</button>
+        <li class="doc-item" data-slug="${escapeAttr(file.slug)}">
+          <button type="button" class="doc-link" data-slug="${escapeAttr(file.slug)}"><span class="doc-read-mark" aria-hidden="true">✓</span>${escapeHtml(file.title || file.slug)}</button>
           <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-doc" data-slug="${escapeAttr(file.slug)}" aria-label="收藏整篇">${favorited ? '★' : '☆'}</button>
         </li>`;
       }).join('');
 
       // 默认展开第一个章节
       return `
-        <details class="chapter"${groupIndex === 0 ? ' open' : ''}>
-          <summary class="chapter-title">${escapeHtml(group.chapter)}</summary>
+        <details class="chapter"${groupIndex === 0 ? ' open' : ''} data-chapter-index="${groupIndex}">
+          <summary class="chapter-title">${escapeHtml(group.chapter)}<span class="chapter-progress"></span></summary>
           <ul class="doc-list">${linksHtml}</ul>
         </details>`;
     }).join('');
@@ -3312,7 +3842,8 @@ body.single-doc .btn-listening {
       ? `<a class="sidebar-home" href="${escapeAttr(homeLink)}">◀ 全部课程</a>`
       : '';
 
-    sidebarEl.innerHTML = `<div class="sidebar-scroll">${groupsHtml}</div>${homeLinkHtml}`;
+    sidebarEl.innerHTML = `<div class="sidebar-scroll"><div class="course-progress" data-role="course-progress"></div>${groupsHtml}</div>${homeLinkHtml}`;
+    updateReadProgressUI();
   }
 
   /**
@@ -3591,10 +4122,14 @@ body.single-doc .btn-listening {
     const headerHtml = `<header class="doc-header">${chapterLabelHtml}${titleRowHtml}</header>`;
 
     contentEl.innerHTML = `
+      ${renderResumeHint()}
       ${headerHtml}
       ${sectionsHtml}
+      ${state.data.tree ? renderReadToggle(doc.slug) : ''}
       ${renderBottomControls()}
       ${renderDocPager(doc.slug)}`;
+
+    scheduleAutoReadCheck();
 
     updateAppTitle(doc.chapter);
 
@@ -5354,9 +5889,11 @@ body.single-doc .btn-listening {
   /**
    * 切换当前查看的 NoteDoc（index 模式）
    * @param {string} slug
+   * @param {{ isInitial?: boolean }} [options] - isInitial：页面初始化时默认打开第一篇，
+   *   不算用户操作，不关闭"上次看到"提示、不覆盖已记录的位置
    * @returns {void}
    */
-  function selectDoc(slug) {
+  function selectDoc(slug, { isInitial = false } = {}) {
 
     const doc = findDoc(slug);
 
@@ -5367,6 +5904,15 @@ body.single-doc .btn-listening {
 
     state.currentSlug = slug;
     state.view = 'doc';
+    state.docOpenedAt = Date.now();
+
+    // 用户自己选了一篇，"上次看到"提示就没意义了；位置记下来，离开页面时保存
+    if (!isInitial) {
+      state.isResumeHintDismissed = true;
+      state.resumeHint = null;
+      state.isPositionDirty = true;
+      saveReadingPosition(0);
+    }
 
     clearViewToggleButtons();
 
@@ -5476,6 +6022,9 @@ body.single-doc .btn-listening {
         if (action === 'next-quiz-batch') nextQuizBatch();
         if (action === 'next-listening-batch') nextListeningBatch();
         if (action === 'favorites-page-prev') changeFavoritesPage(-1);
+        if (action === 'toggle-read') toggleDocRead(actionEl.dataset.slug);
+        if (action === 'resume-continue') continueFromResumeHint();
+        if (action === 'resume-dismiss') dismissResumeHint();
         if (action === 'favorites-page-next') changeFavoritesPage(1);
         if (action === 'listening-choice') handleListeningChoice(actionEl);
         if (action === 'toggle-favorite-listening-item') handleToggleFavoriteListeningItem(actionEl);
@@ -5560,8 +6109,10 @@ body.single-doc .btn-listening {
     const firstSlug = firstDocSlug(state.data.tree);
 
     if (firstSlug) {
-      selectDoc(firstSlug);
+      selectDoc(firstSlug, { isInitial: true });
     }
+
+    setupReadingProgress();
   }
 
   init();
