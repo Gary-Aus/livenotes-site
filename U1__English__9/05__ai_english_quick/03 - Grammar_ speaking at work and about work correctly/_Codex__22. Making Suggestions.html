@@ -1096,10 +1096,12 @@ body.single-doc .btn-listening {
   margin-bottom: 12px;
 }
 
-/* 收藏页两个筛选下拉给统一宽度，不管并排还是窄屏换行堆叠，头（左边）尾（右边）都能对齐；
-   等宽字体配合 app.js 的 renderAlignedOptions 补空格，让选项里的 "--" 分隔符尽量对齐 */
+/* 收藏页筛选下拉：宽度跟内容走、最小 150px（原来固定 150px，选项文案加长成"全部类型"后数量会被截掉）；
+   等宽字体配合 app.js 的 renderAlignedOptions 补空格，让同一个下拉里各选项的 "--" 分隔符尽量对齐 */
 .favorites-filter-select {
-  width: 150px;
+  width: auto;
+  min-width: 150px;
+  max-width: 100%;
   text-align: left;
   font-family: ui-monospace, "Cascadia Code", Consolas, "Courier New", monospace;
 }
@@ -1110,6 +1112,51 @@ body.single-doc .btn-listening {
 }
 
 .favorites-empty { color: var(--color-muted); }
+
+/* 收藏词条搜索框：样式跟同步面板的输入框一致，占满一行；高度跟按钮统一，手机上好点 */
+.favorites-search {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--hit-size);
+  margin-bottom: 12px;
+  padding: 6px 12px;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.favorites-search:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+
+/* 翻页后 scrollIntoView 到这个区块顶部，留出窄屏吸顶标题栏的高度，避免搜索框被挡住 */
+.favorites-items-section { scroll-margin-top: 72px; }
+
+/* 课程 / 章节名字长；max-width（见上）保证窄屏不撑出横向滚动，选中项过长时由浏览器截断。
+   这两个不做 "--" 对齐（见 app.js 的 renderPlainOptions），不需要等宽字体，用正文字体更紧凑 */
+.favorites-filter-select--wide {
+  font-family: inherit;
+}
+
+/* 分页条：上一页 / 页码 / 下一页一排居中，列表上下各一个 */
+.favorites-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.favorites-pager-info {
+  color: var(--color-muted);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.favorites-pager .btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
 /* 同步状态徽标：颜色跟具体状态挂钩，不跟主题色走（保证 10 个主题下都一眼能分清"正常/进行中/出错"） */
 .sync-status {
@@ -1431,6 +1478,8 @@ body.single-doc .btn-listening {
   const DEFAULT_MODE = 'en'; // 默认显示英文、隐藏中文
   const DEFAULT_THEME = 'kraft';
   const QUIZ_BATCH_SIZE = 10; // 测验模式一批显示多少条，内容多时避免一次性渲染几百条卡顿
+  const FAVORITES_PAGE_SIZE = 20; // 「我的收藏」词条列表每页条数，收藏多时避免一次性渲染几百条
+  const FAVORITES_SEARCH_DEBOUNCE_MS = 150; // 收藏搜索框停止输入多久后才刷新列表
 
   // 可选主题（id 与 style.css 的 :root[data-theme="id"] 一一对应）；light 为基础主题，不写 data-theme
   // swatch：收起态色块的背景，跟对应主题 style.css 里的 --color-bg 保持一致（改主题配色时这里也要同步改）
@@ -1468,6 +1517,15 @@ body.single-doc .btn-listening {
   // 「我的收藏」对号档位筛选下拉里，档位数字对应的中文数字（"1"→"一"，拼成"一档"）
   const MARK_LEVEL_CN = { 1: '一', 2: '二', 3: '三' };
 
+  // 「我的收藏」排序下拉的选项
+  const FAVORITES_SORT_LABELS = { newest: '最新收藏', oldest: '最早收藏', course: '课程章节顺序' };
+
+  // 「按课程章节顺序」排序时同一篇文档内各小节的先后，跟 md 里三张表的顺序一致
+  const SECTION_TYPE_ORDER = { vocab: 0, phrases: 1, sentences: 2, reading: 3 };
+
+  // 章节名、文档 slug 都以数字序号开头（"2 - ..."、"10 - ..."），按数字大小比较才不会出现 10 排在 2 前面
+  const NATURAL_COLLATOR = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+
   // ── 运行时状态 ───────────────────────────
   const state = {
     mode: DEFAULT_MODE,
@@ -1482,8 +1540,15 @@ body.single-doc .btn-listening {
     data: null,        // { docs, tree } 或 { doc }
 
     // 「我的收藏」词条列表的筛选条件，只存内存不持久化，刷新页面重置；'all' 表示不筛选
+    // 课程 / 章节筛选的取值加 'c:' 前缀，避免跟 'all' 撞名；课程为 null 表示还没选过，默认当前课程
+    favoritesCourseFilter: null, // null | 'all' | 'c:<课程短标识>'
+    favoritesChapterFilter: 'all', // 'all' | 'c:<章节名>'
     favoritesTypeFilter: 'all', // 'all' | 'vocab' | 'phrases' | 'sentences'
     favoritesMarkFilter: 'all', // 'all' | 'none' | 1 | 2 | 3
+    favoritesSort: 'newest', // 'newest' | 'oldest' | 'course'
+    favoritesSearch: '', // 搜索关键词，空串表示不搜索
+    favoritesPage: 1, // 词条列表当前页码（从 1 开始），渲染时会按实际总页数修正
+    favoritesSearchTimer: null, // 搜索框 debounce 用的 setTimeout 句柄
 
     syncPanelOpen: false, // "同步设置"面板是否展开，只存内存，刷新页面重置为收起
 
@@ -3700,49 +3765,125 @@ body.single-doc .btn-listening {
   }
 
   /**
-   * 渲染"收藏的词条"上方的类型 / 对号档位筛选条，选项文案里带上各筛选项的实际数量
-   * @param {object[]} itemFavs - 全部已收藏的 item 记录（未筛选）
-   * @returns {string}
+   * 收藏记录排序用的时间：优先收藏时间，没有就退化用最后修改时间
+   * @param {object} fav
+   * @returns {number} 毫秒时间戳，都没有返回 0
    */
-  function renderFavoritesFilterBar(itemFavs) {
+  function getFavoriteSortTime(fav) {
 
-    const typeOptions = renderAlignedOptions(['all', 'vocab', 'phrases', 'sentences'].map((type) => ({
-      value: type,
-      label: type === 'all' ? '全部' : SECTION_TYPE_LABELS[type],
-      count: type === 'all' ? itemFavs.length : itemFavs.filter((fav) => fav.sectionType === type).length,
-      selected: state.favoritesTypeFilter === type,
-    })));
+    const raw = fav.favoritedAt || fav.updatedAt || null;
+    const time = raw ? Date.parse(raw) : 0;
 
-    const markOptions = renderAlignedOptions(['all', 'none', '1', '2', '3'].map((markValue) => ({
-      value: markValue,
-      // 纯中文数字"一档/二档/三档"：全部选项都是纯中文 2 字，字体宽度比例一致，容易对齐；
-      // 中文数字跟后面阿拉伯数字的数量也不会看混
-      label: markValue === 'all' ? '全部' : markValue === 'none' ? '未评' : `${MARK_LEVEL_CN[markValue]}档`,
-      count: itemFavs.filter((fav) => {
-
-        if (markValue === 'all') return true;
-        if (markValue === 'none') return !fav.mark;
-
-        return fav.mark === Number(markValue);
-      }).length,
-      selected: String(state.favoritesMarkFilter) === markValue,
-    })));
-
-    return `
-      <div class="favorites-filter-bar">
-        <select class="btn favorites-filter-select" data-role="favorites-type-filter" aria-label="按类型筛选">${typeOptions}</select>
-        <select class="btn favorites-filter-select" data-role="favorites-mark-filter" aria-label="按对号档位筛选">${markOptions}</select>
-      </div>`;
+    return Number.isNaN(time) ? 0 : time;
   }
 
   /**
-   * 按当前筛选条件（state.favoritesTypeFilter / favoritesMarkFilter）过滤词条收藏列表
+   * 「按课程章节顺序」比较两条词条收藏：课程 → 章节 → 文档 → 小节类型 → 表格内序号
+   * @param {object} a
+   * @param {object} b
+   * @returns {number}
+   */
+  function compareFavoritesByCourseOrder(a, b) {
+
+    return NATURAL_COLLATOR.compare(a.courseLabel || '', b.courseLabel || '')
+      || NATURAL_COLLATOR.compare(a.chapter || '', b.chapter || '')
+      || NATURAL_COLLATOR.compare(a.docSlug || '', b.docSlug || '')
+      || (SECTION_TYPE_ORDER[a.sectionType] ?? 9) - (SECTION_TYPE_ORDER[b.sectionType] ?? 9)
+      || (a.itemIndex ?? 0) - (b.itemIndex ?? 0);
+  }
+
+  /**
+   * 按 state.favoritesSort 排序词条收藏（返回新数组，不改原数组）
    * @param {object[]} itemFavs
    * @returns {object[]}
    */
+  function sortItemFavorites(itemFavs) {
+
+    const sorted = [...itemFavs];
+
+    if (state.favoritesSort === 'course') {
+
+      return sorted.sort(compareFavoritesByCourseOrder);
+    }
+
+    if (state.favoritesSort === 'oldest') {
+
+      return sorted.sort((a, b) => getFavoriteSortTime(a) - getFavoriteSortTime(b));
+    }
+
+    return sorted.sort((a, b) => getFavoriteSortTime(b) - getFavoriteSortTime(a));
+  }
+
+  /**
+   * 判断一条词条收藏是否命中搜索关键词：在快照的英文 / 中文全部字段、备注、文档标题里找，不分大小写
+   * @param {object} fav
+   * @param {string} keyword - 已转小写、去掉首尾空格的关键词，空串视为全部命中
+   * @returns {boolean}
+   */
+  function isFavoriteMatchingSearch(fav, keyword) {
+
+    if (!keyword) {
+
+      return true;
+    }
+
+    const snapshot = fav.snapshot || {};
+    const texts = [
+      ...Object.values(snapshot.en || {}),
+      ...Object.values(snapshot.cn || {}),
+      snapshot.note,
+      snapshot.kind,
+      fav.docTitle,
+    ];
+
+    return texts.some((text) => typeof text === 'string' && text.toLowerCase().includes(keyword));
+  }
+
+  /**
+   * 课程筛选的实际取值：还没手动选过（null）时默认"本课程"
+   * @returns {string} 'all' | 'c:<课程短标识>'
+   */
+  function resolveFavoritesCourseFilter() {
+
+    return state.favoritesCourseFilter ?? `c:${currentCourseLabel()}`;
+  }
+
+  /**
+   * 课程短标识的展示文字：老记录没有 courseLabel 时显示"未标注课程"，当前所在课程加"（本课程）"
+   * @param {string} courseLabel
+   * @returns {string}
+   */
+  function formatCourseOptionLabel(courseLabel) {
+
+    const name = courseLabel || '未标注课程';
+
+    return courseLabel === currentCourseLabel() ? `${name}（本课程）` : name;
+  }
+
+  /**
+   * 按当前筛选条件分层过滤词条收藏。分层是为了让每个下拉框选项后面的数量只受"上游"条件影响：
+   * 课程数量受搜索影响，章节数量再受课程影响，类型 / 档位数量再受章节影响
+   * @param {object[]} itemFavs - 全部已收藏的 item 记录
+   * @returns {{ searched: object[], inCourse: object[], inChapter: object[], filtered: object[] }}
+   */
   function applyFavoritesFilter(itemFavs) {
 
-    return itemFavs.filter((fav) => {
+    const keyword = state.favoritesSearch.trim().toLowerCase();
+    const courseFilter = resolveFavoritesCourseFilter();
+
+
+    const searched = itemFavs.filter((fav) => isFavoriteMatchingSearch(fav, keyword));
+
+    const inCourse = courseFilter === 'all'
+      ? searched
+      : searched.filter((fav) => `c:${fav.courseLabel || ''}` === courseFilter);
+
+    // 章节筛选只在选了具体课程时生效（不同课程的章节名可能重名，混在一起筛没有意义）
+    const inChapter = courseFilter === 'all' || state.favoritesChapterFilter === 'all'
+      ? inCourse
+      : inCourse.filter((fav) => `c:${fav.chapter || ''}` === state.favoritesChapterFilter);
+
+    const filtered = inChapter.filter((fav) => {
 
       if (state.favoritesTypeFilter !== 'all' && fav.sectionType !== state.favoritesTypeFilter) {
 
@@ -3762,31 +3903,239 @@ body.single-doc .btn-listening {
 
       return true;
     });
+
+    return { searched, inCourse, inChapter, filtered };
   }
 
   /**
-   * 给筛选条的两个下拉框绑定 change 事件：每次 renderFavoritesView 都会重建 DOM，
-   * 所以每次渲染完都要重新绑定一次
+   * 把一批 { label, count } 拼成不补空格对齐的 <option> 列表：课程 / 章节名字长短差很多，
+   * 补齐到最长会把下拉框撑得过宽，手机上数量直接被挤出可见区域
+   * @param {{ value: string, label: string, count: number, selected: boolean }[]} entries
+   * @returns {string}
+   */
+  function renderPlainOptions(entries) {
+
+    return entries.map((entry) => (
+      `<option value="${escapeAttr(entry.value)}"${entry.selected ? ' selected' : ''}>${escapeHtml(entry.label)} -- ${entry.count}</option>`
+    )).join('');
+  }
+
+  /**
+   * 渲染"收藏的词条"上方的课程 / 章节 / 类型 / 对号档位 / 排序筛选条，选项文案里带上各筛选项的实际数量
+   * @param {{ searched: object[], inCourse: object[], inChapter: object[] }} scopes - applyFavoritesFilter 的分层结果
+   * @returns {string}
+   */
+  function renderFavoritesFilterBar({ searched, inCourse, inChapter }) {
+
+    const courseFilter = resolveFavoritesCourseFilter();
+
+    // 课程选项：本课程固定排第一（即使本课程还没有收藏，也要能选回来），其它课程按名字自然排序
+    const currentLabel = currentCourseLabel();
+    const otherLabels = [...new Set(searched.map((fav) => fav.courseLabel || ''))]
+      .filter((label) => label !== currentLabel)
+      .sort(NATURAL_COLLATOR.compare);
+
+    const courseOptions = renderPlainOptions([
+      { value: 'all', label: '全部课程', count: searched.length, selected: courseFilter === 'all' },
+      ...[currentLabel, ...otherLabels].map((label) => ({
+        value: `c:${label}`,
+        label: formatCourseOptionLabel(label),
+        count: searched.filter((fav) => (fav.courseLabel || '') === label).length,
+        selected: courseFilter === `c:${label}`,
+      })),
+    ]);
+
+    // 章节选项只列当前课程里有收藏的章节；选了"全部课程"时不显示章节下拉
+    const chapters = [...new Set(inCourse.map((fav) => fav.chapter || ''))].sort(NATURAL_COLLATOR.compare);
+
+    const chapterOptions = renderPlainOptions([
+      { value: 'all', label: '全部章节', count: inCourse.length, selected: state.favoritesChapterFilter === 'all' },
+      ...chapters.map((chapter) => ({
+        value: `c:${chapter}`,
+        label: chapter || '未标注章节',
+        count: inCourse.filter((fav) => (fav.chapter || '') === chapter).length,
+        selected: state.favoritesChapterFilter === `c:${chapter}`,
+      })),
+    ]);
+
+    const typeOptions = renderAlignedOptions(['all', 'vocab', 'phrases', 'sentences'].map((type) => ({
+      value: type,
+      label: type === 'all' ? '全部类型' : SECTION_TYPE_LABELS[type],
+      count: type === 'all' ? inChapter.length : inChapter.filter((fav) => fav.sectionType === type).length,
+      selected: state.favoritesTypeFilter === type,
+    })));
+
+    const markOptions = renderAlignedOptions(['all', 'none', '1', '2', '3'].map((markValue) => ({
+      value: markValue,
+      // 纯中文数字"一档/二档/三档"：全部选项都是纯中文 2 字，字体宽度比例一致，容易对齐；
+      // 中文数字跟后面阿拉伯数字的数量也不会看混
+      label: markValue === 'all' ? '全部档位' : markValue === 'none' ? '未评' : `${MARK_LEVEL_CN[markValue]}档`,
+      count: inChapter.filter((fav) => {
+
+        if (markValue === 'all') return true;
+        if (markValue === 'none') return !fav.mark;
+
+        return fav.mark === Number(markValue);
+      }).length,
+      selected: String(state.favoritesMarkFilter) === markValue,
+    })));
+
+    const sortOptions = Object.entries(FAVORITES_SORT_LABELS).map(([value, label]) => (
+      `<option value="${value}"${state.favoritesSort === value ? ' selected' : ''}>${escapeHtml(label)}</option>`
+    )).join('');
+
+    return `
+      <div class="favorites-filter-bar">
+        <select class="btn favorites-filter-select favorites-filter-select--wide" data-role="favorites-course-filter" aria-label="按课程筛选">${courseOptions}</select>
+        ${courseFilter === 'all' ? '' : `<select class="btn favorites-filter-select favorites-filter-select--wide" data-role="favorites-chapter-filter" aria-label="按章节筛选">${chapterOptions}</select>`}
+        <select class="btn favorites-filter-select" data-role="favorites-type-filter" aria-label="按类型筛选">${typeOptions}</select>
+        <select class="btn favorites-filter-select" data-role="favorites-mark-filter" aria-label="按对号档位筛选">${markOptions}</select>
+        <select class="btn favorites-filter-select" data-role="favorites-sort" aria-label="排序方式">${sortOptions}</select>
+      </div>`;
+  }
+
+  /**
+   * 渲染词条列表的分页条（只有 1 页时返回空串）
+   * @param {number} page - 当前页码（已修正到合法范围）
+   * @param {number} totalPages
+   * @returns {string}
+   */
+  function renderFavoritesPager(page, totalPages) {
+
+    if (totalPages <= 1) {
+
+      return '';
+    }
+
+    return `
+      <div class="favorites-pager">
+        <button type="button" class="btn" data-action="favorites-page-prev"${page <= 1 ? ' disabled' : ''}>◀ 上一页</button>
+        <span class="favorites-pager-info">第 ${page} / ${totalPages} 页</span>
+        <button type="button" class="btn" data-action="favorites-page-next"${page >= totalPages ? ' disabled' : ''}>下一页 ▶</button>
+      </div>`;
+  }
+
+  /**
+   * 渲染"收藏的词条"区块里随筛选 / 搜索 / 翻页变化的部分：标题数量、筛选条、分页条、当前页列表。
+   * 搜索框不在这里面，这样输入时只重绘这部分，搜索框不会丢失焦点
+   * @param {object[]} itemFavs - 全部已收藏的 item 记录
+   * @returns {string}
+   */
+  function renderFavoriteItemsBody(itemFavs) {
+
+    const scopes = applyFavoritesFilter(itemFavs);
+    const sorted = sortItemFavorites(scopes.filtered);
+    const totalPages = Math.max(1, Math.ceil(sorted.length / FAVORITES_PAGE_SIZE));
+
+
+    // 取消收藏 / 改筛选后总页数可能变少，页码超出时退回最后一页
+    state.favoritesPage = Math.min(Math.max(1, state.favoritesPage), totalPages);
+
+    const start = (state.favoritesPage - 1) * FAVORITES_PAGE_SIZE;
+    const pageHtml = sorted.slice(start, start + FAVORITES_PAGE_SIZE).map(renderItemFavoriteRow).join('');
+    const pagerHtml = renderFavoritesPager(state.favoritesPage, totalPages);
+
+    return `
+      <h2 class="section-title">收藏的词条（${sorted.length} / ${itemFavs.length}）</h2>
+      ${renderFavoritesFilterBar(scopes)}
+      ${sorted.length
+        ? `${pagerHtml}<ul class="item-list">${pageHtml}</ul>${pagerHtml}`
+        : '<p class="favorites-empty">没有符合筛选条件的词条。</p>'}`;
+  }
+
+  /**
+   * 只重绘"收藏的词条"可变部分（搜索输入、改筛选、翻页时用），不动搜索框和上方工具条
+   * @returns {void}
+   */
+  function refreshFavoriteItemsBody() {
+
+    const bodyEl = document.querySelector('[data-role="favorites-items-body"]');
+
+    if (!bodyEl) {
+
+      return;
+    }
+
+    const itemFavs = loadFavorites().filter((fav) => fav.kind === 'item' && fav.favorited);
+
+    bodyEl.innerHTML = renderFavoriteItemsBody(itemFavs);
+    setupFavoritesFilterSelects();
+  }
+
+  /**
+   * 翻页：页码加减后重绘列表，并滚回"收藏的词条"区块顶部（在底部分页条点翻页时不用再手动往上划）
+   * @param {number} delta - +1 下一页，-1 上一页
+   * @returns {void}
+   */
+  function changeFavoritesPage(delta) {
+
+    state.favoritesPage += delta;
+    refreshFavoriteItemsBody();
+
+    const sectionEl = document.querySelector('[data-role="favorites-items-section"]');
+
+    if (sectionEl) {
+      sectionEl.scrollIntoView({ block: 'start' });
+    }
+  }
+
+  /**
+   * 给筛选条的几个下拉框绑定 change 事件：每次重绘筛选条都会重建 DOM，所以每次渲染完都要重新绑定。
+   * 改任何筛选条件都回到第 1 页
    * @returns {void}
    */
   function setupFavoritesFilterSelects() {
 
-    const typeSelect = document.querySelector('[data-role="favorites-type-filter"]');
-    const markSelect = document.querySelector('[data-role="favorites-mark-filter"]');
+    const bindings = [
+      ['favorites-course-filter', (value) => {
+        state.favoritesCourseFilter = value;
 
-    if (typeSelect) {
-      typeSelect.addEventListener('change', () => {
-        state.favoritesTypeFilter = typeSelect.value;
-        renderFavoritesView();
+        // 换课程后旧章节一般不存在了，章节筛选重置
+        state.favoritesChapterFilter = 'all';
+      }],
+      ['favorites-chapter-filter', (value) => { state.favoritesChapterFilter = value; }],
+      ['favorites-type-filter', (value) => { state.favoritesTypeFilter = value; }],
+      ['favorites-mark-filter', (value) => { state.favoritesMarkFilter = value; }],
+      ['favorites-sort', (value) => { state.favoritesSort = value; }],
+    ];
+
+    for (const [role, applyValue] of bindings) {
+      const selectEl = document.querySelector(`[data-role="${role}"]`);
+
+      if (!selectEl) {
+        continue;
+      }
+
+      selectEl.addEventListener('change', () => {
+        applyValue(selectEl.value);
+        state.favoritesPage = 1;
+        refreshFavoriteItemsBody();
       });
     }
+  }
 
-    if (markSelect) {
-      markSelect.addEventListener('change', () => {
-        state.favoritesMarkFilter = markSelect.value;
-        renderFavoritesView();
-      });
+  /**
+   * 给搜索框绑定 input 事件：停止输入一小段时间后再刷新列表，回到第 1 页
+   * @returns {void}
+   */
+  function setupFavoritesSearchInput() {
+
+    const inputEl = document.querySelector('[data-role="favorites-search"]');
+
+    if (!inputEl) {
+
+      return;
     }
+
+    inputEl.addEventListener('input', () => {
+      clearTimeout(state.favoritesSearchTimer);
+
+      state.favoritesSearchTimer = setTimeout(() => {
+        state.favoritesSearch = inputEl.value;
+        state.favoritesPage = 1;
+        refreshFavoriteItemsBody();
+      }, FAVORITES_SEARCH_DEBOUNCE_MS);
+    });
   }
 
   /**
@@ -3797,7 +4146,11 @@ body.single-doc .btn-listening {
 
     const contentEl = document.querySelector('[data-role="content"]');
     const favorites = loadFavorites();
-    const docFavs = favorites.filter((fav) => fav.kind === 'doc' && fav.favorited);
+
+    // 两个列表都是最新收藏排最上面（词条列表另外还能在排序下拉里改）
+    const docFavs = favorites
+      .filter((fav) => fav.kind === 'doc' && fav.favorited)
+      .sort((a, b) => getFavoriteSortTime(b) - getFavoriteSortTime(a));
     const itemFavs = favorites.filter((fav) => fav.kind === 'item' && fav.favorited);
 
     if (docFavs.length === 0 && itemFavs.length === 0) {
@@ -3808,10 +4161,7 @@ body.single-doc .btn-listening {
       return;
     }
 
-    // 类型 / 对号档位筛选只作用于"词条"列表，"文档"列表没有类型/评分的概念
-    const filteredItemFavs = applyFavoritesFilter(itemFavs);
     const docFavsHtml = docFavs.map(renderDocFavoriteRow).join('');
-    const itemFavsHtml = filteredItemFavs.map(renderItemFavoriteRow).join('');
 
     contentEl.innerHTML = `
       ${renderFavoritesToolbar()}
@@ -3821,15 +4171,14 @@ body.single-doc .btn-listening {
           <ul class="item-list">${docFavsHtml}</ul>
         </section>` : ''}
       ${itemFavs.length ? `
-        <section class="section">
-          <h2 class="section-title">收藏的词条（${filteredItemFavs.length} / ${itemFavs.length}）</h2>
-          ${renderFavoritesFilterBar(itemFavs)}
-          ${filteredItemFavs.length
-            ? `<ul class="item-list">${itemFavsHtml}</ul>`
-            : '<p class="favorites-empty">没有符合筛选条件的词条。</p>'}
+        <section class="section favorites-items-section" data-role="favorites-items-section">
+          <input type="search" class="favorites-search" data-role="favorites-search"
+            value="${escapeAttr(state.favoritesSearch)}" placeholder="搜索收藏的词条（英文 / 中文）" autocomplete="off">
+          <div data-role="favorites-items-body">${renderFavoriteItemsBody(itemFavs)}</div>
         </section>` : ''}`;
 
     setupFavoritesFilterSelects();
+    setupFavoritesSearchInput();
   }
 
   /**
@@ -5124,6 +5473,8 @@ body.single-doc .btn-listening {
         if (action === 'toggle-listening-view') toggleListeningView();
         if (action === 'next-quiz-batch') nextQuizBatch();
         if (action === 'next-listening-batch') nextListeningBatch();
+        if (action === 'favorites-page-prev') changeFavoritesPage(-1);
+        if (action === 'favorites-page-next') changeFavoritesPage(1);
         if (action === 'listening-choice') handleListeningChoice(actionEl);
         if (action === 'toggle-favorite-listening-item') handleToggleFavoriteListeningItem(actionEl);
         if (action === 'toggle-listening-reveal') {
