@@ -335,6 +335,391 @@ body {
   border-color: var(--color-accent);
 }
 
+/* ── 句子训练（精听 / 听写 / 选词 / 回译）────────── */
+
+/* 入口按钮、当前标签页、「译」开关、主按钮：激活时都用强调色，跟测验 / 听力按钮一致 */
+.btn-training.is-active,
+.training-tab.is-active,
+.training-cn-toggle.is-active,
+.training-primary-btn {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.training-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.training-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.training-setting {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 0.9em;
+}
+
+.training-setting select {
+  min-height: 36px;
+  padding: 2px 6px;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.training-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: var(--color-muted);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.training-progress-bar {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  background: var(--mask-bg);
+  border-radius: 3px;
+}
+
+.training-progress-bar > div {
+  height: 100%;
+  background: var(--color-accent);
+}
+
+.training-card {
+  padding: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* 句子按词排成可换行的一行，每个词（含前后标点）不在中间断开 */
+.training-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3em 0.45em;
+  font-size: 1.25em;
+  line-height: 1.8;
+}
+
+.training-sentence--small {
+  font-size: 1em;
+}
+
+.training-word {
+  white-space: nowrap;
+}
+
+/* 精听被遮的词：斜纹块，宽度跟单词长度对应（--len 是字母数），点一下露出来 */
+.training-mask {
+  display: inline-block;
+  width: calc(var(--len) * 0.6em + 10px);
+  height: 1.1em;
+  padding: 0;
+  vertical-align: middle;
+  background: repeating-linear-gradient(135deg, var(--color-accent) 0 2px, transparent 2px 6px);
+  border: 0;
+  border-radius: 3px;
+  opacity: 0.55;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.training-revealed {
+  color: var(--color-accent);
+  border-bottom: 2px solid var(--color-accent);
+}
+
+/* 听写输入框：只留下划线，字号 >= 16px 避免 iOS 聚焦时自动放大页面 */
+.training-blank {
+  width: calc(var(--len) * 0.62em + 18px);
+  min-width: 2.2em;
+  padding: 0 2px;
+  font: inherit;
+  font-size: max(1em, 16px);
+  color: var(--color-text);
+  text-align: center;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--color-muted);
+  border-radius: 0;
+  outline: none;
+}
+
+.training-blank:focus {
+  border-bottom-color: var(--color-accent);
+}
+
+.training-answer {
+  font-weight: 600;
+}
+
+.training-answer.is-correct { color: #16a34a; }
+.training-answer.is-wrong { color: #dc2626; }
+
+/* 用了提示才填对的词 / 用过提示的输入框：橙色，跟自己填对的绿色区分开 */
+.training-answer.is-hinted { color: #d97706; }
+.training-blank.is-hinted { border-bottom-color: #d97706; }
+
+/* 能点了单独发音的词：平时看不出区别，鼠标移上去 / 按下时给个底色反馈 */
+.training-speakable {
+  border-radius: 3px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.training-speakable:hover,
+.training-speakable:active {
+  background: var(--mask-bg);
+}
+
+/* 盲听：揭示前不显示句子，只放一行说明，撑住卡片高度避免揭示时页面跳动太大 */
+.training-blind {
+  padding: 8px 0;
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.training-card-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.training-card-tools .training-note {
+  margin: 0;
+}
+
+/* 做完一句后的词汇点 / 讲解（泛读原文才有） */
+.training-notes {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--color-border);
+  font-size: 0.92em;
+}
+
+.training-notes-vocab {
+  margin: 0 0 8px;
+  padding-left: 1.2em;
+}
+
+.training-notes-word {
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.training-notes-grammar {
+  color: var(--color-muted);
+}
+
+/* 进度条右边的"从头开始"：做成文字链接样式，不跟播放控制按钮抢眼 */
+.training-link-btn {
+  padding: 4px 2px;
+  font: inherit;
+  color: var(--color-accent);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* 听写错了：先划掉自己填的，后面跟正确答案 */
+.training-given {
+  margin-right: 0.25em;
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+/* 回译里自己多写 / 写错的词 */
+.training-word.is-extra {
+  color: #d97706;
+  text-decoration: line-through;
+}
+
+/* 选词的空：下划线，当前要填的那个用强调色 */
+.training-slot {
+  display: inline-block;
+  width: calc(var(--len) * 0.6em + 10px);
+  height: 1em;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.training-slot.is-current {
+  border-bottom-color: var(--color-accent);
+}
+
+.training-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.training-tile {
+  min-height: var(--hit-size);
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 1.05em;
+  color: var(--color-text);
+  background: var(--mask-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* 用过的方块留着空位不挪动，其它方块位置不跳 */
+.training-tile.is-used {
+  visibility: hidden;
+}
+
+.training-tile.is-wrong {
+  background: #fbd0d0;
+  animation: training-shake 0.3s;
+}
+
+@keyframes training-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.training-cn {
+  margin-top: 12px;
+  color: var(--color-muted);
+}
+
+.training-note {
+  margin: 12px 0 0;
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.training-backtrans-cn {
+  margin-bottom: 12px;
+  font-size: 1.15em;
+}
+
+.training-backtrans-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px;
+  font: inherit;
+  font-size: max(1em, 16px);
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  resize: vertical;
+}
+
+.training-backtrans-label {
+  margin: 12px 0 4px;
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.training-player {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 16px 0 8px;
+}
+
+.training-play-btn {
+  min-width: 96px;
+}
+
+.training-player .btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* 主按钮做完本句操作后（已检查 / 已对比……）换成灰色素底，一眼看出这句已经做过了 */
+.training-player .training-primary-btn:disabled,
+.training-player .training-primary-btn.is-done {
+  color: var(--color-muted);
+  background: var(--mask-bg);
+  border-color: var(--color-border);
+  opacity: 1;
+}
+
+.training-shortcuts {
+  margin: 0 0 16px;
+  color: var(--color-muted);
+  font-size: 0.8em;
+  text-align: center;
+}
+
+.training-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.training-stat {
+  padding: 12px;
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.training-stat b {
+  display: block;
+  font-size: 1.4em;
+}
+
+.training-stat span {
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.training-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.training-review-title {
+  margin: 20px 0 8px;
+  font-size: 1.05em;
+}
+
+.training-review-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.training-review-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
 /* 朗读语音选择：语音名字长短不一，限个最大宽度，太长的用省略号截断 */
 .voice-select {
   max-width: 140px;
@@ -1439,6 +1824,13 @@ body.single-doc .btn-listening {
     transform: translateY(-100%);
   }
 
+  /* 手机上没有实体键盘，快捷键说明不显示；选词方块固定三列，跟可可 App 的九宫格一样 */
+  .training-shortcuts { display: none; }
+
+  .training-tiles { grid-template-columns: repeat(3, 1fr); }
+
+  .training-card { padding: 16px; }
+
   .item-actions .mark-btn {
     min-width: 36px;
     min-height: 36px;
@@ -1471,6 +1863,7 @@ body.single-doc .btn-listening {
       <button data-action="toggle-favorites-view" class="btn btn-favorites">收藏</button>
       <button data-action="toggle-quiz-view" class="btn btn-quiz">测验</button>
       <button data-action="toggle-listening-view" class="btn btn-listening">听力</button>
+      <button data-action="toggle-training-view" class="btn btn-training">训练</button>
       <!-- 设置菜单：主题、朗读语音这些不常切换的收进弹出面板，节省顶部工具条常驻宽度 -->
       <span class="settings-menu-wrap">
         <button type="button" class="btn" data-action="toggle-settings-menu" aria-label="设置">⚙️</button>
@@ -1522,6 +1915,7 @@ body.single-doc .btn-listening {
  *   ② 每个 item 独立揭示按钮 → 隐藏侧从下方展开 / 收起
  * 顶部便捷键：全部展开 / 全部收起
  * 顶部主题下拉：切换配色主题（含「跟随系统」）
+ * 句子训练：当前这篇的句子逐句练精听（遮词）/ 听写 / 选词 / 回译，用浏览器朗读
  * 状态（模式、主题、已展开项）存 localStorage
  */
 
@@ -1538,6 +1932,8 @@ body.single-doc .btn-listening {
   const STORAGE_SYNC_TOKEN_KEY = 'livenotes:sync-token';
   const STORAGE_SYNC_GIST_ID_KEY = 'livenotes:sync-gist-id';
   const STORAGE_VOICE_KEY = 'livenotes:voice';
+  const STORAGE_TRAINING_KEY = 'livenotes:training';
+  const STORAGE_TRAINING_POS_KEY = 'livenotes:training-pos';
 
   // ── 收藏跨设备同步（GitHub Gist）──────────
   const GIST_API_BASE = 'https://api.github.com/gists';
@@ -1550,6 +1946,35 @@ body.single-doc .btn-listening {
   const FAVORITES_PAGE_SIZE = 20; // 「我的收藏」词条列表每页条数，收藏多时避免一次性渲染几百条
   const FAVORITES_SEARCH_DEBOUNCE_MS = 150; // 收藏搜索框停止输入多久后才刷新列表
   const AUTO_READ_DELAY_MS = 3000; // 一篇至少停留这么久、且滚动到底部，才自动标记为已看
+  const TRAINING_LOOP_GAP_MS = 600; // 句子训练单句循环时，两遍之间停顿多久，太紧凑听不出句子边界
+  const TRAINING_POS_MAX_ENTRIES = 300; // 「每篇练到第几句」最多记多少篇，超出删最早记的，避免 localStorage 越攒越大
+  const TRAINING_HINT_SCORE = 0.5; // 听写用过首字母提示、最后填对的空，只算半个对
+
+  // 句子训练的四个标签页
+  const TRAINING_TABS = [
+    { id: 'listen', label: '精听' },
+    { id: 'dictation', label: '听写' },
+    { id: 'pick', label: '选词' },
+    { id: 'backtrans', label: '回译' },
+  ];
+
+  // 各标签页可选难度（挖空规则见 isTrainingBlank）；回译没有难度
+  const TRAINING_LEVELS = {
+    listen: [{ id: 'easy', label: '简单' }, { id: 'medium', label: '中等' }, { id: 'hard', label: '困难' }, { id: 'blind', label: '盲听' }],
+    dictation: [{ id: 'easy', label: '简单' }, { id: 'hard', label: '困难' }],
+    pick: [{ id: 'easy', label: '简单' }, { id: 'hard', label: '困难' }],
+  };
+
+  const TRAINING_LOOP_OPTIONS = [1, 2, 3, 4, 5, 0]; // 每句播放几遍，0 表示无限循环
+  const TRAINING_RATE_OPTIONS = [0.5, 0.8, 1, 1.2, 1.5, 2];
+
+  const DEFAULT_TRAINING_SETTINGS = {
+    tab: 'listen',
+    levels: { listen: 'medium', dictation: 'easy', pick: 'easy' },
+    loop: 1,
+    rate: 1,
+    showCn: false,
+  };
 
   // 可选主题（id 与 style.css 的 :root[data-theme="id"] 一一对应）；light 为基础主题，不写 data-theme
   // swatch：收起态色块的背景，跟对应主题 style.css 里的 --color-bg 保持一致（改主题配色时这里也要同步改）
@@ -1600,12 +2025,14 @@ body.single-doc .btn-listening {
   const state = {
     mode: DEFAULT_MODE,
     theme: DEFAULT_THEME,
-    view: 'doc',       // 'doc'：正常文档视图；'favorites'：我的收藏视图；'quiz'：测验模式
+    view: 'doc',       // 'doc'：正常文档视图；'favorites'：我的收藏视图；'quiz'：测验模式；'listening'：听力；'training'：句子训练
     allExpanded: false, // 当前文档是否处于"全部展开"状态，决定切换按钮图标 ➕ / ➖
     quizPool: null,    // 测验模式当前这一轮打乱后的条目池，null 表示需要重新洗牌
     quizBatchOffset: 0, // 当前显示的是池子里第几批（每批 QUIZ_BATCH_SIZE 条）
     listeningPool: null,    // 听力模式当前这一轮的条目池，结构跟 quizPool 一样
     listeningBatchOffset: 0, // 当前显示的是听力池子里第几批
+    training: null, // 句子训练当前会话（只练当前这篇），结构见 startTraining；null 表示没进过训练视图
+    trainingSettings: null, // 句子训练的设置（标签页 / 难度 / 循环 / 语速 / 译），持久化到 localStorage
     currentSlug: null, // index 模式下当前查看的 NoteDoc
     data: null,        // { docs, tree } 或 { doc }
 
@@ -2355,6 +2782,12 @@ body.single-doc .btn-listening {
       return;
     }
 
+    // 句子训练里可能正在填空 / 打字，同步回来重渲染会把输入清掉，不刷新
+    if (state.view === 'training') {
+
+      return;
+    }
+
     const slug = currentSlug();
     const doc = findDoc(slug);
 
@@ -2785,14 +3218,16 @@ body.single-doc .btn-listening {
    * 一起清空（退回"随时都该复习"的状态），供 sortPoolBySrsPriority 用
    * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
    * @param {1|2|3} level
+   * @param {{ isToggle?: boolean }} [options] - isToggle 为 false 时直接设成该档，不做"再点一次清空"
+   *   （句子训练做错自动记一档用：本来就是一档的句子再错一次，要重新排期而不是被清掉）
    * @returns {void}
    */
-  function setItemMark(context, level) {
+  function setItemMark(context, level, { isToggle = true } = {}) {
 
     const { list, record } = ensureItemRecord(context);
     const now = new Date().toISOString();
 
-    record.mark = record.mark === level ? null : level;
+    record.mark = isToggle && record.mark === level ? null : level;
     record.markedAt = record.mark ? now : null;
 
     if (record.mark !== null) {
@@ -3323,9 +3758,11 @@ body.single-doc .btn-listening {
   /**
    * 用浏览器自带的语音合成朗读一段英文；不支持的浏览器（极少见）静默跳过
    * @param {string} text
+   * @param {{ rate?: number, onEnd?: Function, onError?: Function }} [options] - 句子训练用：
+   *   语速、念完回调（用来做单句循环）、出错回调；普通 ▶ 按钮不传
    * @returns {void}
    */
-  function speakText(text) {
+  function speakText(text, options = {}) {
 
     if (!text || typeof window.speechSynthesis === 'undefined') {
 
@@ -3343,6 +3780,16 @@ body.single-doc .btn-listening {
       utterance.lang = voice.lang;
     } else {
       utterance.lang = 'en-US';
+    }
+
+    utterance.rate = options.rate || 1;
+
+    if (options.onEnd) {
+      utterance.onend = options.onEnd;
+    }
+
+    if (options.onError) {
+      utterance.onerror = options.onError;
     }
 
     window.speechSynthesis.speak(utterance);
@@ -3875,6 +4322,7 @@ body.single-doc .btn-listening {
         <button type="button" data-action="toggle-favorites-view" class="btn btn-favorites">收藏</button>
         <button type="button" data-action="toggle-quiz-view" class="btn btn-quiz">测验</button>
         <button type="button" data-action="toggle-listening-view" class="btn btn-listening">听力</button>
+        <button type="button" data-action="toggle-training-view" class="btn btn-training">训练</button>
       </div>`;
   }
 
@@ -4736,6 +5184,13 @@ body.single-doc .btn-listening {
     document.querySelectorAll('[data-action="toggle-listening-view"]').forEach((btn) => {
       btn.classList.remove('is-active');
     });
+
+    document.querySelectorAll('[data-action="toggle-training-view"]').forEach((btn) => {
+      btn.classList.remove('is-active');
+    });
+
+    // 每次切换视图都会走到这里，顺带停掉句子训练还在循环的朗读，不然离开后还会一直念
+    stopTrainingPlayback();
   }
 
   /**
@@ -5323,6 +5778,1486 @@ body.single-doc .btn-listening {
       ${renderBottomControls('<button type="button" class="btn bottom-controls-leading" data-action="next-listening-batch">换一批</button>')}`;
   }
 
+  // ── 句子训练（精听 / 听写 / 选词 / 回译）───────────
+  // 借鉴可可英语的"文章精听 / 文章听写 / 九宫格"：只练当前这篇的句子类内容，一句一句往下，
+  // 声音用浏览器自带朗读（speakText），不需要音频文件
+
+  /**
+   * 读取句子训练设置，缺字段 / 非法值时用默认值补齐
+   * @returns {object} 结构同 DEFAULT_TRAINING_SETTINGS
+   */
+  function loadTrainingSettings() {
+
+    let saved = {};
+
+    try {
+      saved = JSON.parse(localStorage.getItem(STORAGE_TRAINING_KEY) || '{}') || {};
+    } catch (err) {
+      saved = {};
+    }
+
+    const settings = {
+      ...DEFAULT_TRAINING_SETTINGS,
+      ...saved,
+      levels: { ...DEFAULT_TRAINING_SETTINGS.levels, ...(saved.levels || {}) },
+    };
+
+    if (!TRAINING_TABS.some((tab) => tab.id === settings.tab)) {
+      settings.tab = DEFAULT_TRAINING_SETTINGS.tab;
+    }
+
+    if (!TRAINING_LOOP_OPTIONS.includes(settings.loop)) {
+      settings.loop = DEFAULT_TRAINING_SETTINGS.loop;
+    }
+
+    if (!TRAINING_RATE_OPTIONS.includes(settings.rate)) {
+      settings.rate = DEFAULT_TRAINING_SETTINGS.rate;
+    }
+
+    Object.keys(TRAINING_LEVELS).forEach((tabId) => {
+      if (!TRAINING_LEVELS[tabId].some((level) => level.id === settings.levels[tabId])) {
+        settings.levels[tabId] = DEFAULT_TRAINING_SETTINGS.levels[tabId];
+      }
+    });
+
+    return settings;
+  }
+
+  /**
+   * 持久化句子训练设置
+   * @returns {void}
+   */
+  function saveTrainingSettings() {
+
+    try {
+      localStorage.setItem(STORAGE_TRAINING_KEY, JSON.stringify(state.trainingSettings));
+    } catch (err) {
+      // 静默降级：不影响页面使用
+    }
+  }
+
+  /**
+   * 读取每篇练到第几句（只存本机，不跟收藏一起同步）
+   * @returns {Object<string, number>} key 为文档 slug
+   */
+  function loadTrainingPositions() {
+
+    try {
+      const positions = JSON.parse(localStorage.getItem(STORAGE_TRAINING_POS_KEY) || '{}');
+
+      return positions && typeof positions === 'object' ? positions : {};
+    } catch (err) {
+
+      return {};
+    }
+  }
+
+  /**
+   * 记下这篇练到第几句；先删再加，让最近练的排在最后，超出上限时从最早的开始删
+   * @param {string} slug
+   * @param {number} index
+   * @returns {void}
+   */
+  function saveTrainingPosition(slug, index) {
+
+    const positions = loadTrainingPositions();
+
+    delete positions[slug];
+    positions[slug] = index;
+
+    const slugs = Object.keys(positions);
+
+    slugs.slice(0, Math.max(slugs.length - TRAINING_POS_MAX_ENTRIES, 0)).forEach((oldSlug) => {
+      delete positions[oldSlug];
+    });
+
+    try {
+      localStorage.setItem(STORAGE_TRAINING_POS_KEY, JSON.stringify(positions));
+    } catch (err) {
+      // 静默降级：不影响页面使用
+    }
+  }
+
+  /**
+   * 收集一篇里可以拿来训练的句子：「句型 & 金句」和泛读「阅读原文」，词汇 / 短语太短不收
+   * @param {object} doc - NoteDoc
+   * @returns {{ text: string, cn: string, context: object }[]} context 供 setItemMark 记错题用
+   */
+  function collectTrainingSentences(doc) {
+
+    const sentences = [];
+
+    doc.sections.forEach((section) => {
+
+      if (section.type !== 'sentences' && section.type !== 'reading') {
+
+        return;
+      }
+
+      section.items.forEach((item, itemIndex) => {
+
+        const en = item.en || {};
+        const cn = item.cn || {};
+        const text = (section.type === 'reading' ? en.text : en.text_en) || '';
+
+        if (!text.trim()) {
+
+          return;
+        }
+
+        sentences.push({
+          text: text.trim(),
+          cn: (section.type === 'reading' ? cn.gist : cn.text_cn) || '',
+          context: buildItemContext(doc, section, itemIndex),
+        });
+      });
+    });
+
+    return sentences;
+  }
+
+  /**
+   * 按空格把句子切成词，每个词再拆成"前导标点 + 词本体 + 尾随标点"，
+   * 挖空 / 遮挡只针对词本体，标点保持显示
+   * @param {string} text
+   * @returns {{ raw: string, prefix: string, core: string, suffix: string }[]}
+   */
+  function tokenizeSentence(text) {
+
+    return text.split(/\s+/).filter(Boolean).map((raw) => {
+
+      const match = raw.match(/^([^A-Za-z0-9]*)(.*?)([^A-Za-z0-9]*)$/);
+
+      return { raw, prefix: match[1], core: match[2], suffix: match[3] };
+    });
+  }
+
+  /**
+   * 比对用的词形归一：小写、弯引号转直引号、去掉连字符等符号，避免大小写 / 标点差异判错
+   * @param {string} word
+   * @returns {string}
+   */
+  function normalizeTrainingWord(word) {
+
+    return (word || '')
+      .toLowerCase()
+      .replace(/[’‘]/g, "'")
+      .replace(/[^a-z0-9']/g, '');
+  }
+
+  /**
+   * 判断一个词在当前标签页 + 难度下要不要挖空 / 遮挡。规则参考可可英语前端代码：
+   * - 精听：简单 = 6 个字母以上的长词，中等 = 超过 3 个字母的词（可可默认档），困难 = 全部；
+   *   盲听 = 全部，而且连遮挡块都不显示（借鉴每日英语听力的盲听模式，见 renderTrainingListenTokens）
+   * - 听写：只挖全小写单词（大写开头的人名 / 句首词保留显示），简单再限超过 3 个字母
+   * - 选词：简单同听写简单，困难 = 全部词都做成方块（跟可可 App 的九宫格一样）
+   * @param {{ core: string }} token
+   * @param {string} tab
+   * @param {string} level
+   * @returns {boolean}
+   */
+  function isTrainingBlank(token, tab, level) {
+
+    if (!/[A-Za-z0-9]/.test(token.core)) {
+
+      return false;
+    }
+
+    const letterCount = token.core.replace(/[^A-Za-z]/g, '').length;
+    const isLowerWord = /^[a-z][a-z'’-]*$/.test(token.core);
+
+    if (tab === 'listen') {
+
+      if (level === 'hard' || level === 'blind') {
+
+        return true;
+      }
+
+      return level === 'medium' ? letterCount > 3 : letterCount >= 6;
+    }
+
+    if (tab === 'dictation') {
+
+      return isLowerWord && (level === 'hard' || letterCount > 3);
+    }
+
+    if (tab === 'pick') {
+
+      return level === 'hard' || (isLowerWord && letterCount > 3);
+    }
+
+    return false;
+  }
+
+  /**
+   * 进入句子训练视图（或在训练视图里换了一篇），练这篇的句子
+   * @param {object} doc - NoteDoc
+   * @returns {void}
+   */
+  function enterTrainingView(doc) {
+
+    state.view = 'training';
+
+    if (!state.trainingSettings) {
+      state.trainingSettings = loadTrainingSettings();
+    }
+
+    document.querySelectorAll('[data-action="toggle-training-view"]').forEach((btn) => {
+      btn.classList.add('is-active');
+    });
+
+    const sentences = collectTrainingSentences(doc);
+
+    // 接着上次练到的那句；源文件改过、句子变少时夹到最后一句
+    const savedIndex = loadTrainingPositions()[doc.slug] || 0;
+
+    state.training = {
+      slug: doc.slug,
+      sentences,
+      index: Math.min(savedIndex, Math.max(sentences.length - 1, 0)),
+      results: [], // 按句子下标存听写 / 选词的判分结果，用于成绩页
+      startedAt: Date.now(),
+      finishedAt: 0,
+      isFinished: false, // 是否在显示成绩页
+      sentence: null, // 当前这句的界面状态，见 buildTrainingSentenceState
+      playToken: 0, // 每次停止 / 重新播放都加 1，旧的念完回调发现对不上就不再循环
+      loopTimer: null,
+      isPlaying: false,
+    };
+
+    if (state.training.sentences.length > 0) {
+      buildTrainingSentenceState();
+    }
+
+    renderTrainingView();
+    updateAppTitle(doc.chapter);
+    window.scrollTo(0, 0);
+  }
+
+  /**
+   * 顶部 / 底部「训练」按钮：进入当前这篇的句子训练，再点一次回到正文
+   * @returns {void}
+   */
+  function toggleTrainingView() {
+
+    const isEntering = state.view !== 'training';
+    const doc = findDoc(currentSlug());
+
+    clearViewToggleButtons();
+
+    if (!doc) {
+
+      return;
+    }
+
+    if (isEntering) {
+      enterTrainingView(doc);
+
+      return;
+    }
+
+    state.view = 'doc';
+    renderContent(doc);
+  }
+
+  /**
+   * 按当前标签页 + 难度，给当前这句重建界面状态（换句 / 换标签页 / 换难度时调用）
+   * @returns {void}
+   */
+  function buildTrainingSentenceState() {
+
+    const training = state.training;
+    const { tab } = state.trainingSettings;
+    const level = state.trainingSettings.levels[tab];
+    const sentence = training.sentences[training.index];
+
+    const tokens = tokenizeSentence(sentence.text).map((token) => ({
+      ...token,
+      isBlank: isTrainingBlank(token, tab, level),
+    }));
+    const blankOrder = tokens
+      .map((token, tokenIndex) => (token.isBlank ? tokenIndex : -1))
+      .filter((tokenIndex) => tokenIndex >= 0);
+
+
+    training.sentence = {
+      tokens,
+      blankOrder, // 挖空的词在 tokens 里的下标，按句子顺序
+      revealed: new Set(), // 精听：已点开的词
+      drafts: new Map(), // 听写：重渲染前暂存还没提交的输入，key 为 token 下标
+      hintLevels: new Map(), // 听写：用过提示的空，key 为 token 下标，值 1 = 给了首字母、2 = 给了整个词
+      activeTokenIndex: null, // 听写：最近一次获得焦点的空，💡 提示给这个空
+      outcomes: new Map(), // 听写 / 选词判分结果，key 为 token 下标，值 { given, isCorrect, score }
+      isChecked: false, // 听写已检查 / 选词已填完 / 回译已对比
+      filledCount: 0, // 选词：已经按顺序填对了几个空
+      wrongBlanks: new Set(), // 选词：点错过方块的空（按 blankOrder 的序号）
+      flashTileId: null, // 选词：刚点错的方块，渲染时加抖动效果
+      tiles: shuffleArray(blankOrder.map((tokenIndex, tileId) => ({
+        id: tileId,
+        text: tokens[tokenIndex].core,
+        isUsed: false,
+      }))),
+      backtransInput: '', // 回译：用户输入的英文
+    };
+  }
+
+  /**
+   * 停掉句子训练的朗读（包括还没开始的下一遍循环）
+   * @returns {void}
+   */
+  function stopTrainingPlayback() {
+
+    const training = state.training;
+
+    if (!training) {
+
+      return;
+    }
+
+    const wasPlaying = training.isPlaying;
+
+    training.playToken += 1;
+    clearTimeout(training.loopTimer);
+    training.isPlaying = false;
+
+    if (wasPlaying && typeof window.speechSynthesis !== 'undefined') {
+      window.speechSynthesis.cancel();
+    }
+
+    updateTrainingPlayButton();
+  }
+
+  /**
+   * 从头播放当前这句，按设置的遍数循环（0 = 无限循环，直到手动停止 / 换句）
+   * @returns {void}
+   */
+  function playTrainingSentence() {
+
+    const training = state.training;
+
+    if (!training || training.sentences.length === 0 || training.isFinished) {
+
+      return;
+    }
+
+    stopTrainingPlayback();
+
+    const token = training.playToken;
+    const { loop, rate } = state.trainingSettings;
+    const text = training.sentences[training.index].text;
+    let playedCount = 0;
+
+
+    // 念完一遍后决定要不要再念；token 对不上说明期间被停止 / 换句了，旧回调直接作废
+    const finishPlayback = () => {
+      if (token !== training.playToken) {
+
+        return;
+      }
+
+      training.isPlaying = false;
+      updateTrainingPlayButton();
+    };
+
+    const speakOnce = () => {
+      if (token !== training.playToken || state.view !== 'training') {
+
+        return;
+      }
+
+      playedCount += 1;
+
+      speakText(text, {
+        rate,
+        onEnd: () => {
+          if (token !== training.playToken) {
+
+            return;
+          }
+
+          if (loop === 0 || playedCount < loop) {
+            training.loopTimer = setTimeout(speakOnce, TRAINING_LOOP_GAP_MS);
+
+            return;
+          }
+
+          finishPlayback();
+        },
+        onError: finishPlayback,
+      });
+    };
+
+    training.isPlaying = true;
+    updateTrainingPlayButton();
+    speakOnce();
+  }
+
+  /**
+   * 播放 / 停止切换
+   * @returns {void}
+   */
+  function toggleTrainingPlayback() {
+
+    if (state.training && state.training.isPlaying) {
+      stopTrainingPlayback();
+
+      return;
+    }
+
+    playTrainingSentence();
+  }
+
+  /**
+   * 同步播放按钮文字（播放中显示"停止"）
+   * @returns {void}
+   */
+  function updateTrainingPlayButton() {
+
+    const isPlaying = Boolean(state.training && state.training.isPlaying);
+
+    document.querySelectorAll('[data-role="training-play-btn"]').forEach((btn) => {
+      btn.textContent = isPlaying ? '■ 停止' : '▶ 播放';
+      btn.classList.toggle('is-active', isPlaying);
+    });
+  }
+
+  /**
+   * 跳到第 index 句；听写 / 选词在最后一句再往后就进成绩页
+   * @param {number} index
+   * @param {{ shouldPlay?: boolean }} [options]
+   * @returns {void}
+   */
+  function goToTrainingSentence(index, { shouldPlay = true } = {}) {
+
+    const training = state.training;
+    const { tab } = state.trainingSettings;
+
+    if (!training || index < 0) {
+
+      return;
+    }
+
+    stopTrainingPlayback();
+
+    if (index >= training.sentences.length) {
+
+      if (tab === 'dictation' || tab === 'pick') {
+        training.isFinished = true;
+        training.finishedAt = Date.now();
+        renderTrainingView();
+      }
+
+      return;
+    }
+
+    training.index = index;
+    training.isFinished = false;
+    saveTrainingPosition(training.slug, index);
+    buildTrainingSentenceState();
+    renderTrainingView();
+
+    if (shouldPlay) {
+      playTrainingSentence();
+    }
+  }
+
+  /**
+   * 重渲染前把还没提交的输入（听写的空、回译的输入框）存进状态，避免切"译"之类的操作清掉输入。
+   * 只能在"同一句重渲染"之前调用——换句时 DOM 里还是上一句的输入框，读进来会串到新句子里
+   * @returns {void}
+   */
+  function captureTrainingDrafts() {
+
+    const sentenceState = state.training && state.training.sentence;
+
+    if (!sentenceState || sentenceState.isChecked) {
+
+      return;
+    }
+
+    document.querySelectorAll('[data-role="training-blank"]').forEach((inputEl) => {
+      sentenceState.drafts.set(Number(inputEl.dataset.tokenIndex), inputEl.value);
+    });
+
+    const backtransEl = document.querySelector('[data-role="training-backtrans-input"]');
+
+    if (backtransEl) {
+      sentenceState.backtransInput = backtransEl.value;
+    }
+  }
+
+  /**
+   * 一个可以点了单独发音的词：词本体包一层可点击的 span，前后标点照常显示。
+   * 听不清的往往只是其中一个词，单独听比整句重放高效
+   * @param {{ raw: string, prefix: string, core: string, suffix: string }} token
+   * @param {string} [extraClass] - 词本体额外的 class（揭示 / 对错颜色）
+   * @param {string} [innerHtml] - 词本体里面的内容，默认就是这个词（听写错了要先放划掉的输入）
+   * @returns {string}
+   */
+  function renderTrainingSpeakableWord(token, extraClass = '', innerHtml = escapeHtml(token.core)) {
+
+    if (!normalizeTrainingWord(token.core)) {
+
+      return `<span class="training-word">${escapeHtml(token.raw)}</span>`;
+    }
+
+    const coreHtml = `<span class="training-speakable${extraClass ? ` ${extraClass}` : ''}" data-action="training-speak-word" data-word="${escapeAttr(token.core)}">${innerHtml}</span>`;
+
+    return `<span class="training-word">${escapeHtml(token.prefix)}${coreHtml}${escapeHtml(token.suffix)}</span>`;
+  }
+
+  /**
+   * 渲染一个已判分的句子：对的词绿色，错的词红色（划掉自己填的 + 正确答案），
+   * 用过提示才填对的词橙色（只算半对）；每个词都能点了单独发音
+   * @param {object[]} tokens
+   * @param {Map<number, { given: string, isCorrect: boolean, score: number }>} outcomes
+   * @returns {string}
+   */
+  function renderTrainingCheckedTokens(tokens, outcomes) {
+
+    return tokens.map((token, tokenIndex) => {
+
+      const outcome = outcomes.get(tokenIndex);
+
+      if (!outcome) {
+
+        return renderTrainingSpeakableWord(token);
+      }
+
+      const givenHtml = !outcome.isCorrect && outcome.given
+        ? `<s class="training-given">${escapeHtml(outcome.given)}</s>`
+        : '';
+      let stateClass = outcome.isCorrect ? 'is-correct' : 'is-wrong';
+
+      if (outcome.isCorrect && outcome.score < 1) {
+        stateClass = 'is-hinted';
+      }
+
+      return renderTrainingSpeakableWord(token, `training-answer ${stateClass}`, `${givenHtml}${escapeHtml(token.core)}`);
+    }).join('');
+  }
+
+  /**
+   * 精听：被遮的词显示成斜纹块，点一下露出来；盲听档在全部揭示之前连句子都不显示，只出声音
+   * @param {object} sentenceState
+   * @returns {string}
+   */
+  function renderTrainingListenTokens(sentenceState) {
+
+    const isBlind = state.trainingSettings.levels.listen === 'blind';
+    const isAllRevealed = sentenceState.blankOrder.every((tokenIndex) => sentenceState.revealed.has(tokenIndex));
+
+    if (isBlind && !isAllRevealed) {
+
+      return '<div class="training-blind">🎧 盲听：只听声音，听懂了再点「显示原文」核对</div>';
+    }
+
+    return sentenceState.tokens.map((token, tokenIndex) => {
+
+      if (!token.isBlank) {
+
+        return renderTrainingSpeakableWord(token);
+      }
+
+      if (sentenceState.revealed.has(tokenIndex)) {
+
+        return renderTrainingSpeakableWord(token, 'training-revealed');
+      }
+
+      const maskHtml = `<button type="button" class="training-mask" data-action="training-reveal-word" data-token-index="${tokenIndex}" style="--len: ${token.core.length}" aria-label="显示这个词"></button>`;
+
+      return `<span class="training-word">${escapeHtml(token.prefix)}${maskHtml}${escapeHtml(token.suffix)}</span>`;
+    }).join('');
+  }
+
+  /**
+   * 听写：挖空的词换成输入框，宽度跟单词长度对应（可可也是这样给一点长度提示）
+   * @param {object} sentenceState
+   * @returns {string}
+   */
+  function renderTrainingDictationTokens(sentenceState) {
+
+    if (sentenceState.isChecked) {
+
+      return renderTrainingCheckedTokens(sentenceState.tokens, sentenceState.outcomes);
+    }
+
+    let blankNumber = 0;
+
+    return sentenceState.tokens.map((token, tokenIndex) => {
+
+      if (!token.isBlank) {
+
+        return renderTrainingSpeakableWord(token);
+      }
+
+      blankNumber += 1;
+
+      const draft = sentenceState.drafts.get(tokenIndex) || '';
+      const hintedClass = sentenceState.hintLevels.has(tokenIndex) ? ' is-hinted' : '';
+      const inputHtml = `<input type="text" class="training-blank${hintedClass}" data-role="training-blank" data-token-index="${tokenIndex}" value="${escapeAttr(draft)}" style="--len: ${token.core.length}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="第 ${blankNumber} 个空">`;
+
+      return `<span class="training-word">${escapeHtml(token.prefix)}${inputHtml}${escapeHtml(token.suffix)}</span>`;
+    }).join('');
+  }
+
+  /**
+   * 选词：已填的空显示单词，当前要填的空高亮，后面的空是下划线
+   * @param {object} sentenceState
+   * @returns {string}
+   */
+  function renderTrainingPickTokens(sentenceState) {
+
+    if (sentenceState.isChecked) {
+
+      return renderTrainingCheckedTokens(sentenceState.tokens, sentenceState.outcomes);
+    }
+
+    const currentTokenIndex = sentenceState.blankOrder[sentenceState.filledCount];
+
+    return sentenceState.tokens.map((token, tokenIndex) => {
+
+      if (!token.isBlank) {
+
+        return renderTrainingSpeakableWord(token);
+      }
+
+      const outcome = sentenceState.outcomes.get(tokenIndex);
+
+      if (outcome) {
+
+        return renderTrainingSpeakableWord(token, `training-answer ${outcome.isCorrect ? 'is-correct' : 'is-wrong'}`);
+      }
+
+      const slotHtml = `<span class="training-slot${tokenIndex === currentTokenIndex ? ' is-current' : ''}" style="--len: ${token.core.length}"></span>`;
+
+      return `<span class="training-word">${escapeHtml(token.prefix)}${slotHtml}${escapeHtml(token.suffix)}</span>`;
+    }).join('');
+  }
+
+  /**
+   * 选词：打乱的单词方块，用过的留空位不挪动（跟可可 App 一样，位置不跳，方便找）
+   * @param {object} sentenceState
+   * @returns {string}
+   */
+  function renderTrainingPickTiles(sentenceState) {
+
+    if (sentenceState.isChecked) {
+
+      return '';
+    }
+
+    const tilesHtml = sentenceState.tiles.map((tile) => {
+
+      const classes = ['training-tile'];
+
+      if (tile.isUsed) {
+        classes.push('is-used');
+      }
+
+      if (tile.id === sentenceState.flashTileId) {
+        classes.push('is-wrong');
+      }
+
+      return `<button type="button" class="${classes.join(' ')}" data-action="training-pick-tile" data-tile-id="${tile.id}"${tile.isUsed ? ' disabled' : ''}>${escapeHtml(tile.text)}</button>`;
+    }).join('');
+
+    return `<div class="training-tiles">${tilesHtml}</div>`;
+  }
+
+  /**
+   * 用最长公共子序列比对两串词，标出哪些词对上了（回译用：顺序也算进去，不是只看词有没有出现）
+   * @param {string[]} expectedWords - 已归一化
+   * @param {string[]} givenWords - 已归一化
+   * @returns {{ expectedMatched: boolean[], givenMatched: boolean[] }}
+   */
+  function diffTrainingWords(expectedWords, givenWords) {
+
+    const rows = expectedWords.length;
+    const cols = givenWords.length;
+    const table = Array.from({ length: rows + 1 }, () => new Array(cols + 1).fill(0));
+
+    const expectedMatched = new Array(rows).fill(false);
+    const givenMatched = new Array(cols).fill(false);
+
+
+    for (let i = rows - 1; i >= 0; i -= 1) {
+      for (let j = cols - 1; j >= 0; j -= 1) {
+        table[i][j] = expectedWords[i] === givenWords[j]
+          ? table[i + 1][j + 1] + 1
+          : Math.max(table[i + 1][j], table[i][j + 1]);
+      }
+    }
+
+    // 沿着表格走一遍，把公共子序列上的词标记出来
+    let i = 0;
+    let j = 0;
+
+    while (i < rows && j < cols) {
+      if (expectedWords[i] === givenWords[j]) {
+        expectedMatched[i] = true;
+        givenMatched[j] = true;
+        i += 1;
+        j += 1;
+      } else if (table[i + 1][j] >= table[i][j + 1]) {
+        i += 1;
+      } else {
+        j += 1;
+      }
+    }
+
+    return { expectedMatched, givenMatched };
+  }
+
+  /**
+   * 回译：看中文打英文；对比后原文里漏掉的词标红，自己多写 / 写错的词划掉
+   * @param {object} sentence
+   * @param {object} sentenceState
+   * @returns {string}
+   */
+  function renderTrainingBacktrans(sentence, sentenceState) {
+
+    const cnHtml = `<div class="training-backtrans-cn">${escapeHtml(sentence.cn || '（这句没有中文意思）')}</div>`;
+
+    if (!sentenceState.isChecked) {
+
+      return `
+        ${cnHtml}
+        <textarea class="training-backtrans-input" data-role="training-backtrans-input" rows="3" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="把这句中文翻成英文，写完按「对比」（Ctrl + Enter）">${escapeHtml(sentenceState.backtransInput)}</textarea>`;
+    }
+
+    const expectedTokens = sentenceState.tokens.filter((token) => normalizeTrainingWord(token.core));
+    const givenTokens = sentenceState.backtransInput.split(/\s+/).filter((word) => normalizeTrainingWord(word));
+    const { expectedMatched, givenMatched } = diffTrainingWords(
+      expectedTokens.map((token) => normalizeTrainingWord(token.core)),
+      givenTokens.map((word) => normalizeTrainingWord(word))
+    );
+
+    const expectedHtml = expectedTokens.map((token, index) => (
+      renderTrainingSpeakableWord(token, `training-answer ${expectedMatched[index] ? 'is-correct' : 'is-wrong'}`)
+    )).join('');
+    const givenHtml = givenTokens.length > 0
+      ? givenTokens.map((word, index) => (
+        `<span class="training-word${givenMatched[index] ? '' : ' is-extra'}">${escapeHtml(word)}</span>`
+      )).join('')
+      : '<span class="training-word">（没有填写）</span>';
+    const matchedCount = expectedMatched.filter(Boolean).length;
+
+    return `
+      ${cnHtml}
+      <div class="training-backtrans-label">你写的：</div>
+      <div class="training-sentence training-sentence--small">${givenHtml}</div>
+      <div class="training-backtrans-label">原文（对上 ${matchedCount} / ${expectedTokens.length} 个词）：</div>
+      <div class="training-sentence">${expectedHtml}</div>
+      <p class="training-note">泛读的中文是意译的大意，跟原文对不上很正常，这里只做对照，不计分。</p>`;
+  }
+
+  /**
+   * 当前标签页 + 状态下，主按钮（Enter 键）该干什么、显示什么字。
+   * 主按钮只管"本句操作"，做完就变灰显示已完成状态，不会变成"下一句"——
+   * 同一位置的按钮点完立刻换成别的功能，连点两下很容易误跳句；换句只用两边的 ⏮ ⏭ / ← → 键
+   * @returns {{ label: string, action: string, isDone?: boolean }} action 为 'none' 时按钮禁用；
+   *   isDone 表示按钮显示成灰色完成态但仍可点击（回译「已对比」点了退回编辑）
+   */
+  function getTrainingPrimaryAction() {
+
+    const sentenceState = state.training.sentence;
+    const { tab } = state.trainingSettings;
+
+    // 完成态都能再点一次退回：精听重新遮住、听写回到填空（保留填过的内容）、
+    // 选词重新打乱再做、回译回到编辑（保留写过的英文）
+    if (tab === 'listen') {
+
+      const isAllRevealed = sentenceState.blankOrder.every((tokenIndex) => sentenceState.revealed.has(tokenIndex));
+      const isBlind = state.trainingSettings.levels.listen === 'blind';
+
+      if (isAllRevealed) {
+
+        return { label: isBlind ? '已显示原文' : '已全部显示', action: 'uncheck', isDone: true };
+      }
+
+      return { label: isBlind ? '显示原文' : '全部显示', action: 'reveal-all' };
+    }
+
+    if (tab === 'dictation') {
+
+      return sentenceState.isChecked ? { label: '已检查', action: 'uncheck', isDone: true } : { label: '检查', action: 'check' };
+    }
+
+    if (tab === 'pick') {
+
+      return sentenceState.isChecked ? { label: '已完成', action: 'uncheck', isDone: true } : { label: '显示答案', action: 'give-up' };
+    }
+
+    return sentenceState.isChecked ? { label: '已对比', action: 'uncheck', isDone: true } : { label: '对比', action: 'check' };
+  }
+
+  /**
+   * 主按钮 / Enter 键：按当前状态执行检查、对比、显示答案或全部显示（不负责换句）；
+   * 完成态再点一次退回（undoTrainingSentence）
+   * @param {{ isFromKeyboard?: boolean }} [options] - Enter 键触发时不做退回：检查完再按一次 Enter
+   *   就撤掉检查，跟"连点两下误触"是同一个问题，退回只认鼠标 / 手指点按钮
+   * @returns {void}
+   */
+  function handleTrainingPrimary({ isFromKeyboard = false } = {}) {
+
+    const training = state.training;
+
+    if (!training || training.isFinished || training.sentences.length === 0) {
+
+      return;
+    }
+
+    const { action } = getTrainingPrimaryAction();
+    const sentenceState = training.sentence;
+
+    if (action === 'uncheck' && isFromKeyboard) {
+
+      return;
+    }
+
+    if (action === 'reveal-all') {
+      sentenceState.blankOrder.forEach((tokenIndex) => sentenceState.revealed.add(tokenIndex));
+      renderTrainingView();
+    }
+
+    if (action === 'check' && state.trainingSettings.tab === 'dictation') {
+      checkTrainingDictation();
+    }
+
+    if (action === 'check' && state.trainingSettings.tab === 'backtrans') {
+      captureTrainingDrafts();
+      sentenceState.isChecked = true;
+      renderTrainingView();
+    }
+
+    if (action === 'give-up') {
+      finishTrainingPick({ isGivingUp: true });
+    }
+
+    if (action === 'uncheck') {
+      undoTrainingSentence();
+    }
+  }
+
+  /**
+   * 主按钮完成态再点一次：把当前这句退回到做之前的状态。
+   * 听写 / 选词会撤掉这句已记的成绩（重新检查 / 做完时再记），但已经记进复习的评分不撤回
+   * @returns {void}
+   */
+  function undoTrainingSentence() {
+
+    const training = state.training;
+    const sentenceState = training.sentence;
+    const { tab } = state.trainingSettings;
+
+
+    if (tab === 'listen') {
+      sentenceState.revealed.clear();
+      renderTrainingView();
+
+      return;
+    }
+
+    delete training.results[training.index];
+
+    if (tab === 'pick') {
+      buildTrainingSentenceState();
+      renderTrainingView();
+
+      return;
+    }
+
+    // 听写：记下第一个填错的空，退回后光标直接放过去改
+    const firstWrongTokenIndex = sentenceState.blankOrder.find((tokenIndex) => {
+      const outcome = sentenceState.outcomes.get(tokenIndex);
+
+      return outcome && !outcome.isCorrect;
+    });
+
+    sentenceState.outcomes.clear();
+    sentenceState.isChecked = false;
+    renderTrainingView();
+
+    if (tab === 'dictation' && firstWrongTokenIndex !== undefined) {
+      const wrongInputEl = document.querySelector(`[data-role="training-blank"][data-token-index="${firstWrongTokenIndex}"]`);
+
+      if (wrongInputEl) {
+        wrongInputEl.focus();
+        wrongInputEl.select();
+      }
+    }
+
+    // 回译：光标放到已有文字末尾，直接接着改
+    const backtransEl = document.querySelector('[data-role="training-backtrans-input"]');
+
+    if (backtransEl) {
+      backtransEl.focus();
+      backtransEl.setSelectionRange(backtransEl.value.length, backtransEl.value.length);
+    }
+  }
+
+  /**
+   * 听写：逐个空比对（忽略大小写和标点），记录成绩。
+   * 计分：自己填对 1 分；用过首字母提示后填对 0.5 分；直接要了整个词 0 分（显示成对，但不算分）
+   * @returns {void}
+   */
+  function checkTrainingDictation() {
+
+    const sentenceState = state.training.sentence;
+
+    captureTrainingDrafts();
+
+    sentenceState.blankOrder.forEach((tokenIndex) => {
+      const given = (sentenceState.drafts.get(tokenIndex) || '').trim();
+      const expected = sentenceState.tokens[tokenIndex].core;
+      const isCorrect = normalizeTrainingWord(given) === normalizeTrainingWord(expected);
+      const hintLevel = sentenceState.hintLevels.get(tokenIndex) || 0;
+      let score = isCorrect ? 1 : 0;
+
+      if (isCorrect && hintLevel === 1) {
+        score = TRAINING_HINT_SCORE;
+      }
+
+      if (hintLevel === 2) {
+        score = 0;
+      }
+
+      sentenceState.outcomes.set(tokenIndex, { given, isCorrect, score });
+    });
+
+    sentenceState.isChecked = true;
+    recordTrainingResult();
+    renderTrainingView();
+  }
+
+  /**
+   * 选词：点一个方块，对就填进当前空，错就让方块抖一下并记下这个空错过
+   * @param {HTMLElement} actionEl
+   * @returns {void}
+   */
+  function handleTrainingPickTile(actionEl) {
+
+    const sentenceState = state.training && state.training.sentence;
+
+    if (!sentenceState || sentenceState.isChecked) {
+
+      return;
+    }
+
+    const tileId = Number(actionEl.dataset.tileId);
+    const tile = sentenceState.tiles.find((entry) => entry.id === tileId);
+    const blankPosition = sentenceState.filledCount;
+    const tokenIndex = sentenceState.blankOrder[blankPosition];
+
+    if (!tile || tile.isUsed || tokenIndex === undefined) {
+
+      return;
+    }
+
+    // 同一个词出现两次时两块方块都算对，按词形比，不按方块 id 比
+    const isMatch = normalizeTrainingWord(tile.text) === normalizeTrainingWord(sentenceState.tokens[tokenIndex].core);
+
+    if (!isMatch) {
+      sentenceState.wrongBlanks.add(blankPosition);
+      sentenceState.flashTileId = tileId;
+      renderTrainingView();
+
+      return;
+    }
+
+    tile.isUsed = true;
+    sentenceState.flashTileId = null;
+    const isFirstTry = !sentenceState.wrongBlanks.has(blankPosition);
+
+    sentenceState.outcomes.set(tokenIndex, { given: tile.text, isCorrect: isFirstTry, score: isFirstTry ? 1 : 0 });
+    sentenceState.filledCount += 1;
+
+    if (sentenceState.filledCount >= sentenceState.blankOrder.length) {
+      finishTrainingPick({ isGivingUp: false });
+
+      return;
+    }
+
+    renderTrainingView();
+  }
+
+  /**
+   * 选词这句结束：全部填完，或点了"显示答案"（剩下没填的空都算错）
+   * @param {{ isGivingUp: boolean }} options
+   * @returns {void}
+   */
+  function finishTrainingPick({ isGivingUp }) {
+
+    const sentenceState = state.training.sentence;
+
+    if (isGivingUp) {
+      sentenceState.blankOrder.forEach((tokenIndex) => {
+        if (!sentenceState.outcomes.has(tokenIndex)) {
+          sentenceState.outcomes.set(tokenIndex, { given: '', isCorrect: false, score: 0 });
+        }
+      });
+    }
+
+    sentenceState.isChecked = true;
+    sentenceState.flashTileId = null;
+    recordTrainingResult();
+    renderTrainingView();
+  }
+
+  /**
+   * 听写 💡 提示：给当前（最近聚焦过的）空，没有就给第一个还空着的空。
+   * 第一次给首字母，第二次给整个词；直接改输入框的值，不重渲染，免得打断正在打的字
+   * @returns {void}
+   */
+  function giveTrainingHint() {
+
+    const sentenceState = state.training && state.training.sentence;
+
+    if (!sentenceState || sentenceState.isChecked || state.trainingSettings.tab !== 'dictation') {
+
+      return;
+    }
+
+    const inputEls = [...document.querySelectorAll('[data-role="training-blank"]')];
+    const activeInputEl = inputEls.find((inputEl) => Number(inputEl.dataset.tokenIndex) === sentenceState.activeTokenIndex);
+    const targetInputEl = activeInputEl || inputEls.find((inputEl) => !inputEl.value.trim());
+
+    if (!targetInputEl) {
+
+      return;
+    }
+
+    const tokenIndex = Number(targetInputEl.dataset.tokenIndex);
+    const word = sentenceState.tokens[tokenIndex].core;
+    const nextLevel = Math.min((sentenceState.hintLevels.get(tokenIndex) || 0) + 1, 2);
+
+    sentenceState.hintLevels.set(tokenIndex, nextLevel);
+    sentenceState.activeTokenIndex = tokenIndex;
+
+    targetInputEl.value = nextLevel === 1 ? word.charAt(0) : word;
+    targetInputEl.classList.add('is-hinted');
+    targetInputEl.focus();
+    targetInputEl.setSelectionRange(targetInputEl.value.length, targetInputEl.value.length);
+  }
+
+  /**
+   * 句子训练检查 / 揭示之后，显示这句的词汇点和讲解（泛读「阅读原文」才有，句型表没有这两列）。
+   * 借鉴每日英语听力的"重点单词智能提示"：练完马上知道难点在哪
+   * @param {object} sentence - collectTrainingSentences 里的一条
+   * @returns {string}
+   */
+  function renderTrainingNotes(sentence) {
+
+    const item = sentence.context.item;
+    const vocabs = item.vocab || [];
+    const grammar = item.grammar || '';
+
+    if (vocabs.length === 0 && !grammar) {
+
+      return '';
+    }
+
+    const vocabHtml = vocabs.length > 0
+      ? `<ul class="training-notes-vocab">${vocabs.map((entry) => `
+          <li>${renderTrainingSpeakableWord({ raw: entry.word, prefix: '', core: entry.word, suffix: '' }, 'training-notes-word')} ${escapeHtml(entry.note)}</li>`).join('')}
+        </ul>`
+      : '';
+    const grammarHtml = grammar ? `<div class="training-notes-grammar">${escapeHtml(grammar)}</div>` : '';
+
+    return `<div class="training-notes">${vocabHtml}${grammarHtml}</div>`;
+  }
+
+  /**
+   * 记下当前这句的判分结果（成绩页用）；有错的句子记成测验评分一档，进间隔复习，
+   * 测验 / 听力模式会优先抽到，「我的收藏」里按评分筛选也能找到
+   * @returns {void}
+   */
+  function recordTrainingResult() {
+
+    const training = state.training;
+    const sentenceState = training.sentence;
+    const outcomes = [...sentenceState.outcomes.values()];
+
+    if (outcomes.length === 0) {
+
+      return;
+    }
+
+    // 按分数累加（用过提示的空只算半个），所以 correct 可能是小数；没拿满分的句子（含靠提示填对的）都进复习
+    const correct = outcomes.reduce((sum, outcome) => sum + outcome.score, 0);
+
+    training.results[training.index] = {
+      tokens: sentenceState.tokens,
+      outcomes: new Map(sentenceState.outcomes),
+      cn: training.sentences[training.index].cn,
+      total: outcomes.length,
+      correct,
+    };
+
+    if (correct < outcomes.length) {
+      setItemMark(training.sentences[training.index].context, 1, { isToggle: false });
+    }
+  }
+
+  /**
+   * 成绩页：正确率、耗时、每句的红绿回顾（参考可可的"成绩解析 / 回顾详情"）
+   * @returns {string}
+   */
+  function renderTrainingSummary() {
+
+    const training = state.training;
+    const results = training.results.filter(Boolean);
+    const total = results.reduce((sum, result) => sum + result.total, 0);
+    const correct = results.reduce((sum, result) => sum + result.correct, 0);
+    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+    const elapsedSeconds = Math.round((training.finishedAt - training.startedAt) / 1000);
+    const wrongSentenceCount = results.filter((result) => result.correct < result.total).length;
+
+    const reviewHtml = results.map((result) => `
+      <li class="training-review-item">
+        <div class="training-sentence training-sentence--small">${renderTrainingCheckedTokens(result.tokens, result.outcomes)}</div>
+        ${result.cn ? `<div class="training-cn">${escapeHtml(result.cn)}</div>` : ''}
+      </li>`).join('');
+
+    const nextDoc = state.data.tree ? getAdjacentDoc(training.slug, 1) : null;
+    const nextDocHtml = nextDoc
+      ? `<button type="button" class="btn" data-action="next-doc" data-slug="${escapeAttr(nextDoc.slug)}">下一篇 ›</button>`
+      : '';
+    const wrongNoteHtml = wrongSentenceCount > 0
+      ? `<p class="training-note">有 ${wrongSentenceCount} 句没全对（靠提示填对的也算），已记成评分「一」进入复习，测验 / 听力模式会优先出现。</p>`
+      : '';
+
+    return `
+      <div class="training-summary">
+        <div class="training-stats">
+          <div class="training-stat"><b>${results.length}</b><span>完成句数</span></div>
+          <div class="training-stat"><b>${Number.isInteger(correct) ? correct : correct.toFixed(1)} / ${total}</b><span>正确词数</span></div>
+          <div class="training-stat"><b>${accuracy}%</b><span>正确率</span></div>
+          <div class="training-stat"><b>${Math.floor(elapsedSeconds / 60)}分${elapsedSeconds % 60}秒</b><span>耗时</span></div>
+        </div>
+        ${wrongNoteHtml}
+        <div class="training-summary-actions">
+          <button type="button" class="btn training-primary-btn" data-action="training-restart">重新开始</button>
+          ${nextDocHtml}
+        </div>
+        <h3 class="training-review-title">回顾详情</h3>
+        <ul class="training-review-list">${reviewHtml}</ul>
+      </div>`;
+  }
+
+  /**
+   * 难度 / 循环 / 语速 / 译 这一排设置
+   * @returns {string}
+   */
+  function renderTrainingSettings() {
+
+    const settings = state.trainingSettings;
+    const levels = TRAINING_LEVELS[settings.tab];
+
+    const levelHtml = levels
+      ? `<label class="training-setting"><span>难度</span>
+          <select data-role="training-setting" data-setting="level">
+            ${levels.map((level) => `<option value="${level.id}"${level.id === settings.levels[settings.tab] ? ' selected' : ''}>${level.label}</option>`).join('')}
+          </select></label>`
+      : '';
+    const loopHtml = TRAINING_LOOP_OPTIONS.map((count) => {
+      const label = count === 0 ? '无限循环' : (count === 1 ? '播放 1 遍' : `循环 ${count} 遍`);
+
+      return `<option value="${count}"${count === settings.loop ? ' selected' : ''}>${label}</option>`;
+    }).join('');
+    const rateHtml = TRAINING_RATE_OPTIONS.map((rate) => (
+      `<option value="${rate}"${rate === settings.rate ? ' selected' : ''}>${rate.toFixed(1)}x</option>`
+    )).join('');
+
+    // 回译本来就显示中文，不需要「译」开关
+    const cnToggleHtml = settings.tab === 'backtrans'
+      ? ''
+      : `<button type="button" class="btn training-cn-toggle${settings.showCn ? ' is-active' : ''}" data-action="training-toggle-cn" aria-label="显示中文">译</button>`;
+
+    return `
+      <div class="training-settings">
+        ${levelHtml}
+        <label class="training-setting"><span>循环</span>
+          <select data-role="training-setting" data-setting="loop">${loopHtml}</select></label>
+        <label class="training-setting"><span>语速</span>
+          <select data-role="training-setting" data-setting="rate">${rateHtml}</select></label>
+        ${cnToggleHtml}
+      </div>`;
+  }
+
+  /**
+   * 渲染句子训练视图：标签页 + 设置 + 进度 + 当前句子卡片 + 播放控制（或成绩页）
+   * @returns {void}
+   */
+  function renderTrainingView() {
+
+    const contentEl = document.querySelector('[data-role="content"]');
+    const training = state.training;
+    const settings = state.trainingSettings;
+    const doc = findDoc(training.slug);
+
+    const headerHtml = `
+      <header class="doc-header">
+        <div class="doc-chapter-label">🎯 句子训练</div>
+        <h2 class="doc-title">${escapeHtml((doc && (doc.title || doc.slug)) || '')}</h2>
+      </header>`;
+
+    if (training.sentences.length === 0) {
+      contentEl.innerHTML = `
+        ${headerHtml}
+        <p class="favorites-empty">这篇没有句子类内容（「句型 & 金句」或泛读「阅读原文」），换一篇试试。</p>
+        ${renderBottomControls()}`;
+
+      return;
+    }
+
+    const tabsHtml = `
+      <div class="training-tabs" role="tablist">
+        ${TRAINING_TABS.map((tab) => `<button type="button" class="btn training-tab${tab.id === settings.tab ? ' is-active' : ''}" data-action="training-tab" data-tab="${tab.id}" role="tab">${tab.label}</button>`).join('')}
+      </div>`;
+
+    if (training.isFinished) {
+      contentEl.innerHTML = `${headerHtml}${tabsHtml}${renderTrainingSummary()}${renderBottomControls()}`;
+
+      return;
+    }
+
+    const sentence = training.sentences[training.index];
+    const sentenceState = training.sentence;
+    const total = training.sentences.length;
+    const percent = Math.round(((training.index + 1) / total) * 100);
+
+    // 会接着上次练到的那句，不在第一句时给个"从头开始"
+    const restartHtml = training.index > 0
+      ? '<button type="button" class="training-link-btn" data-action="training-restart">从头开始</button>'
+      : '';
+    const progressHtml = `
+      <div class="training-progress">
+        <span>第 ${training.index + 1} / ${total} 句</span>
+        <div class="training-progress-bar"><div style="width: ${percent}%"></div></div>
+        ${restartHtml}
+      </div>`;
+
+    let bodyHtml = '';
+
+    if (settings.tab === 'listen') {
+      bodyHtml = `<div class="training-sentence">${renderTrainingListenTokens(sentenceState)}</div>`;
+    }
+
+    if (settings.tab === 'dictation') {
+      const hintHtml = !sentenceState.isChecked && sentenceState.blankOrder.length > 0
+        ? '<div class="training-card-tools"><button type="button" class="btn training-hint-btn" data-action="training-hint">💡 提示</button><span class="training-note">先给首字母，再点给整个词；用了提示只算半对</span></div>'
+        : '';
+
+      bodyHtml = `<div class="training-sentence">${renderTrainingDictationTokens(sentenceState)}</div>${hintHtml}`;
+    }
+
+    if (settings.tab === 'pick') {
+      bodyHtml = `<div class="training-sentence">${renderTrainingPickTokens(sentenceState)}</div>${renderTrainingPickTiles(sentenceState)}`;
+    }
+
+    if (settings.tab === 'backtrans') {
+      bodyHtml = renderTrainingBacktrans(sentence, sentenceState);
+    }
+
+    // 这句没有符合当前难度的词可挖（比如很短的句子），提示一下，不然看起来像没反应
+    const hasNoBlank = settings.tab !== 'backtrans' && sentenceState.blankOrder.length === 0;
+    const noBlankHtml = hasNoBlank ? '<p class="training-note">这句在当前难度下没有要遮 / 要填的词，可以换个难度或直接下一句。</p>' : '';
+    const cnHtml = settings.showCn && settings.tab !== 'backtrans' && sentence.cn
+      ? `<div class="training-cn">${escapeHtml(sentence.cn)}</div>`
+      : '';
+
+    const primary = getTrainingPrimaryAction();
+
+    // 做完这句（主按钮进入完成态）才显示词汇点和讲解，做之前显示等于提前给答案
+    const notesHtml = primary.isDone ? renderTrainingNotes(sentence) : '';
+
+    const isLast = training.index === total - 1;
+    const hasSummary = settings.tab === 'dictation' || settings.tab === 'pick';
+    const canGoNext = !isLast || hasSummary;
+    const nextLabel = isLast && hasSummary ? '查看成绩' : '下一句';
+
+    // 最后一句做完了，提示去哪看成绩（主按钮不再兼任"下一句"，不提示的话不知道下一步点哪）
+    const lastHintHtml = isLast && hasSummary && sentenceState.isChecked
+      ? '<p class="training-note">这是最后一句，点 ⏭ 查看成绩。</p>'
+      : '';
+
+    const enterLabels = { listen: '全部显示', dictation: '检查', pick: '显示答案', backtrans: '对比（输入框里用 Ctrl + Enter）' };
+    const shortcutsHtml = `
+      <p class="training-shortcuts">快捷键：空格 播放/停止 · R 重听 · ← → 上一句/下一句 · Enter ${enterLabels[settings.tab]}${settings.tab === 'dictation' ? ' · 填空时按空格跳到下一个空' : ''} · 点任意单词单独发音</p>`;
+
+    contentEl.innerHTML = `
+      ${headerHtml}
+      ${tabsHtml}
+      ${renderTrainingSettings()}
+      ${progressHtml}
+      <div class="training-card">
+        ${bodyHtml}
+        ${cnHtml}
+        ${noBlankHtml}
+        ${notesHtml}
+        ${lastHintHtml}
+      </div>
+      <div class="training-player">
+        <button type="button" class="btn" data-action="training-prev" title="上一句" aria-label="上一句"${training.index === 0 ? ' disabled' : ''}>⏮</button>
+        <button type="button" class="btn training-play-btn" data-action="training-toggle-play" data-role="training-play-btn">▶ 播放</button>
+        <button type="button" class="btn training-primary-btn${primary.isDone ? ' is-done' : ''}" data-action="training-primary"${primary.action === 'none' ? ' disabled' : ''}>${escapeHtml(primary.label)}</button>
+        <button type="button" class="btn" data-action="training-next" title="${nextLabel}" aria-label="${nextLabel}"${canGoNext ? '' : ' disabled'}>⏭</button>
+      </div>
+      ${shortcutsHtml}
+      ${renderBottomControls()}`;
+
+    updateTrainingPlayButton();
+
+    // 听写刚进一句就把光标放进第一个空，直接开始打字；手机上不自动聚焦，免得键盘一下弹出来挡住句子
+    if (settings.tab === 'dictation' && !sentenceState.isChecked && !isNarrowViewport()) {
+      const firstInputEl = contentEl.querySelector('[data-role="training-blank"]');
+
+      if (firstInputEl) {
+        firstInputEl.focus();
+      }
+    }
+  }
+
+  /**
+   * 切换标签页：保留当前句子位置，成绩重新算
+   * @param {string} tabId
+   * @returns {void}
+   */
+  function switchTrainingTab(tabId) {
+
+    const training = state.training;
+
+    if (!training || !TRAINING_TABS.some((tab) => tab.id === tabId)) {
+
+      return;
+    }
+
+    stopTrainingPlayback();
+
+    state.trainingSettings.tab = tabId;
+    saveTrainingSettings();
+
+    training.results = [];
+    training.startedAt = Date.now();
+
+    // 从成绩页切过来就从第一句开始，不然停在"最后一句之后"
+    if (training.isFinished) {
+      training.isFinished = false;
+      training.index = 0;
+    }
+
+    buildTrainingSentenceState();
+    renderTrainingView();
+  }
+
+  /**
+   * 设置下拉框变化：难度要重建当前这句，循环 / 语速只存设置（下次播放生效）
+   * @param {HTMLSelectElement} selectEl
+   * @returns {void}
+   */
+  function handleTrainingSettingChange(selectEl) {
+
+    const settings = state.trainingSettings;
+    const { setting } = selectEl.dataset;
+
+    if (setting === 'level') {
+      settings.levels[settings.tab] = selectEl.value;
+      saveTrainingSettings();
+      buildTrainingSentenceState();
+      renderTrainingView();
+
+      return;
+    }
+
+    if (setting === 'loop') {
+      settings.loop = Number(selectEl.value);
+    }
+
+    if (setting === 'rate') {
+      settings.rate = Number(selectEl.value);
+    }
+
+    saveTrainingSettings();
+  }
+
+  /**
+   * 句子训练快捷键；输入框里只处理 Enter（检查 / 下一句）和空格（听写跳到下一个空）
+   * @param {KeyboardEvent} event
+   * @returns {void}
+   */
+  function handleTrainingKeydown(event) {
+
+    if (state.view !== 'training' || !state.training || event.isComposing) {
+
+      return;
+    }
+
+    const targetEl = event.target;
+    const isTyping = targetEl.matches && targetEl.matches('input, textarea, select');
+
+
+    // 成绩页上没有当前句子，快捷键都不响应
+    if (state.training.isFinished) {
+
+      return;
+    }
+
+    if (isTyping) {
+
+      if (targetEl.dataset.role === 'training-blank' && event.key === 'Enter') {
+        event.preventDefault();
+        handleTrainingPrimary({ isFromKeyboard: true });
+      }
+
+      if (targetEl.dataset.role === 'training-blank' && event.key === ' ') {
+        event.preventDefault();
+
+        const inputEls = [...document.querySelectorAll('[data-role="training-blank"]')];
+        const nextInputEl = inputEls[inputEls.indexOf(targetEl) + 1];
+
+        if (nextInputEl) {
+          nextInputEl.focus();
+        }
+      }
+
+      if (targetEl.dataset.role === 'training-backtrans-input' && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        handleTrainingPrimary({ isFromKeyboard: true });
+      }
+
+      return;
+    }
+
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+
+      return;
+    }
+
+    if (event.key === ' ') {
+      event.preventDefault();
+      toggleTrainingPlayback();
+    }
+
+    if (event.key === 'r' || event.key === 'R') {
+      playTrainingSentence();
+    }
+
+    if (event.key === 'ArrowLeft') {
+      goToTrainingSentence(state.training.index - 1);
+    }
+
+    if (event.key === 'ArrowRight') {
+      goToTrainingSentence(state.training.index + 1);
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleTrainingPrimary({ isFromKeyboard: true });
+    }
+  }
+
   /**
    * 按测验 item 的全局 id 在当前池子里找到对应条目
    * @param {string} id
@@ -5491,8 +7426,8 @@ body.single-doc .btn-listening {
    */
   function toggleMode() {
 
-    // 收藏 / 听力视图下不响应模式切换（听力模式没有 EN/CN 显示侧的概念）
-    if (state.view === 'favorites' || state.view === 'listening') {
+    // 收藏 / 听力 / 句子训练视图下不响应模式切换（这几个视图没有 EN/CN 显示侧的概念）
+    if (state.view === 'favorites' || state.view === 'listening' || state.view === 'training') {
 
       return;
     }
@@ -5562,13 +7497,13 @@ body.single-doc .btn-listening {
    */
   function setAllExpanded(shouldExpand) {
 
-    // 收藏视图下不响应全部展开/收起
-    if (state.view === 'favorites') {
+    // 收藏 / 句子训练视图下不响应全部展开/收起
+    if (state.view === 'favorites' || state.view === 'training') {
 
       return;
     }
 
-    const items = document.querySelectorAll('[data-role="content"] .item');
+    const items =document.querySelectorAll('[data-role="content"] .item');
 
     items.forEach((itemEl) => {
       itemEl.classList.toggle('is-expanded', shouldExpand);
@@ -5623,8 +7558,8 @@ body.single-doc .btn-listening {
    */
   function toggleAllExpanded() {
 
-    // 收藏视图下不响应，跟 setAllExpanded 的守卫保持一致，避免图标跟实际状态错位
-    if (state.view === 'favorites') {
+    // 收藏 / 句子训练视图下不响应，跟 setAllExpanded 的守卫保持一致，避免图标跟实际状态错位
+    if (state.view === 'favorites' || state.view === 'training') {
 
       return;
     }
@@ -5902,6 +7837,9 @@ body.single-doc .btn-listening {
       return;
     }
 
+    // 句子训练里从侧边栏换一篇，留在训练视图练新的这篇，不退回正文
+    const isTraining = state.view === 'training';
+
     state.currentSlug = slug;
     state.view = 'doc';
     state.docOpenedAt = Date.now();
@@ -5916,7 +7854,12 @@ body.single-doc .btn-listening {
 
     clearViewToggleButtons();
 
-    renderContent(doc);
+    if (isTraining) {
+      enterTrainingView(doc);
+    } else {
+      renderContent(doc);
+    }
+
     highlightActiveLink(slug);
 
     // 窄屏选完自动收起抽屉
@@ -6040,6 +7983,33 @@ body.single-doc .btn-listening {
         if (action === 'reveal-reading-text') handleRevealReadingStage(actionEl, 'text');
         if (action === 'reveal-reading-explain') handleRevealReadingStage(actionEl, 'explain');
         if (action === 'toggle-reading-vocab') handleToggleReadingVocab(actionEl);
+        if (action === 'toggle-training-view') toggleTrainingView();
+        if (action === 'training-tab') switchTrainingTab(actionEl.dataset.tab);
+        if (action === 'training-toggle-play') toggleTrainingPlayback();
+        if (action === 'training-primary') handleTrainingPrimary();
+        if (action === 'training-prev') goToTrainingSentence(state.training.index - 1);
+        if (action === 'training-next') goToTrainingSentence(state.training.index + 1);
+        if (action === 'training-pick-tile') handleTrainingPickTile(actionEl);
+        if (action === 'training-hint') giveTrainingHint();
+        if (action === 'training-speak-word') {
+          stopTrainingPlayback();
+          speakText(actionEl.dataset.word, { rate: state.trainingSettings.rate });
+        }
+        if (action === 'training-reveal-word') {
+          state.training.sentence.revealed.add(Number(actionEl.dataset.tokenIndex));
+          renderTrainingView();
+        }
+        if (action === 'training-toggle-cn') {
+          state.trainingSettings.showCn = !state.trainingSettings.showCn;
+          saveTrainingSettings();
+          captureTrainingDrafts();
+          renderTrainingView();
+        }
+        if (action === 'training-restart') {
+          state.training.results = [];
+          state.training.startedAt = Date.now();
+          goToTrainingSentence(0, { shouldPlay: false });
+        }
 
         return;
       }
@@ -6061,6 +8031,24 @@ body.single-doc .btn-listening {
 
       if (itemEl && !itemEl.classList.contains('listening-item') && !itemEl.classList.contains('reading-item')) {
         toggleItem(itemEl);
+      }
+    });
+
+    // 句子训练的难度 / 循环 / 语速下拉框是每次渲染新建的，用委托监听 change
+    document.addEventListener('change', (event) => {
+      const selectEl = event.target.closest('[data-role="training-setting"]');
+
+      if (selectEl) {
+        handleTrainingSettingChange(selectEl);
+      }
+    });
+
+    document.addEventListener('keydown', handleTrainingKeydown);
+
+    // 记住听写最近聚焦的空：点 💡 按钮时输入框已经失焦，靠这个知道提示该给哪个空
+    document.addEventListener('focusin', (event) => {
+      if (event.target.dataset && event.target.dataset.role === 'training-blank' && state.training && state.training.sentence) {
+        state.training.sentence.activeTokenIndex = Number(event.target.dataset.tokenIndex);
       }
     });
   }
