@@ -250,7 +250,7 @@ body {
 }
 
 /*
- * 宽屏：标题独立留在左边，按钮组居中到工具条正中间。
+ * 宽屏：标题独立留在左边，按钮组紧跟在标题右边靠左排（2026-10-07 用户要求从居中改成左对齐）。
  * 用 grid 三列（左 / 中 / 右）而不是 position: absolute——之前用绝对定位时，
  * 按钮组一旦在中等宽度下换行变成两行，会因为脱离文档流而跟下方正文重叠
  * （工具条自身高度不会跟着换行长高）。grid 让按钮组留在正常文档流里，
@@ -269,9 +269,9 @@ body {
 
   .controls {
     grid-column: 2;
-    justify-self: center;
+    justify-self: start;
     margin-left: 0;
-    justify-content: center;
+    justify-content: flex-start;
     max-width: min(90vw, 640px);
   }
 
@@ -348,18 +348,42 @@ body {
 }
 
 .training-tabs {
+  --training-tab-gap: 20px;
+
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  justify-content: center;
+  gap: var(--training-tab-gap);
   margin-bottom: 12px;
 }
 
 .training-settings {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
+}
+
+/* 「译」跟前面的难度 / 循环 / 语速不是一组功能，多空出一段距离分组 */
+.training-settings .training-cn-toggle {
+  margin-left: 14px;
+}
+
+/* 标签页分两组：精听 / 选词（听）和 听写 / 回译（写），组之间的距离是普通间隔的两倍 */
+.training-tab[data-tab="dictation"] {
+  margin-left: var(--training-tab-gap);
+}
+
+/* 「全部展开/收起」和「⇄」在收藏 / 听力 / 训练视图里不起作用，顶部和底部都不显示（data-view 由 app.js 的 syncBodyView 写） */
+body[data-view="favorites"] .btn-expand-toggle,
+body[data-view="listening"] .btn-expand-toggle,
+body[data-view="training"] .btn-expand-toggle,
+body[data-view="favorites"] .btn-mode,
+body[data-view="listening"] .btn-mode,
+body[data-view="training"] .btn-mode {
+  display: none;
 }
 
 .training-setting {
@@ -641,11 +665,22 @@ body {
 }
 
 .training-player {
+  --training-player-gap: 35px;
+
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  gap: var(--training-player-gap);
   margin: 16px 0 8px;
+}
+
+/* 换句按钮跟中间的播放 / 主按钮分组：上一句右边、下一句左边的距离是普通间隔的两倍 */
+.training-player [data-action="training-prev"] {
+  margin-right: var(--training-player-gap);
+}
+
+.training-player [data-action="training-next"] {
+  margin-left: var(--training-player-gap);
 }
 
 .training-play-btn {
@@ -1848,6 +1883,16 @@ body.single-doc .btn-listening {
     font-size: 14px;
   }
 }
+
+/*
+ * 手机竖屏：训练页的标签页、播放控制按钮间距收小，避免挤成两行。
+ * 单独用 480px 而不是 --breakpoint（900px）：电脑上浏览器窗口不够 900 宽时也该保持大间距
+ */
+@media (max-width: 480px) {
+  .training-tabs { --training-tab-gap: 8px; }
+
+  .training-player { --training-player-gap: 12px; }
+}
 </style>
 </head>
 <body>
@@ -1950,11 +1995,11 @@ body.single-doc .btn-listening {
   const TRAINING_POS_MAX_ENTRIES = 300; // 「每篇练到第几句」最多记多少篇，超出删最早记的，避免 localStorage 越攒越大
   const TRAINING_HINT_SCORE = 0.5; // 听写用过首字母提示、最后填对的空，只算半个对
 
-  // 句子训练的四个标签页
+  // 句子训练的四个标签页；按难度递进排：先听（精听 / 选词），再写（听写 / 回译），两组之间 CSS 留出间隔
   const TRAINING_TABS = [
     { id: 'listen', label: '精听' },
-    { id: 'dictation', label: '听写' },
     { id: 'pick', label: '选词' },
+    { id: 'dictation', label: '听写' },
     { id: 'backtrans', label: '回译' },
   ];
 
@@ -4327,6 +4372,16 @@ body.single-doc .btn-listening {
   }
 
   /**
+   * 把当前视图写到 body 的 data-view 上，CSS 据此隐藏在当前视图里不起作用的按钮
+   * （「全部展开/收起」和「⇄」在收藏 / 听力 / 训练视图里点了没反应，直接不显示）
+   * @returns {void}
+   */
+  function syncBodyView() {
+
+    document.body.dataset.view = state.view;
+  }
+
+  /**
    * 渲染"泛读精读"卡片列表：播放 + 三级顺序揭示（原文→讲解）+ 精选词点击，
    * 跟其它类型的"EN⇄CN 翻面"完全独立，不复用 formatSide/RESIDENT_FIELD/SPEAK_FIELD
    * @param {object} doc - NoteDoc
@@ -4499,6 +4554,8 @@ body.single-doc .btn-listening {
   function renderContent(doc) {
 
     const contentEl = document.querySelector('[data-role="content"]');
+
+    syncBodyView();
 
     const shownSide = state.mode;
     const hiddenSide = state.mode === 'en' ? 'cn' : 'en';
@@ -5130,6 +5187,8 @@ body.single-doc .btn-listening {
   function renderFavoritesView() {
 
     const contentEl = document.querySelector('[data-role="content"]');
+
+    syncBodyView();
     const favorites = loadFavorites();
 
     // 两个列表都是最新收藏排最上面（词条列表另外还能在排序下拉里改）
@@ -5437,6 +5496,8 @@ body.single-doc .btn-listening {
 
     const contentEl = document.querySelector('[data-role="content"]');
 
+    syncBodyView();
+
     if (!state.quizPool) {
       startNewQuizPool();
     }
@@ -5742,6 +5803,8 @@ body.single-doc .btn-listening {
   function renderListeningView() {
 
     const contentEl = document.querySelector('[data-role="content"]');
+
+    syncBodyView();
 
     if (!state.listeningPool) {
       startNewListeningPool();
@@ -6555,7 +6618,7 @@ body.single-doc .btn-listening {
   /**
    * 当前标签页 + 状态下，主按钮（Enter 键）该干什么、显示什么字。
    * 主按钮只管"本句操作"，做完就变灰显示已完成状态，不会变成"下一句"——
-   * 同一位置的按钮点完立刻换成别的功能，连点两下很容易误跳句；换句只用两边的 ⏮ ⏭ / ← → 键
+   * 同一位置的按钮点完立刻换成别的功能，连点两下很容易误跳句；换句只用两边的「上一句」「下一句」/ ← → 键
    * @returns {{ label: string, action: string, isDone?: boolean }} action 为 'none' 时按钮禁用；
    *   isDone 表示按钮显示成灰色完成态但仍可点击（回译「已对比」点了退回编辑）
    */
@@ -6993,6 +7056,8 @@ body.single-doc .btn-listening {
   function renderTrainingView() {
 
     const contentEl = document.querySelector('[data-role="content"]');
+
+    syncBodyView();
     const training = state.training;
     const settings = state.trainingSettings;
     const doc = findDoc(training.slug);
@@ -7080,7 +7145,7 @@ body.single-doc .btn-listening {
 
     // 最后一句做完了，提示去哪看成绩（主按钮不再兼任"下一句"，不提示的话不知道下一步点哪）
     const lastHintHtml = isLast && hasSummary && sentenceState.isChecked
-      ? '<p class="training-note">这是最后一句，点 ⏭ 查看成绩。</p>'
+      ? '<p class="training-note">这是最后一句，点「下一句」查看成绩。</p>'
       : '';
 
     const enterLabels = { listen: '全部显示', dictation: '检查', pick: '显示答案', backtrans: '对比（输入框里用 Ctrl + Enter）' };
@@ -7100,10 +7165,10 @@ body.single-doc .btn-listening {
         ${lastHintHtml}
       </div>
       <div class="training-player">
-        <button type="button" class="btn" data-action="training-prev" title="上一句" aria-label="上一句"${training.index === 0 ? ' disabled' : ''}>⏮</button>
+        <button type="button" class="btn" data-action="training-prev"${training.index === 0 ? ' disabled' : ''}>上一句</button>
         <button type="button" class="btn training-play-btn" data-action="training-toggle-play" data-role="training-play-btn">▶ 播放</button>
         <button type="button" class="btn training-primary-btn${primary.isDone ? ' is-done' : ''}" data-action="training-primary"${primary.action === 'none' ? ' disabled' : ''}>${escapeHtml(primary.label)}</button>
-        <button type="button" class="btn" data-action="training-next" title="${nextLabel}" aria-label="${nextLabel}"${canGoNext ? '' : ' disabled'}>⏭</button>
+        <button type="button" class="btn" data-action="training-next" title="${nextLabel}"${canGoNext ? '' : ' disabled'}>下一句</button>
       </div>
       ${shortcutsHtml}
       ${renderBottomControls()}`;
