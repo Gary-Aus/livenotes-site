@@ -242,8 +242,9 @@ body {
 
 .app-title:active { opacity: 0.6; }
 
+/* 按钮组靠左排（2026-10-07 用户要求），窄屏也一样；之前是 margin-left: auto 推到最右边 */
 .controls {
-  margin-left: auto;
+  margin-left: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -347,6 +348,16 @@ body {
   border-color: var(--color-accent);
 }
 
+/* 标题前面的「🎯 句子训练」：小号灰字，跟文档标题同一行 */
+.training-title-label {
+  margin-right: 12px;
+  color: var(--color-muted);
+  font-size: 0.6em;
+  font-weight: 400;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 .training-tabs {
   --training-tab-gap: 20px;
 
@@ -364,6 +375,10 @@ body {
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
+
+  /* 跟上面的播放控制按钮用分隔线分开（设置行挪到按钮下面后，两排按钮挨着看不出分组） */
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
 }
 
 /* 「译」跟前面的难度 / 循环 / 语速不是一组功能，多空出一段距离分组 */
@@ -671,7 +686,7 @@ body[data-view="training"] .btn-mode {
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--training-player-gap);
-  margin: 16px 0 8px;
+  margin: 16px 0;
 }
 
 /* 换句按钮跟中间的播放 / 主按钮分组：上一句右边、下一句左边的距离是普通间隔的两倍 */
@@ -1024,7 +1039,9 @@ body[data-view="training"] .btn-mode {
   max-width: none;
 }
 
+/* 单篇页面的"返回总目录"：按钮组改成靠左后，它自己用 margin-left: auto 留在最右边 */
 .back-link {
+  margin-left: auto;
   color: var(--color-accent);
   text-decoration: none;
   white-space: nowrap;
@@ -1892,6 +1909,36 @@ body.single-doc .btn-listening {
   .training-tabs { --training-tab-gap: 8px; }
 
   .training-player { --training-player-gap: 12px; }
+}
+
+/*
+ * 电脑端（含不到 900 宽的电脑窗口）：训练页纵向拉开，从上到下三组——练习区（标签页 + 句子卡片）、
+ * 控制区（上一句 / 主按钮 / 播放 / 下一句）、设置区（难度行 + 进度条 + 快捷键），组之间 32px、组内适当放松。
+ * 手机竖屏（<= 480px）屏幕小，保持紧凑不变
+ */
+@media (min-width: 481px) {
+  body[data-view="training"] .doc-header { margin-bottom: 24px; }
+
+  .training-tabs { margin-bottom: 24px; }
+
+  .training-settings {
+    margin-bottom: 16px;
+    padding-top: 24px;
+  }
+
+  .training-progress { margin-bottom: 20px; }
+
+  .training-card { padding: 32px 20px; }
+
+  .training-sentence {
+    font-size: 1.4em;
+    line-height: 1.9;
+  }
+
+  /* 卡片里的小号句子（回译"你写的"、成绩页回顾）不跟着放大 */
+  .training-sentence--small { font-size: 1em; }
+
+  .training-player { margin: 32px 0 24px; }
 }
 </style>
 </head>
@@ -7070,17 +7117,16 @@ body.single-doc .btn-listening {
     const settings = state.trainingSettings;
     const doc = findDoc(training.slug);
 
+    // 「句子训练」标签和文档标题放同一行，省一行纵向空间
     const headerHtml = `
       <header class="doc-header">
-        <div class="doc-chapter-label">🎯 句子训练</div>
-        <h2 class="doc-title">${escapeHtml((doc && (doc.title || doc.slug)) || '')}</h2>
+        <h2 class="doc-title"><span class="training-title-label">🎯 句子训练</span>${escapeHtml((doc && (doc.title || doc.slug)) || '')}</h2>
       </header>`;
 
     if (training.sentences.length === 0) {
       contentEl.innerHTML = `
         ${headerHtml}
-        <p class="favorites-empty">这篇没有句子类内容（「句型 & 金句」或泛读「阅读原文」），换一篇试试。</p>
-        ${renderBottomControls()}`;
+        <p class="favorites-empty">这篇没有句子类内容（「句型 & 金句」或泛读「阅读原文」），换一篇试试。</p>`;
 
       return;
     }
@@ -7091,7 +7137,7 @@ body.single-doc .btn-listening {
       </div>`;
 
     if (training.isFinished) {
-      contentEl.innerHTML = `${headerHtml}${tabsHtml}${renderTrainingSummary()}${renderBottomControls()}`;
+      contentEl.innerHTML = `${headerHtml}${tabsHtml}${renderTrainingSummary()}`;
 
       return;
     }
@@ -7160,11 +7206,11 @@ body.single-doc .btn-listening {
     const shortcutsHtml = `
       <p class="training-shortcuts">快捷键：空格 播放/停止 · R 重听 · ← → 上一句/下一句 · Enter ${enterLabels[settings.tab]}${settings.tab === 'dictation' ? ' · 填空时按空格跳到下一个空' : ''} · 点任意单词单独发音</p>`;
 
+    // 训练页内容短，一屏就能看完，不放底部那排「收藏 / 测验……」按钮（用户要求去掉），视图切换用顶部工具条
+    // 设置行和进度条放在播放控制下面（用户要求）：上方只留标签页，句子卡片更靠上、更突出
     contentEl.innerHTML = `
       ${headerHtml}
       ${tabsHtml}
-      ${renderTrainingSettings()}
-      ${progressHtml}
       <div class="training-card">
         ${bodyHtml}
         ${cnHtml}
@@ -7178,8 +7224,9 @@ body.single-doc .btn-listening {
         <button type="button" class="btn training-play-btn" data-action="training-toggle-play" data-role="training-play-btn">▶ 播放</button>
         <button type="button" class="btn" data-action="training-next" title="${nextLabel}"${canGoNext ? '' : ' disabled'}>下一句</button>
       </div>
-      ${shortcutsHtml}
-      ${renderBottomControls()}`;
+      ${renderTrainingSettings()}
+      ${progressHtml}
+      ${shortcutsHtml}`;
 
     updateTrainingPlayButton();
 
