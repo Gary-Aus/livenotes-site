@@ -6161,6 +6161,7 @@ body.single-doc .btn-listening {
         isUsed: false,
       }))),
       backtransInput: '', // 回译：用户输入的英文
+      isGivenUp: false, // 选词：是点「显示答案」结束的（主按钮显示"已显示"），不是自己点完的（"已完成"）
     };
   }
 
@@ -6636,7 +6637,7 @@ body.single-doc .btn-listening {
 
       if (isAllRevealed) {
 
-        return { label: isBlind ? '已显示原文' : '已全部显示', action: 'uncheck', isDone: true };
+        return { label: '已显示', action: 'uncheck', isDone: true };
       }
 
       return { label: isBlind ? '显示原文' : '全部显示', action: 'reveal-all' };
@@ -6649,7 +6650,13 @@ body.single-doc .btn-listening {
 
     if (tab === 'pick') {
 
-      return sentenceState.isChecked ? { label: '已完成', action: 'uncheck', isDone: true } : { label: '显示答案', action: 'give-up' };
+      if (!sentenceState.isChecked) {
+
+        return { label: '显示答案', action: 'give-up' };
+      }
+
+      // 点了「显示答案」才算"已显示"；自己把方块全部点完的是"已完成"
+      return { label: sentenceState.isGivenUp ? '已显示' : '已完成', action: 'uncheck', isDone: true };
     }
 
     return sentenceState.isChecked ? { label: '已对比', action: 'uncheck', isDone: true } : { label: '对比', action: 'check' };
@@ -6863,6 +6870,7 @@ body.single-doc .btn-listening {
     }
 
     sentenceState.isChecked = true;
+    sentenceState.isGivenUp = isGivingUp;
     sentenceState.flashTileId = null;
     recordTrainingResult();
     renderTrainingView();
@@ -7166,8 +7174,8 @@ body.single-doc .btn-listening {
       </div>
       <div class="training-player">
         <button type="button" class="btn" data-action="training-prev"${training.index === 0 ? ' disabled' : ''}>上一句</button>
-        <button type="button" class="btn training-play-btn" data-action="training-toggle-play" data-role="training-play-btn">▶ 播放</button>
         <button type="button" class="btn training-primary-btn${primary.isDone ? ' is-done' : ''}" data-action="training-primary"${primary.action === 'none' ? ' disabled' : ''}>${escapeHtml(primary.label)}</button>
+        <button type="button" class="btn training-play-btn" data-action="training-toggle-play" data-role="training-play-btn">▶ 播放</button>
         <button type="button" class="btn" data-action="training-next" title="${nextLabel}"${canGoNext ? '' : ' disabled'}>下一句</button>
       </div>
       ${shortcutsHtml}
