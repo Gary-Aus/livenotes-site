@@ -448,6 +448,17 @@ body[data-view="training"] .btn-mode {
   box-shadow: var(--shadow);
 }
 
+/* 卡片右上角的评分 + 收藏，四个标签页位置都一样；星标放最右，跟测验页顺序一致 */
+.training-card-marks {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.training-card-marks .fav-btn { margin-left: 6px; }
+
 /* 句子按词排成可换行的一行，每个词（含前后标点）不在中间断开 */
 .training-sentence {
   display: flex;
@@ -783,10 +794,13 @@ body[data-view="training"] .btn-mode {
 }
 
 /*
- * 测验模式评分按钮：3 个对号，点第几个就点亮到第几个（类似打分条）。
- * 用固定的灰 / 黄两色（不用主题令牌），跟收藏星标的金色区分开，避免混淆成同一种标记。
+ * 重要性按钮：3 个圆角方块感叹号，点第几个就点亮到第几个（类似打分条）。
+ * 用固定的灰 / 红两色（不用主题令牌），跟收藏星标的橙色区分开，避免混淆成同一种标记。
  */
 .mark-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 32px;
   min-height: var(--hit-size);
   padding: 4px 6px;
@@ -801,11 +815,18 @@ body[data-view="training"] .btn-mode {
 
 .mark-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
-/* 点亮态用实心黄底 + 深色对号，比只变文字颜色更醒目，一眼能扫出点亮了几个 */
-.mark-btn.is-filled {
-  color: #78350f;
-  background: #facc15;
-  border-color: #facc15;
+/* 点亮态：按钮不填底色，图标本身变成实心红块 + 白色感叹号，一眼能扫出点亮了几个 */
+.mark-btn.is-filled { color: #ef4444; }
+
+.mark-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
+.mark-btn:not(.is-filled) .mark-icon-on,
+.mark-btn.is-filled .mark-icon-off {
+  display: none;
 }
 
 /*
@@ -918,7 +939,7 @@ body[data-view="training"] .btn-mode {
   border-color: #f5a524;
 }
 
-/* 「我的收藏」列表里只读展示评分（不可点击），跟评分按钮共用 .mark-btn 样式 */
+/* 「我的收藏」列表里只读展示重要性（不可点击），跟重要性按钮共用 .mark-btn 样式 */
 .mark-badges {
   display: inline-flex;
   gap: 4px;
@@ -930,6 +951,11 @@ body[data-view="training"] .btn-mode {
   justify-content: center;
   min-height: auto;
   cursor: default;
+}
+
+.mark-badges .mark-icon {
+  width: 16px;
+  height: 16px;
 }
 
 /*
@@ -1590,7 +1616,7 @@ body.single-doc .btn-listening {
   gap: 10px;
 }
 
-/* 类型 / 对号档位两个筛选下拉，跟工具条分开单独一个类（之前误用 .favorites-toolbar，
+/* 类型 / 重要性档位两个筛选下拉，跟工具条分开单独一个类（之前误用 .favorites-toolbar，
    工具条改成纵向堆叠时筛选条被一起带歪，拆开避免以后互相影响） */
 .favorites-filter-bar {
   display: flex;
@@ -1881,11 +1907,27 @@ body.single-doc .btn-listening {
 
   .training-card { padding: 16px; }
 
+  .training-card-marks { margin-bottom: 8px; }
+
+  .training-card-marks .mark-btn,
+  .training-card-marks .fav-btn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 2px 8px;
+    font-size: 14px;
+  }
+
   .item-actions .mark-btn {
     min-width: 36px;
     min-height: 36px;
     padding: 2px 8px;
     font-size: 14px;
+  }
+
+  .training-card-marks .mark-icon,
+  .item-actions .mark-icon {
+    width: 20px;
+    height: 20px;
   }
 
   /* 收藏星标按钮：128px 太宽容易误触，减半 → 64px；朗读按钮宽度跟收藏按钮保持一致；
@@ -2099,7 +2141,7 @@ body.single-doc .btn-listening {
   // 「我的收藏」类型筛选下拉的选项文案，跟 SIDE_FIELDS 的 key 对应
   const SECTION_TYPE_LABELS = { vocab: '词汇', phrases: '短语', sentences: '句型' };
 
-  // 「我的收藏」对号档位筛选下拉里，档位数字对应的中文数字（"1"→"一"，拼成"一档"）
+  // 「我的收藏」重要性档位筛选下拉里，档位数字对应的中文数字（"1"→"一"，拼成"一档"）
   const MARK_LEVEL_CN = { 1: '一', 2: '二', 3: '三' };
 
   // 「我的收藏」排序下拉的选项
@@ -3277,52 +3319,41 @@ body.single-doc .btn-listening {
     persistFavorites(list);
   }
 
+  // 重要性档位 → 复习间隔（天）：越重要复习越勤
+  const SRS_INTERVAL_DAYS_BY_IMPORTANCE = { 1: 7, 2: 3, 3: 1 };
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
   /**
-   * 间隔重复：根据这次评分算出下次复习间隔（天）。1 档＝不熟悉，明天再看；
-   * 2/3 档在上一次间隔基础上乘 1.5 / 2.5 倍增长，第一次评分（没有上次间隔）给个
-   * 固定起始值。这个函数只管算天数，不碰任何存储，方便以后单独测试/调参
-   * @param {number} previousInterval - 上一次的间隔天数，从没评过是 0
-   * @param {1|2|3} rating
+   * 间隔重复：按重要性档位给出复习间隔（天）。mark 是"收藏的重要性"（1 一般 ～ 3 很重要），
+   * 不是熟练度，所以越重要间隔越短、复习越勤；不再按上次间隔倍增（改档位不等于复习过一遍）。
+   * 这个函数只管算天数，不碰任何存储，方便以后单独调参
+   * @param {1|2|3} importance
    * @returns {number} 天数
    */
-  function computeNextSrsInterval(previousInterval, rating) {
+  function computeSrsInterval(importance) {
 
-    if (rating === 1) {
-
-      return 1;
-    }
-
-    if (!previousInterval) {
-
-      return rating === 2 ? 2 : 4;
-    }
-
-    const multiplier = rating === 2 ? 1.5 : 2.5;
-
-    return Math.max(1, Math.round(previousInterval * multiplier));
+    return SRS_INTERVAL_DAYS_BY_IMPORTANCE[importance] || 1;
   }
 
   /**
-   * 设置单条 item 的测验评分：再点一次当前档位会清空评分。
-   * 顺带维护间隔重复的调度字段（srsInterval / srsDueAt）：评分时更新，清空评分时也
+   * 设置单条 item 的重要性档位：再点一次当前档位会清空。
+   * 顺带维护间隔重复的调度字段（srsInterval / srsDueAt）：设档位时更新，清空时也
    * 一起清空（退回"随时都该复习"的状态），供 sortPoolBySrsPriority 用
    * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
    * @param {1|2|3} level
-   * @param {{ isToggle?: boolean }} [options] - isToggle 为 false 时直接设成该档，不做"再点一次清空"
-   *   （句子训练做错自动记一档用：本来就是一档的句子再错一次，要重新排期而不是被清掉）
    * @returns {void}
    */
-  function setItemMark(context, level, { isToggle = true } = {}) {
+  function setItemMark(context, level) {
 
     const { list, record } = ensureItemRecord(context);
     const now = new Date().toISOString();
 
-    record.mark = isToggle && record.mark === level ? null : level;
+    record.mark = record.mark === level ? null : level;
     record.markedAt = record.mark ? now : null;
 
     if (record.mark !== null) {
-      record.srsInterval = computeNextSrsInterval(record.srsInterval || 0, record.mark);
-      record.srsDueAt = new Date(Date.now() + record.srsInterval * 24 * 60 * 60 * 1000).toISOString();
+      record.srsInterval = computeSrsInterval(record.mark);
+      record.srsDueAt = new Date(Date.now() + record.srsInterval * DAY_MS).toISOString();
     } else {
       record.srsInterval = null;
       record.srsDueAt = null;
@@ -3331,6 +3362,35 @@ body.single-doc .btn-listening {
     // 设置了评分（不是取消）就顺带自动收藏，方便测验时顺手标记；取消评分不会跟着取消收藏，
     // 避免误清掉本来手动收藏的记录
     if (record.mark !== null && !record.favorited) {
+      record.favorited = true;
+      record.favoritedAt = now;
+    }
+
+    record.updatedAt = now;
+
+    persistFavorites(list);
+  }
+
+  /**
+   * 听力答错 / 句子训练做错时安排复习：不动用户标的重要性档位，只把复习时间提前到最晚明天；
+   * 没收藏过的顺带收藏，方便在「我的收藏」里找到
+   * @param {object} context - { docSlug, docTitle, chapter, sectionType, sectionHeading, itemIndex, item }
+   * @returns {void}
+   */
+  function scheduleItemReview(context) {
+
+    const { list, record } = ensureItemRecord(context);
+    const now = new Date().toISOString();
+    const tomorrowMs = Date.now() + DAY_MS;
+
+
+    // srsDueAt 为空的记录在排序里已经排最前（当成"现在就该复习"），不用再动；
+    // 已经排在明天之前的也不往后推
+    if (record.srsDueAt && new Date(record.srsDueAt).getTime() > tomorrowMs) {
+      record.srsDueAt = new Date(tomorrowMs).toISOString();
+    }
+
+    if (!record.favorited) {
       record.favorited = true;
       record.favoritedAt = now;
     }
@@ -5008,7 +5068,7 @@ body.single-doc .btn-listening {
   }
 
   /**
-   * 渲染"收藏的词条"上方的课程 / 章节 / 类型 / 对号档位 / 排序筛选条，选项文案里带上各筛选项的实际数量
+   * 渲染"收藏的词条"上方的课程 / 章节 / 类型 / 重要性档位 / 排序筛选条，选项文案里带上各筛选项的实际数量
    * @param {{ searched: object[], inCourse: object[], inChapter: object[] }} scopes - applyFavoritesFilter 的分层结果
    * @returns {string}
    */
@@ -5056,7 +5116,7 @@ body.single-doc .btn-listening {
       value: markValue,
       // 纯中文数字"一档/二档/三档"：全部选项都是纯中文 2 字，字体宽度比例一致，容易对齐；
       // 中文数字跟后面阿拉伯数字的数量也不会看混
-      label: markValue === 'all' ? '全部档位' : markValue === 'none' ? '未评' : `${MARK_LEVEL_CN[markValue]}档`,
+      label: markValue === 'all' ? '全部档位' : markValue === 'none' ? '未标' : `${MARK_LEVEL_CN[markValue]}档`,
       count: inChapter.filter((fav) => {
 
         if (markValue === 'all') return true;
@@ -5076,7 +5136,7 @@ body.single-doc .btn-listening {
         <select class="btn favorites-filter-select favorites-filter-select--wide" data-role="favorites-course-filter" aria-label="按课程筛选">${courseOptions}</select>
         ${courseFilter === 'all' ? '' : `<select class="btn favorites-filter-select favorites-filter-select--wide" data-role="favorites-chapter-filter" aria-label="按章节筛选">${chapterOptions}</select>`}
         <select class="btn favorites-filter-select" data-role="favorites-type-filter" aria-label="按类型筛选">${typeOptions}</select>
-        <select class="btn favorites-filter-select" data-role="favorites-mark-filter" aria-label="按对号档位筛选">${markOptions}</select>
+        <select class="btn favorites-filter-select" data-role="favorites-mark-filter" aria-label="按重要性档位筛选">${markOptions}</select>
         <select class="btn favorites-filter-select" data-role="favorites-sort" aria-label="排序方式">${sortOptions}</select>
       </div>`;
   }
@@ -5454,23 +5514,33 @@ body.single-doc .btn-listening {
       .map((scored) => scored.entry);
   }
 
+  // 重要性图标：圆角方块感叹号。未点亮显示空心框（.mark-icon-off），点亮显示实心块 + 镂空感叹号
+  // （.mark-icon-on），两套图形都画好、靠 CSS 按 .is-filled 切换，点击时只需切 class 不用重画
+  const MARK_ICON_SVG = '<svg class="mark-icon" viewBox="0 0 24 24" aria-hidden="true">'
+    + '<g class="mark-icon-off"><rect x="2.6" y="2.6" width="18.8" height="18.8" rx="5" fill="none" stroke="currentColor" stroke-width="2.2"/>'
+    + '<rect x="10.6" y="6" width="2.8" height="7.6" rx="1.4" fill="currentColor"/><circle cx="12" cy="17.2" r="1.6" fill="currentColor"/></g>'
+    + '<g class="mark-icon-on"><rect x="1.5" y="1.5" width="21" height="21" rx="5.5" fill="currentColor"/>'
+    + '<rect x="10.6" y="6" width="2.8" height="7.6" rx="1.4" fill="#ffffff"/><circle cx="12" cy="17.2" r="1.6" fill="#ffffff"/></g>'
+    + '</svg>';
+
   /**
-   * 渲染评分用的 3 个对号按钮，点亮到当前评分档位（再点一次已点亮的档位会清空，见 setItemMark）
+   * 渲染重要性档位的 3 个按钮，点亮到当前档位（再点一次已点亮的档位会清空，见 setItemMark）
    * @param {number|null} mark
+   * @param {string} [action] - 点击事件的 data-action，测验页和训练页各用各的处理函数
    * @returns {string}
    */
-  function renderMarkButtons(mark) {
+  function renderMarkButtons(mark, action = 'set-quiz-mark') {
 
     return [1, 2, 3].map((level) => {
 
       const filled = mark !== null && level <= mark;
 
-      return `<button type="button" class="mark-btn${filled ? ' is-filled' : ''}" data-action="set-quiz-mark" data-level="${level}" aria-label="评分 ${level}">✓</button>`;
+      return `<button type="button" class="mark-btn${filled ? ' is-filled' : ''}" data-action="${action}" data-level="${level}" aria-label="重要性 ${level}">${MARK_ICON_SVG}</button>`;
     }).join('');
   }
 
   /**
-   * 渲染只读的评分展示（3 个对号，不可点击），用于「我的收藏」列表里展示测验评分
+   * 渲染只读的重要性展示（3 个图标，不可点击），用于「我的收藏」列表
    * @param {number|null} mark
    * @returns {string}
    */
@@ -5485,10 +5555,10 @@ body.single-doc .btn-listening {
 
       const filled = level <= mark;
 
-      return `<span class="mark-btn${filled ? ' is-filled' : ''}" aria-hidden="true">✓</span>`;
+      return `<span class="mark-btn${filled ? ' is-filled' : ''}" aria-hidden="true">${MARK_ICON_SVG}</span>`;
     }).join('');
 
-    return `<span class="mark-badges" title="测验评分：${mark}/3">${dots}</span>`;
+    return `<span class="mark-badges" title="重要性：${mark}/3">${dots}</span>`;
   }
 
   /**
@@ -5812,8 +5882,17 @@ body.single-doc .btn-listening {
       enEl.hidden = false;
     });
 
-    // 答对给 3 档、答错给 1 档，接入现有的评分 + 间隔重复调度，测验模式也会看到这次结果
-    setItemMark(entry, isCorrect ? 3 : 1);
+    // 档位是用户标的重要性，答题结果不去改它：答错只安排明天复习（顺带收藏），答对不动
+    if (!isCorrect) {
+      scheduleItemReview(entry);
+
+      const favBtn = itemEl.querySelector('.fav-btn');
+
+      if (favBtn) {
+        favBtn.classList.add('is-favorited');
+        favBtn.textContent = '★';
+      }
+    }
   }
 
   /**
@@ -6985,8 +7064,8 @@ body.single-doc .btn-listening {
   }
 
   /**
-   * 记下当前这句的判分结果（成绩页用）；有错的句子记成测验评分一档，进间隔复习，
-   * 测验 / 听力模式会优先抽到，「我的收藏」里按评分筛选也能找到
+   * 记下当前这句的判分结果（成绩页用）；有错的句子安排明天复习并顺带收藏（不动重要性档位），
+   * 测验 / 听力模式会优先抽到，「我的收藏」里也能找到
    * @returns {void}
    */
   function recordTrainingResult() {
@@ -7012,8 +7091,75 @@ body.single-doc .btn-listening {
     };
 
     if (correct < outcomes.length) {
-      setItemMark(training.sentences[training.index].context, 1, { isToggle: false });
+      scheduleItemReview(training.sentences[training.index].context);
     }
+  }
+
+  /**
+   * 训练句子对应的 item 记录 id（跟 ensureItemRecord 的规则一致）
+   * @param {object} sentence - collectTrainingSentences 里的一条
+   * @returns {string}
+   */
+  function buildTrainingItemId(sentence) {
+
+    const { docSlug, sectionType, itemIndex } = sentence.context;
+
+    return `${docSlug}::${sectionType}:${itemIndex}`;
+  }
+
+  /**
+   * 按存储里的最新记录刷新训练卡片上的 3 个重要性按钮和星标。
+   * 只改按钮外观、不整页重新渲染，免得听写填到一半的内容和光标位置丢掉
+   * @returns {void}
+   */
+  function syncTrainingMarkButtons() {
+
+    const marksEl = document.querySelector('.training-card-marks');
+    const sentence = state.training && state.training.sentences[state.training.index];
+
+    if (!marksEl || !sentence) {
+
+      return;
+    }
+
+    const itemId = buildTrainingItemId(sentence);
+    const mark = getItemMark(itemId);
+    const favorited = isItemFavorited(itemId);
+
+
+    marksEl.querySelectorAll('.mark-btn').forEach((markBtn) => {
+      markBtn.classList.toggle('is-filled', mark !== null && Number(markBtn.dataset.level) <= mark);
+    });
+
+    const favBtn = marksEl.querySelector('.fav-btn');
+
+    favBtn.classList.toggle('is-favorited', favorited);
+    favBtn.textContent = favorited ? '★' : '☆';
+  }
+
+  /**
+   * 训练卡片上重要性按钮点击处理：规则同测验页（点第几档亮到第几档，再点当前档清空，标档位顺带收藏）
+   * @param {HTMLElement} buttonEl
+   * @returns {void}
+   */
+  function handleSetTrainingMark(buttonEl) {
+
+    const sentence = state.training.sentences[state.training.index];
+
+    setItemMark(sentence.context, Number(buttonEl.dataset.level));
+    syncTrainingMarkButtons();
+  }
+
+  /**
+   * 训练卡片上「收藏」按钮点击处理
+   * @returns {void}
+   */
+  function handleToggleFavoriteTrainingItem() {
+
+    const sentence = state.training.sentences[state.training.index];
+
+    toggleFavoriteItem(sentence.context);
+    syncTrainingMarkButtons();
   }
 
   /**
@@ -7041,7 +7187,7 @@ body.single-doc .btn-listening {
       ? `<button type="button" class="btn" data-action="next-doc" data-slug="${escapeAttr(nextDoc.slug)}">下一篇 ›</button>`
       : '';
     const wrongNoteHtml = wrongSentenceCount > 0
-      ? `<p class="training-note">有 ${wrongSentenceCount} 句没全对（靠提示填对的也算），已记成评分「一」进入复习，测验 / 听力模式会优先出现。</p>`
+      ? `<p class="training-note">有 ${wrongSentenceCount} 句没全对（靠提示填对的也算），已加入收藏并安排明天复习（不改你标的重要性），测验 / 听力模式会优先出现。</p>`
       : '';
 
     return `
@@ -7185,6 +7331,15 @@ body.single-doc .btn-listening {
       ? `<div class="training-cn">${escapeHtml(sentence.cn)}</div>`
       : '';
 
+    // 卡片右上角的重要性 + 收藏，跟正文 / 测验页是同一条记录；做错会顺带收藏，检查后重新渲染时星标就会亮
+    const itemId = buildTrainingItemId(sentence);
+    const favorited = isItemFavorited(itemId);
+    const marksHtml = `
+      <div class="training-card-marks">
+        ${renderMarkButtons(getItemMark(itemId), 'set-training-mark')}
+        <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-training-item" aria-label="收藏">${favorited ? '★' : '☆'}</button>
+      </div>`;
+
     const primary = getTrainingPrimaryAction();
 
     // 做完这句（主按钮进入完成态）才显示词汇点和讲解，做之前显示等于提前给答案
@@ -7210,6 +7365,7 @@ body.single-doc .btn-listening {
       ${headerHtml}
       ${tabsHtml}
       <div class="training-card">
+        ${marksHtml}
         ${bodyHtml}
         ${cnHtml}
         ${noBlankHtml}
@@ -8109,6 +8265,8 @@ body.single-doc .btn-listening {
         if (action === 'training-next') goToTrainingSentence(state.training.index + 1);
         if (action === 'training-pick-tile') handleTrainingPickTile(actionEl);
         if (action === 'training-hint') giveTrainingHint();
+        if (action === 'set-training-mark') handleSetTrainingMark(actionEl);
+        if (action === 'toggle-favorite-training-item') handleToggleFavoriteTrainingItem();
         if (action === 'training-speak-word') {
           stopTrainingPlayback();
           speakText(actionEl.dataset.word, { rate: state.trainingSettings.rate });
