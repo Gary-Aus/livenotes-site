@@ -34,6 +34,12 @@
   --color-muted: #6b7280;
   --color-border: #e5e7eb;
   --color-accent: #2563eb;
+  /* 全站播放 / 停止图标的固定配色，不跟主题走：没在念是绿色 ▶，正在念（点了会暂停）是红色 ■ */
+  --color-play: #16a34a;
+  --color-stop: #dc2626;
+  /* 朗读逐词高亮：默认浅蓝底（设置菜单可换，JS 改写这个变量），字固定深色，深色主题下也看得清 */
+  --color-speech-bg: #bfdbfe;
+  --color-speech-text: #1a1a1a;
   --color-on-accent: #ffffff;
 
   /* 隐藏侧展开后的背景，与显示侧区分 */
@@ -262,9 +268,14 @@ body {
     column-gap: 12px;
   }
 
-  .topbar-left { grid-column: 1; }
+  /* 标题区固定宽度：正文页标题带章节名、训练 / 听力页只有课程名，长短不一，
+     不固定的话后面的按钮会跟着左右挪；太长的截断成"…"，悬停看全名（app.js 写 title） */
+  .topbar-left {
+    grid-column: 1;
+    width: min(360px, 36vw);
+  }
 
-  .app-title { max-width: min(32vw, 400px); }
+  .app-title { max-width: 100%; }
 
   .controls {
     grid-column: 2;
@@ -389,7 +400,9 @@ body {
   margin-left: var(--training-tab-gap);
 }
 
-/* 「全部展开/收起」和「⇄」在收藏 / 听力 / 训练视图里不起作用，顶部和底部都不显示（data-view 由 app.js 的 syncBodyView 写） */
+/* 「全部展开/收起」和「⇄」在收藏 / 听力 / 训练视图里不起作用，不显示（data-view 由 app.js 的 syncBodyView 写）。
+   顶部工具条里只隐藏不让位（visibility），后面「收藏 / 测验 / 听力 / 训练」的位置在各个页面都不变；
+   底部那排没有这个问题，直接不占位 */
 body[data-view="favorites"] .btn-expand-toggle,
 body[data-view="listening"] .btn-expand-toggle,
 body[data-view="training"] .btn-expand-toggle,
@@ -397,6 +410,16 @@ body[data-view="favorites"] .btn-mode,
 body[data-view="listening"] .btn-mode,
 body[data-view="training"] .btn-mode {
   display: none;
+}
+
+body[data-view="favorites"] .controls .btn-expand-toggle,
+body[data-view="listening"] .controls .btn-expand-toggle,
+body[data-view="training"] .controls .btn-expand-toggle,
+body[data-view="favorites"] .controls .btn-mode,
+body[data-view="listening"] .controls .btn-mode,
+body[data-view="training"] .controls .btn-mode {
+  display: inline-block;
+  visibility: hidden;
 }
 
 .training-setting {
@@ -425,6 +448,22 @@ body[data-view="training"] .btn-mode {
   color: var(--color-muted);
   font-size: 0.9em;
   white-space: nowrap;
+}
+
+/* 训练标签上的"已练完"：绿色 ✓；当前标签是强调色实底，✓ 用白色才看得清 */
+.training-tab-done {
+  color: var(--color-play);
+  font-weight: 700;
+}
+
+.training-tab.is-active .training-tab-done {
+  color: var(--color-on-accent);
+}
+
+/* 进度条旁的「✓ 已练完」：练完了换成绿色 */
+.training-link-btn.is-done {
+  color: var(--color-play);
+  font-weight: 600;
 }
 
 .training-progress-bar {
@@ -1226,6 +1265,54 @@ body.single-doc .btn-listening {
 
 .doc-item.is-read .doc-read-mark { display: inline; }
 
+/* 牛皮纸主题：读完不打 ✓，整行浅蓝底；正在看的篇深蓝底（替换原来的米棕色），正在看且读完再加左侧藏青竖条。
+   主题本身偏黄，用蓝色跟底色反差最大（用户在对比页里挑的）；其它主题暂时保持 ✓ + 原来的当前篇样式 */
+/* 侧边栏正在看的篇：标题前加一个小绿点，所有主题都有 */
+.doc-link.is-active::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  vertical-align: middle;
+  background: #22c55e;
+  border-radius: 50%;
+}
+
+:root[data-theme="kraft"] .doc-item.is-read .doc-read-mark { display: none; }
+
+:root[data-theme="kraft"] .doc-item.is-read .doc-link {
+  background: rgba(96, 165, 250, 0.18);
+}
+
+:root[data-theme="kraft"] .doc-link.is-active,
+:root[data-theme="kraft"] .doc-item.is-read .doc-link.is-active {
+  background: rgba(37, 99, 235, 0.32);
+}
+
+:root[data-theme="kraft"] .doc-item.is-read .doc-link.is-active {
+  box-shadow: inset 4px 0 0 #1e3a8a;
+}
+
+/* 标题后面的「听 选 写 译」：练完的强调色，没练完的淡灰；一种都没练完时整组不渲染 */
+.doc-training-tags {
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+.training-done-tag {
+  margin-left: 2px;
+  font-size: 0.75em;
+  color: var(--color-muted);
+  opacity: 0.45;
+}
+
+.training-done-tag.is-done {
+  color: var(--color-accent);
+  opacity: 1;
+  font-weight: 700;
+}
+
 /* 章节标题后的 "3/5"，全部看完时换强调色 */
 .chapter-progress {
   margin-left: 8px;
@@ -1406,6 +1493,14 @@ body.single-doc .btn-listening {
   cursor: pointer;
 }
 
+/* 键盘 ↑↓ 选中的当前卡片：只在有鼠标的设备上描边，手机点卡片不出现高亮 */
+@media (hover: hover) and (pointer: fine) {
+  .item.is-active-card {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent), var(--shadow);
+  }
+}
+
 .shown-side {
   overflow-wrap: anywhere;
 }
@@ -1480,6 +1575,50 @@ body.single-doc .btn-listening {
 }
 
 .speak-btn:active { transform: translateY(1px); }
+
+/* 卡片 ▶ 和训练页「▶ 播放」：按钮保持素色，只有图标上色——没在念绿色 ▶，正在念红色 ■；
+   正在念的按钮四周加一圈强调色描边（牛皮纸主题下是棕色） */
+.play-icon {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  vertical-align: middle;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 17px solid var(--color-play);
+}
+
+.play-icon--stop {
+  width: 18px;
+  height: 18px;
+  background: var(--color-stop);
+  border: 0;
+}
+
+/* 朗读逐词高亮：训练页给当前词的 .training-word 加 class（精听遮挡块在里面一起变色），
+   泛读原文用 CSS Custom Highlight API，不改 DOM */
+.training-word.is-speaking {
+  color: var(--color-speech-text);
+  background: var(--color-speech-bg);
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px var(--color-speech-bg);
+}
+
+.training-word.is-speaking .training-mask {
+  background: var(--color-speech-bg);
+  opacity: 1;
+}
+
+::highlight(livenotes-speech) {
+  color: var(--color-speech-text);
+  background-color: var(--color-speech-bg);
+}
+
+.speak-btn.is-playing,
+.training-play-btn.is-active {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
 .speak-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 .cell--word,
@@ -2013,6 +2152,11 @@ body.single-doc .btn-listening {
             <span>朗读语音：</span>
             <select class="voice-select" data-role="voice-select" aria-label="朗读语音" hidden></select>
           </label>
+          <!-- 朗读逐词高亮的颜色，选项由 setupSpeechHighlightSelect 填充 -->
+          <label class="settings-menu-item">
+            <span>朗读高亮：</span>
+            <select class="voice-select" data-role="speech-highlight-select" aria-label="朗读高亮颜色"></select>
+          </label>
         </div>
       </span>
     </div>
@@ -2064,6 +2208,7 @@ body.single-doc .btn-listening {
   const STORAGE_SYNC_TOKEN_KEY = 'livenotes:sync-token';
   const STORAGE_SYNC_GIST_ID_KEY = 'livenotes:sync-gist-id';
   const STORAGE_VOICE_KEY = 'livenotes:voice';
+  const STORAGE_SPEECH_HIGHLIGHT_KEY = 'livenotes:speech-highlight';
   const STORAGE_TRAINING_KEY = 'livenotes:training';
   const STORAGE_TRAINING_POS_KEY = 'livenotes:training-pos';
 
@@ -2080,14 +2225,34 @@ body.single-doc .btn-listening {
   const AUTO_READ_DELAY_MS = 3000; // 一篇至少停留这么久、且滚动到底部，才自动标记为已看
   const TRAINING_LOOP_GAP_MS = 600; // 句子训练单句循环时，两遍之间停顿多久，太紧凑听不出句子边界
   const TRAINING_POS_MAX_ENTRIES = 300; // 「每篇练到第几句」最多记多少篇，超出删最早记的，避免 localStorage 越攒越大
-  const TRAINING_HINT_SCORE = 0.5; // 听写用过首字母提示、最后填对的空，只算半个对
+  const SPEECH_SEEK_WORDS = 3; // ← → 一次往回 / 往前跳几个词
+  const SPEECH_HIGHLIGHT_NAME = 'livenotes-speech';
+
+  // 朗读逐词高亮可选颜色（设置菜单里选，只存本机）；避开黄色（跟牛皮纸等偏黄主题分不开）和绿色（跟"答对"混）
+  const SPEECH_HIGHLIGHT_OPTIONS = [
+    { id: 'blue', label: '浅蓝', color: '#bfdbfe' },
+    { id: 'purple', label: '淡紫', color: '#ddd6fe' },
+    { id: 'pink', label: '粉色', color: '#fbcfe8' },
+    { id: 'slate', label: '灰蓝', color: '#cbd5e1' },
+    { id: 'sky', label: '天蓝', color: '#93c5fd' },
+    { id: 'lavender', label: '薰衣草', color: '#c4b5fd' },
+    { id: 'off', label: '关闭', color: null },
+  ];
+  const DEFAULT_SPEECH_HIGHLIGHT = 'blue'; // 泛读原文逐词高亮用的 CSS Custom Highlight 名字，样式见 ::highlight()
+  const SPEECH_FALLBACK_CHARS_PER_SEC = 14; // 语音不报告"念到哪个词"时，按 1 倍速每秒约念这么多字符估算位置
+  const TRAINING_HINT_SCORE = 0.5;
+
+  // 播放 / 停止图标：只给图标上色（绿 / 红），按钮本身保持素色。图形用 CSS 画，不用 ▶ ■ 字符——
+  // 卡片按钮和训练页按钮字体不同，同一个字符画出来大小差很多
+  const PLAY_ICON_HTML = '<span class="play-icon" aria-hidden="true"></span>';
+  const STOP_ICON_HTML = '<span class="play-icon play-icon--stop" aria-hidden="true"></span>'; // 听写用过首字母提示、最后填对的空，只算半个对
 
   // 句子训练的四个标签页；按难度递进排：先听（精听 / 选词），再写（听写 / 回译），两组之间 CSS 留出间隔
   const TRAINING_TABS = [
-    { id: 'listen', label: '精听' },
-    { id: 'pick', label: '选词' },
-    { id: 'dictation', label: '听写' },
-    { id: 'backtrans', label: '回译' },
+    { id: 'listen', label: '精听', short: '听' },
+    { id: 'pick', label: '选词', short: '选' },
+    { id: 'dictation', label: '听写', short: '写' },
+    { id: 'backtrans', label: '回译', short: '译' },
   ];
 
   // 各标签页可选难度（挖空规则见 isTrainingBlank）；回译没有难度
@@ -2165,6 +2330,11 @@ body.single-doc .btn-listening {
     listeningBatchOffset: 0, // 当前显示的是听力池子里第几批
     training: null, // 句子训练当前会话（只练当前这篇），结构见 startTraining；null 表示没进过训练视图
     trainingSettings: null, // 句子训练的设置（标签页 / 难度 / 循环 / 语速 / 译），持久化到 localStorage
+    cardSpeakToken: 0, // 卡片 ▶ 朗读的序号，每次开始 / 停止 +1，旧朗读的结束回调对不上就不再改按钮外观
+    activeCard: null, // 正文里键盘 ↑↓ 选中的当前卡片 { slug, key }，null 表示还没选过
+    speechCursor: null, // 正在念的这段念到第几个词，结构见 startSeekableSpeech
+    speechHighlight: DEFAULT_SPEECH_HIGHLIGHT, // 朗读逐词高亮颜色 id（SPEECH_HIGHLIGHT_OPTIONS），'off' 表示不高亮
+    pausedCardSpeech: null, // 卡片朗读暂停时记的位置 { btnEl, word }，再按播放从这里接着念
     currentSlug: null, // index 模式下当前查看的 NoteDoc
     data: null,        // { docs, tree } 或 { doc }
 
@@ -2186,6 +2356,7 @@ body.single-doc .btn-listening {
     isResumeHintDismissed: false, // 用户点过"继续"或"×"、或自己选了别的文档后不再显示提示
     docOpenedAt: 0, // 当前这篇是什么时候打开的，用来判断停留够不够 AUTO_READ_DELAY_MS
     manualUnreadSlugs: new Set(), // 本次打开期间手动取消过"已看"的文档，不再被自动标回去
+    manualUndoneTrainings: new Set(), // 本次打开期间手动取消过"练完"的 `${slug}::${tab}`，不再被自动标回去
     isPositionDirty: false, // 用户在本页有过切换文档 / 滚动，才需要在离开时记录位置
     autoReadTimer: null, // 打开文档后 AUTO_READ_DELAY_MS 检查一次（短文档一屏就看完，不会触发滚动）
 
@@ -2270,6 +2441,7 @@ body.single-doc .btn-listening {
 
     if (titleEl) {
       titleEl.textContent = text;
+      titleEl.title = text;
     }
 
     document.title = text;
@@ -2652,6 +2824,12 @@ body.single-doc .btn-listening {
     if (fav.kind === 'read') {
 
       return !fav.read;
+    }
+
+    // 手动取消"练完"的记录只是为了同步覆盖别的设备，过期后可以清理；老记录没有 done 字段，视为练完
+    if (fav.kind === 'training-done') {
+
+      return fav.done === false;
     }
 
     // 上次看到的位置、课程总篇数是每门课一条的状态记录，永远不清理
@@ -3684,7 +3862,7 @@ body.single-doc .btn-listening {
       return '';
     }
 
-    return `<button type="button" class="speak-btn" data-action="speak" data-text="${escapeAttr(text)}" aria-label="朗读">▶</button>`;
+    return `<button type="button" class="speak-btn" data-action="speak" data-text="${escapeAttr(text)}" aria-label="朗读">${PLAY_ICON_HTML}</button>`;
   }
 
   /**
@@ -3889,6 +4067,77 @@ body.single-doc .btn-listening {
   }
 
   /**
+   * 应用朗读高亮颜色：写到 CSS 变量 --color-speech-bg，训练页和泛读原文的高亮样式都读它
+   * @param {string} highlightId - SPEECH_HIGHLIGHT_OPTIONS 里的 id；不认识的退回默认
+   * @returns {void}
+   */
+  function applySpeechHighlight(highlightId) {
+
+    const option = SPEECH_HIGHLIGHT_OPTIONS.find((entry) => entry.id === highlightId)
+      || SPEECH_HIGHLIGHT_OPTIONS.find((entry) => entry.id === DEFAULT_SPEECH_HIGHLIGHT);
+
+    state.speechHighlight = option.id;
+
+    if (!option.color) {
+      clearSpeechHighlight();
+
+      return;
+    }
+
+    document.documentElement.style.setProperty('--color-speech-bg', option.color);
+
+    // ::highlight() 里用 var() 较旧的 Chromium 读不到页面上的变量，单独写一条带具体颜色的规则兜底
+    let styleEl = document.querySelector('style[data-role="speech-highlight-style"]');
+
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.dataset.role = 'speech-highlight-style';
+      document.head.appendChild(styleEl);
+    }
+
+    styleEl.textContent = `::highlight(${SPEECH_HIGHLIGHT_NAME}) { color: #1a1a1a; background-color: ${option.color}; }`;
+  }
+
+  /**
+   * 填充"朗读高亮"下拉框，恢复本机记住的选择；选了马上生效并记住（只存本机，不进同步）
+   * @returns {void}
+   */
+  function setupSpeechHighlightSelect() {
+
+    const selectEl = document.querySelector('[data-role="speech-highlight-select"]');
+    let saved = '';
+
+
+    try {
+      saved = localStorage.getItem(STORAGE_SPEECH_HIGHLIGHT_KEY) || '';
+    } catch (err) {
+      // 静默降级，用默认颜色
+    }
+
+    applySpeechHighlight(saved);
+
+    if (!selectEl) {
+
+      return;
+    }
+
+    selectEl.innerHTML = SPEECH_HIGHLIGHT_OPTIONS
+      .map((option) => `<option value="${option.id}">${option.label}</option>`)
+      .join('');
+    selectEl.value = state.speechHighlight;
+
+    selectEl.addEventListener('change', () => {
+      applySpeechHighlight(selectEl.value);
+
+      try {
+        localStorage.setItem(STORAGE_SPEECH_HIGHLIGHT_KEY, state.speechHighlight);
+      } catch (err) {
+        // 静默降级
+      }
+    });
+  }
+
+  /**
    * 朗读前清理掉不适合语音合成引擎念的符号：连续下划线（填空线，比如 "I ___ to
    * school"）会被逐个读成"下划线"，省略号会被读成"点点点"，都会念好几遍很难听——
    * 下划线直接去掉（留一个空格），省略号换成逗号制造停顿感。只影响朗读，页面上
@@ -3908,8 +4157,8 @@ body.single-doc .btn-listening {
   /**
    * 用浏览器自带的语音合成朗读一段英文；不支持的浏览器（极少见）静默跳过
    * @param {string} text
-   * @param {{ rate?: number, onEnd?: Function, onError?: Function }} [options] - 句子训练用：
-   *   语速、念完回调（用来做单句循环）、出错回调；普通 ▶ 按钮不传
+   * @param {{ rate?: number, onEnd?: Function, onError?: Function, onBoundary?: Function }} [options] -
+   *   语速、念完回调（句子训练用来做单句循环）、出错回调、念到每个词的回调（记位置用）
    * @returns {void}
    */
   function speakText(text, options = {}) {
@@ -3942,7 +4191,356 @@ body.single-doc .btn-listening {
       utterance.onerror = options.onError;
     }
 
+    if (options.onBoundary) {
+      utterance.onboundary = options.onBoundary;
+    }
+
     window.speechSynthesis.speak(utterance);
+  }
+
+  /**
+   * 把所有卡片 ▶ 按钮恢复成"未在播放"的绿色外观
+   * @returns {void}
+   */
+  function resetCardSpeakButtons() {
+
+    document.querySelectorAll('.speak-btn.is-playing').forEach((btn) => {
+      btn.classList.remove('is-playing');
+      btn.innerHTML = PLAY_ICON_HTML;
+      btn.setAttribute('aria-label', '朗读');
+    });
+  }
+
+  /**
+   * 从第 fromWord 个词开始念一段英文，并记录念到哪个词。
+   * 浏览器朗读不能拖进度，暂停 / 继续、前进 / 后退都靠"从某个词重新念"实现
+   * @param {string} text
+   * @param {number} fromWord - 从第几个词开始（超出范围会被夹到首尾）
+   * @param {{ owner: any, rate?: number, onEnd?: Function, onError?: Function }} options -
+   *   owner 标识这段朗读属于谁（卡片按钮元素 / 'training'），读位置时用来确认还是同一段
+   * @returns {boolean} 没有可念的内容（或浏览器不支持朗读）时返回 false，调用方据此不进入"播放中"状态
+   */
+  function startSeekableSpeech(text, fromWord, options) {
+
+    const cleanText = sanitizeSpeechText(text || '');
+    const wordStarts = [...cleanText.matchAll(/\S+/g)].map((match) => match.index);
+
+    if (wordStarts.length === 0 || typeof window.speechSynthesis === 'undefined') {
+
+      return false;
+    }
+
+    const startWord = Math.min(Math.max(fromWord, 0), wordStarts.length - 1);
+    const cursor = {
+      owner: options.owner,
+      wordStarts,
+      startWord,
+      currentWord: startWord,
+      hasBoundary: false, // 有的语音（如 Chrome 的 Google 在线语音）不触发 boundary，只能按时间估算
+      startedAt: Date.now(),
+      rate: options.rate || 1,
+    };
+
+    state.speechCursor = cursor;
+    clearSpeechHighlight();
+
+    speakText(cleanText.slice(wordStarts[startWord]), {
+      rate: options.rate,
+
+      // 念完就清掉位置：训练页循环两遍之间的停顿里按暂停，继续时应该从头念，而不是按时间估算到最后一个词
+      onEnd: (event) => {
+        if (state.speechCursor === cursor) {
+          state.speechCursor = null;
+          clearSpeechHighlight();
+        }
+
+        if (options.onEnd) {
+          options.onEnd(event);
+        }
+      },
+      onError: (event) => {
+        if (state.speechCursor === cursor) {
+          clearSpeechHighlight();
+        }
+
+        if (options.onError) {
+          options.onError(event);
+        }
+      },
+      onBoundary: (event) => {
+        if (state.speechCursor !== cursor || event.name === 'sentence') {
+
+          return;
+        }
+
+        const charIndex = wordStarts[startWord] + event.charIndex;
+
+        cursor.hasBoundary = true;
+        cursor.currentWord = Math.max(findWordIndexAt(wordStarts, charIndex), startWord);
+        highlightSpeechWord(cursor.owner, cursor.currentWord, wordStarts.length);
+      },
+    });
+
+    return true;
+  }
+
+  /**
+   * 清掉朗读逐词高亮（训练页的 class 和泛读原文的 CSS Highlight 都清）
+   * @returns {void}
+   */
+  function clearSpeechHighlight() {
+
+    document.querySelectorAll('.training-word.is-speaking').forEach((el) => el.classList.remove('is-speaking'));
+
+    if (window.CSS && CSS.highlights) {
+      CSS.highlights.delete(SPEECH_HIGHLIGHT_NAME);
+    }
+  }
+
+  /**
+   * 把正在念的第 wordIndex 个词标成浅黄底。只在语音报告了"念到哪个词"（boundary 事件）时调用，
+   * 按时间估算的不标，免得越标越偏。页面上的词数跟念的词数对不上（比如原文里有填空线被朗读时去掉了）
+   * 就不标，宁可不标也不标错位置
+   * @param {any} owner - 'training' 或卡片 ▶ 按钮元素
+   * @param {number} wordIndex
+   * @param {number} wordCount - 这段朗读一共几个词
+   * @returns {void}
+   */
+  function highlightSpeechWord(owner, wordIndex, wordCount) {
+
+    clearSpeechHighlight();
+
+    if (state.speechHighlight === 'off') {
+
+      return;
+    }
+
+    if (owner === 'training') {
+      highlightTrainingWord(wordIndex, wordCount);
+
+      return;
+    }
+
+    const readingItemEl = owner instanceof HTMLElement ? owner.closest('.reading-item') : null;
+
+    if (readingItemEl) {
+      highlightReadingWord(readingItemEl, wordIndex, wordCount);
+    }
+  }
+
+  /**
+   * 训练页：句子里每个词本来就是一个 .training-word，直接加 class（精听的遮挡块在里面，一起变色）。
+   * 回译对比后上面"你写的"那行不算，只标下面的原文
+   * @param {number} wordIndex
+   * @param {number} wordCount
+   * @returns {void}
+   */
+  function highlightTrainingWord(wordIndex, wordCount) {
+
+    const wordEls = document.querySelectorAll('.training-card .training-sentence:not(.training-sentence--small) .training-word');
+
+    if (wordEls.length !== wordCount) {
+
+      return;
+    }
+
+    wordEls[wordIndex].classList.add('is-speaking');
+  }
+
+  /**
+   * 泛读原文：原文里夹着可点的精选词，不改 DOM，用 CSS Custom Highlight API 直接在文字上标出范围。
+   * 原文没展开时不标；浏览器不支持这个 API（较旧版本）时不标
+   * @param {HTMLElement} itemEl - .reading-item
+   * @param {number} wordIndex
+   * @param {number} wordCount
+   * @returns {void}
+   */
+  function highlightReadingWord(itemEl, wordIndex, wordCount) {
+
+    const originalEl = itemEl.querySelector('.reading-original');
+
+    if (!itemEl.classList.contains('show-text') || !originalEl || !window.CSS || !CSS.highlights || typeof Highlight === 'undefined') {
+
+      return;
+    }
+
+    const wordRanges = collectTextWordRanges(originalEl, '.vocab-note');
+
+    if (wordRanges.length !== wordCount) {
+
+      return;
+    }
+
+    CSS.highlights.set(SPEECH_HIGHLIGHT_NAME, new Highlight(wordRanges[wordIndex]));
+  }
+
+  /**
+   * 把元素里的文字按空白切成词，每个词一个 Range；词可以跨多个文字节点（比如精选词后面紧跟的逗号）
+   * @param {HTMLElement} rootEl
+   * @param {string} excludeSelector - 不算进来的子元素（精选词的中文解释不朗读）
+   * @returns {Range[]}
+   */
+  function collectTextWordRanges(rootEl, excludeSelector) {
+
+    const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT);
+    const ranges = [];
+    let currentRange = null;
+
+
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+
+      if (node.parentElement && node.parentElement.closest(excludeSelector)) {
+        continue;
+      }
+
+      for (let offset = 0; offset < node.data.length; offset += 1) {
+
+        if (/\s/.test(node.data[offset])) {
+          currentRange = null;
+          continue;
+        }
+
+        if (!currentRange) {
+          currentRange = document.createRange();
+          currentRange.setStart(node, offset);
+          ranges.push(currentRange);
+        }
+
+        currentRange.setEnd(node, offset + 1);
+      }
+    }
+
+    return ranges;
+  }
+
+  /**
+   * 字符位置落在第几个词（最后一个起点 <= 该位置的词）
+   * @param {number[]} wordStarts - 各词起始字符位置，升序
+   * @param {number} charIndex
+   * @returns {number}
+   */
+  function findWordIndexAt(wordStarts, charIndex) {
+
+    let wordIndex = 0;
+
+    while (wordIndex + 1 < wordStarts.length && wordStarts[wordIndex + 1] <= charIndex) {
+      wordIndex += 1;
+    }
+
+    return wordIndex;
+  }
+
+  /**
+   * owner 这段朗读现在念到第几个词；不是它在念时返回 0
+   * @param {any} owner
+   * @returns {number}
+   */
+  function getSpeechCursorWord(owner) {
+
+    const cursor = state.speechCursor;
+
+    if (!cursor || cursor.owner !== owner) {
+
+      return 0;
+    }
+
+    if (cursor.hasBoundary) {
+
+      return cursor.currentWord;
+    }
+
+    const elapsedChars = ((Date.now() - cursor.startedAt) / 1000) * SPEECH_FALLBACK_CHARS_PER_SEC * cursor.rate;
+
+    return findWordIndexAt(cursor.wordStarts, cursor.wordStarts[cursor.startWord] + elapsedChars);
+  }
+
+  /**
+   * 停止卡片 ▶ 的朗读，按钮恢复绿色
+   * @returns {void}
+   */
+  function stopCardSpeak() {
+
+    state.cardSpeakToken += 1;
+    state.pausedCardSpeech = null;
+    resetCardSpeakButtons();
+    clearSpeechHighlight();
+
+    if (typeof window.speechSynthesis !== 'undefined') {
+      window.speechSynthesis.cancel();
+    }
+  }
+
+  /**
+   * 从第 fromWord 个词开始朗读某张卡片 ▶ 按钮对应的英文，按钮变成红色 ■
+   * @param {HTMLElement} btnEl - .speak-btn
+   * @param {number} [fromWord] - 默认从头念
+   * @returns {void}
+   */
+  function startCardSpeak(btnEl, fromWord = 0) {
+
+    state.cardSpeakToken += 1;
+    state.pausedCardSpeech = null;
+    resetCardSpeakButtons();
+
+    const token = state.cardSpeakToken;
+
+    // cancel() 会让上一段朗读的 end / error 回调晚一步触发，token 对不上说明已经换成别的朗读了
+    const finishSpeak = () => {
+      if (token === state.cardSpeakToken) {
+        resetCardSpeakButtons();
+      }
+    };
+
+    if (!startSeekableSpeech(btnEl.dataset.text, fromWord, { owner: btnEl, onEnd: finishSpeak, onError: finishSpeak })) {
+
+      return;
+    }
+
+    btnEl.classList.add('is-playing');
+    btnEl.innerHTML = STOP_ICON_HTML;
+    btnEl.setAttribute('aria-label', '暂停朗读');
+  }
+
+  /**
+   * 卡片 ▶ 按钮 / 空格键：没在念就开始念（刚暂停过的接着念），正在念就暂停并记住念到哪
+   * @param {HTMLElement} btnEl - .speak-btn
+   * @returns {void}
+   */
+  function toggleCardSpeak(btnEl) {
+
+    const paused = state.pausedCardSpeech;
+
+    if (btnEl.classList.contains('is-playing')) {
+      const word = getSpeechCursorWord(btnEl);
+
+      stopCardSpeak();
+      state.pausedCardSpeech = { btnEl, word };
+
+      return;
+    }
+
+    startCardSpeak(btnEl, paused && paused.btnEl === btnEl ? paused.word : 0);
+  }
+
+  /**
+   * ← → 键：从当前念到的位置往回 / 往前跳几个词接着念；没在念也没暂停时从开头算起
+   * @param {HTMLElement} btnEl - .speak-btn
+   * @param {number} direction - -1 后退，1 前进
+   * @returns {void}
+   */
+  function seekCardSpeak(btnEl, direction) {
+
+    const paused = state.pausedCardSpeech;
+    let baseWord = 0;
+
+
+    if (btnEl.classList.contains('is-playing')) {
+      baseWord = getSpeechCursorWord(btnEl);
+    } else if (paused && paused.btnEl === btnEl) {
+      baseWord = paused.word;
+    }
+
+    startCardSpeak(btnEl, baseWord + direction * SPEECH_SEEK_WORDS);
   }
 
   /**
@@ -4029,6 +4627,139 @@ body.single-doc .btn-listening {
   }
 
   /**
+   * 当前课程每篇练完了哪几种训练
+   * @returns {Map<string, Set<string>>} 文档 slug → 练完的标签页 id 集合
+   */
+  function loadTrainingDoneMap() {
+
+    const courseKey = getCourseKey();
+    const doneMap = new Map();
+
+
+    loadFavorites()
+      .filter((fav) => fav.kind === 'training-done' && fav.courseLabel === courseKey && fav.done !== false)
+      .forEach((fav) => {
+        if (!doneMap.has(fav.docSlug)) {
+          doneMap.set(fav.docSlug, new Set());
+        }
+
+        doneMap.get(fav.docSlug).add(fav.tab);
+      });
+
+    return doneMap;
+  }
+
+  /**
+   * 设置"这篇的某种训练练完了没有"；状态没变就不写（避免重复触发同步推送）。
+   * 每种训练单独一条记录：两台设备各练了不同的模式，同步合并时不会互相覆盖；取消时留 done: false 的墓碑
+   * @param {string} slug
+   * @param {string} tab - 训练标签页 id（listen / pick / dictation / backtrans）
+   * @param {boolean} isDone
+   * @returns {void}
+   */
+  function setTrainingDone(slug, tab, isDone) {
+
+    const courseKey = getCourseKey();
+    const id = `${courseKey}::${slug}::${tab}`;
+    const list = loadFavorites();
+    const index = favoriteIndex(list, 'training-done', id);
+    const now = new Date().toISOString();
+
+
+    if (index >= 0 && (list[index].done !== false) === isDone) {
+
+      return;
+    }
+
+    if (index < 0 && !isDone) {
+
+      return;
+    }
+
+    const record = { kind: 'training-done', id, courseLabel: courseKey, docSlug: slug, tab, done: isDone, doneAt: isDone ? now : null, updatedAt: now };
+
+    if (index >= 0) {
+      list[index] = record;
+    } else {
+      list.push(record);
+    }
+
+    persistFavorites(list);
+    updateTrainingDoneUI();
+  }
+
+  /**
+   * 练完自动记一笔；本次打开期间手动取消过的不自动标回去
+   * @param {string} slug
+   * @param {string} tab
+   * @returns {void}
+   */
+  function markTrainingDone(slug, tab) {
+
+    if (state.manualUndoneTrainings.has(`${slug}::${tab}`)) {
+
+      return;
+    }
+
+    setTrainingDone(slug, tab, true);
+  }
+
+  /**
+   * 训练页「标记为已练完 / 取消」按钮：手动切换当前这篇当前训练的练完状态
+   * @returns {void}
+   */
+  function toggleCurrentTrainingDone() {
+
+    const training = state.training;
+    const { tab } = state.trainingSettings;
+
+    if (!training) {
+
+      return;
+    }
+
+    const key = `${training.slug}::${tab}`;
+    const doneTabs = loadTrainingDoneMap().get(training.slug);
+    const isDone = Boolean(doneTabs && doneTabs.has(tab));
+
+    if (isDone) {
+      state.manualUndoneTrainings.add(key);
+    } else {
+      state.manualUndoneTrainings.delete(key);
+    }
+
+    setTrainingDone(training.slug, tab, !isDone);
+
+    // 同一句重绘前先存下听写的空 / 回译的输入，不然点一下按钮填到一半的内容就丢了
+    captureTrainingDrafts();
+    renderTrainingView();
+  }
+
+  /**
+   * 侧边栏每篇标题后面的「听 选 写 译」：练完的点亮；一种都没练完的不显示，避免几百篇的列表满是灰字
+   * @returns {void}
+   */
+  function updateTrainingDoneUI() {
+
+    const doneMap = loadTrainingDoneMap();
+
+
+    document.querySelectorAll('.doc-item[data-slug]').forEach((itemEl) => {
+      const tagsEl = itemEl.querySelector('[data-role="training-tags"]');
+      const doneTabs = doneMap.get(itemEl.dataset.slug);
+
+      if (!tagsEl) {
+
+        return;
+      }
+
+      tagsEl.innerHTML = doneTabs
+        ? TRAINING_TABS.map((tab) => `<span class="training-done-tag${doneTabs.has(tab.id) ? ' is-done' : ''}" title="${tab.label}${doneTabs.has(tab.id) ? '：已练完' : '：未练完'}">${tab.short}</span>`).join('')
+        : '';
+    });
+  }
+
+  /**
    * 底部"已看完"按钮：手动切换；手动取消后本次打开期间不再自动标回去
    * @param {string} slug
    * @returns {void}
@@ -4079,6 +4810,8 @@ body.single-doc .btn-listening {
     document.querySelectorAll('.doc-item[data-slug]').forEach((itemEl) => {
       itemEl.classList.toggle('is-read', readSlugs.has(itemEl.dataset.slug));
     });
+
+    updateTrainingDoneUI();
 
     document.querySelectorAll('.chapter[data-chapter-index]').forEach((chapterEl) => {
       const group = state.data.tree[Number(chapterEl.dataset.chapterIndex)];
@@ -4418,7 +5151,7 @@ body.single-doc .btn-listening {
 
         return `
         <li class="doc-item" data-slug="${escapeAttr(file.slug)}">
-          <button type="button" class="doc-link" data-slug="${escapeAttr(file.slug)}"><span class="doc-read-mark" aria-hidden="true">✓</span>${escapeHtml(file.title || file.slug)}</button>
+          <button type="button" class="doc-link" data-slug="${escapeAttr(file.slug)}"><span class="doc-read-mark" aria-hidden="true">✓</span>${escapeHtml(file.title || file.slug)}<span class="doc-training-tags" data-role="training-tags"></span></button>
           <button type="button" class="fav-btn${favorited ? ' is-favorited' : ''}" data-action="toggle-favorite-doc" data-slug="${escapeAttr(file.slug)}" aria-label="收藏整篇">${favorited ? '★' : '☆'}</button>
         </li>`;
       }).join('');
@@ -4739,6 +5472,7 @@ body.single-doc .btn-listening {
       ${renderBottomControls()}
       ${renderDocPager(doc.slug)}`;
 
+    restoreActiveCard();
     scheduleAutoReadCheck();
 
     updateAppTitle(doc.chapter);
@@ -6210,6 +6944,7 @@ body.single-doc .btn-listening {
       playToken: 0, // 每次停止 / 重新播放都加 1，旧的念完回调发现对不上就不再循环
       loopTimer: null,
       isPlaying: false,
+      pausedWord: null, // 暂停时念到第几个词，null 表示没在暂停（再播放从头念）
     };
 
     if (state.training.sentences.length > 0) {
@@ -6286,6 +7021,7 @@ body.single-doc .btn-listening {
       }))),
       backtransInput: '', // 回译：用户输入的英文
       isGivenUp: false, // 选词：是点「显示答案」结束的（主按钮显示"已显示"），不是自己点完的（"已完成"）
+      hasPlayed: false, // 这句播放过没有：精听最后一句没有空时，播放过才算练完
     };
   }
 
@@ -6307,6 +7043,8 @@ body.single-doc .btn-listening {
     training.playToken += 1;
     clearTimeout(training.loopTimer);
     training.isPlaying = false;
+    training.pausedWord = null;
+    clearSpeechHighlight();
 
     if (wasPlaying && typeof window.speechSynthesis !== 'undefined') {
       window.speechSynthesis.cancel();
@@ -6316,10 +7054,11 @@ body.single-doc .btn-listening {
   }
 
   /**
-   * 从头播放当前这句，按设置的遍数循环（0 = 无限循环，直到手动停止 / 换句）
+   * 播放当前这句，按设置的遍数循环（0 = 无限循环，直到手动停止 / 换句）
+   * @param {number} [fromWord] - 第一遍从第几个词开始（暂停后继续 / 前进后退用），之后每遍都从头念
    * @returns {void}
    */
-  function playTrainingSentence() {
+  function playTrainingSentence(fromWord = 0) {
 
     const training = state.training;
 
@@ -6334,6 +7073,7 @@ body.single-doc .btn-listening {
     const { loop, rate } = state.trainingSettings;
     const text = training.sentences[training.index].text;
     let playedCount = 0;
+    let nextFromWord = fromWord;
 
 
     // 念完一遍后决定要不要再念；token 对不上说明期间被停止 / 换句了，旧回调直接作废
@@ -6355,7 +7095,12 @@ body.single-doc .btn-listening {
 
       playedCount += 1;
 
-      speakText(text, {
+      const startWord = nextFromWord;
+
+      nextFromWord = 0;
+
+      const isStarted = startSeekableSpeech(text, startWord, {
+        owner: 'training',
         rate,
         onEnd: () => {
           if (token !== training.playToken) {
@@ -6373,40 +7118,132 @@ body.single-doc .btn-listening {
         },
         onError: finishPlayback,
       });
+
+      if (!isStarted) {
+        finishPlayback();
+      }
     };
 
     training.isPlaying = true;
+    training.sentence.hasPlayed = true;
     updateTrainingPlayButton();
+    checkTrainingCompletion();
     speakOnce();
   }
 
   /**
-   * 播放 / 停止切换
+   * 播放 / 暂停切换：暂停记住念到第几个词，再播放从那里接着念
    * @returns {void}
    */
   function toggleTrainingPlayback() {
 
-    if (state.training && state.training.isPlaying) {
-      stopTrainingPlayback();
+    const training = state.training;
+
+    if (!training) {
 
       return;
     }
 
-    playTrainingSentence();
+    if (training.isPlaying) {
+      const word = getSpeechCursorWord('training');
+
+      stopTrainingPlayback();
+      training.pausedWord = word;
+      updateTrainingPlayButton();
+
+      return;
+    }
+
+    playTrainingSentence(training.pausedWord || 0);
   }
 
   /**
-   * 同步播放按钮文字（播放中显示"停止"）
+   * ← → 键：从当前念到的位置往回 / 往前跳几个词接着念；没在念也没暂停时从开头算起
+   * @param {number} direction - -1 后退，1 前进
+   * @returns {void}
+   */
+  function seekTrainingPlayback(direction) {
+
+    const training = state.training;
+    let baseWord = 0;
+
+
+    if (!training) {
+
+      return;
+    }
+
+    if (training.isPlaying) {
+      baseWord = getSpeechCursorWord('training');
+    } else if (training.pausedWord !== null) {
+      baseWord = training.pausedWord;
+    }
+
+    playTrainingSentence(Math.max(baseWord + direction * SPEECH_SEEK_WORDS, 0));
+  }
+
+  /**
+   * 同步播放按钮文字：播放中显示"暂停"（红色），暂停中显示"继续"
    * @returns {void}
    */
   function updateTrainingPlayButton() {
 
     const isPlaying = Boolean(state.training && state.training.isPlaying);
+    const isPaused = Boolean(state.training && state.training.pausedWord !== null);
+    let labelHtml = `${PLAY_ICON_HTML} 播放`;
+
+
+    if (isPlaying) {
+      labelHtml = `${STOP_ICON_HTML} 暂停`;
+    } else if (isPaused) {
+      labelHtml = `${PLAY_ICON_HTML} 继续`;
+    }
 
     document.querySelectorAll('[data-role="training-play-btn"]').forEach((btn) => {
-      btn.textContent = isPlaying ? '■ 停止' : '▶ 播放';
+      btn.innerHTML = labelHtml;
       btn.classList.toggle('is-active', isPlaying);
     });
+  }
+
+  /**
+   * 判断当前这篇的当前训练算不算练完，练完就记下来（侧边栏显示标签）：
+   * 听写 / 选词以进成绩页为准；精听 / 回译没有成绩页，以最后一句做完（主按钮变成完成态）为准。
+   * 精听最后一句在当前难度下一个空都没有时，主按钮一开始就是完成态，要播放过一次才算，免得一打开就记成练完
+   * @returns {void}
+   */
+  function checkTrainingCompletion() {
+
+    const training = state.training;
+    const { tab } = state.trainingSettings;
+
+    if (!training || training.sentences.length === 0) {
+
+      return;
+    }
+
+    if (training.isFinished) {
+      markTrainingDone(training.slug, tab);
+
+      return;
+    }
+
+    const sentenceState = training.sentence;
+    const isLastSentence = training.index === training.sentences.length - 1;
+    const isListenWithoutBlank = tab === 'listen' && sentenceState.blankOrder.length === 0;
+
+    if (!isLastSentence || (tab !== 'listen' && tab !== 'backtrans')) {
+
+      return;
+    }
+
+    if (isListenWithoutBlank && !sentenceState.hasPlayed) {
+
+      return;
+    }
+
+    if (getTrainingPrimaryAction().isDone) {
+      markTrainingDone(training.slug, tab);
+    }
   }
 
   /**
@@ -6743,7 +7580,7 @@ body.single-doc .btn-listening {
   /**
    * 当前标签页 + 状态下，主按钮（Enter 键）该干什么、显示什么字。
    * 主按钮只管"本句操作"，做完就变灰显示已完成状态，不会变成"下一句"——
-   * 同一位置的按钮点完立刻换成别的功能，连点两下很容易误跳句；换句只用两边的「上一句」「下一句」/ ← → 键
+   * 同一位置的按钮点完立刻换成别的功能，连点两下很容易误跳句；换句只用两边的「上一句」「下一句」/ Ctrl+← → 键
    * @returns {{ label: string, action: string, isDone?: boolean }} action 为 'none' 时按钮禁用；
    *   isDone 表示按钮显示成灰色完成态但仍可点击（回译「已对比」点了退回编辑）
    */
@@ -7257,6 +8094,7 @@ body.single-doc .btn-listening {
     const contentEl = document.querySelector('[data-role="content"]');
 
     syncBodyView();
+    checkTrainingCompletion();
     const training = state.training;
     const settings = state.trainingSettings;
     const doc = findDoc(training.slug);
@@ -7275,9 +8113,11 @@ body.single-doc .btn-listening {
       return;
     }
 
+    // 这篇练完的标签后面加绿色 ✓（跟侧边栏的「听 选 写 译」是同一份记录）
+    const doneTabs = loadTrainingDoneMap().get(training.slug) || new Set();
     const tabsHtml = `
       <div class="training-tabs" role="tablist">
-        ${TRAINING_TABS.map((tab) => `<button type="button" class="btn training-tab${tab.id === settings.tab ? ' is-active' : ''}" data-action="training-tab" data-tab="${tab.id}" role="tab">${tab.label}</button>`).join('')}
+        ${TRAINING_TABS.map((tab) => `<button type="button" class="btn training-tab${tab.id === settings.tab ? ' is-active' : ''}" data-action="training-tab" data-tab="${tab.id}" role="tab">${tab.label}${doneTabs.has(tab.id) ? '<span class="training-tab-done" aria-label="已练完"> ✓</span>' : ''}</button>`).join('')}
       </div>`;
 
     if (training.isFinished) {
@@ -7295,11 +8135,14 @@ body.single-doc .btn-listening {
     const restartHtml = training.index > 0
       ? '<button type="button" class="training-link-btn" data-action="training-restart">从头开始</button>'
       : '';
+    const isTabDone = doneTabs.has(settings.tab);
+    const doneToggleHtml = `<button type="button" class="training-link-btn${isTabDone ? ' is-done' : ''}" data-action="training-toggle-done">${isTabDone ? '✓ 已练完（点击取消）' : '标记为已练完'}</button>`;
     const progressHtml = `
       <div class="training-progress">
         <span>第 ${training.index + 1} / ${total} 句</span>
         <div class="training-progress-bar"><div style="width: ${percent}%"></div></div>
         ${restartHtml}
+        ${doneToggleHtml}
       </div>`;
 
     let bodyHtml = '';
@@ -7357,7 +8200,7 @@ body.single-doc .btn-listening {
 
     const enterLabels = { listen: '全部显示', dictation: '检查', pick: '显示答案', backtrans: '对比（输入框里用 Ctrl + Enter）' };
     const shortcutsHtml = `
-      <p class="training-shortcuts">快捷键：空格 播放/停止 · R 重听 · ← → 上一句/下一句 · Enter ${enterLabels[settings.tab]}${settings.tab === 'dictation' ? ' · 填空时按空格跳到下一个空' : ''} · 点任意单词单独发音</p>`;
+      <p class="training-shortcuts">快捷键：空格 播放/暂停 · R 从头重听 · ← → 后退/前进 ${SPEECH_SEEK_WORDS} 个词 · Ctrl+← → 上一句/下一句 · Enter ${enterLabels[settings.tab]}${settings.tab === 'dictation' ? ' · 填空时按空格跳到下一个空' : ''} · 点任意单词单独发音</p>`;
 
     // 训练页内容短，一屏就能看完，不放底部那排「收藏 / 测验……」按钮（用户要求去掉），视图切换用顶部工具条
     // 设置行和进度条放在播放控制下面（用户要求）：上方只留标签页，句子卡片更靠上、更突出
@@ -7375,7 +8218,7 @@ body.single-doc .btn-listening {
       <div class="training-player">
         <button type="button" class="btn" data-action="training-prev"${training.index === 0 ? ' disabled' : ''}>上一句</button>
         <button type="button" class="btn training-primary-btn${primary.isDone ? ' is-done' : ''}" data-action="training-primary"${primary.action === 'none' ? ' disabled' : ''}>${escapeHtml(primary.label)}</button>
-        <button type="button" class="btn training-play-btn" data-action="training-toggle-play" data-role="training-play-btn">▶ 播放</button>
+        <button type="button" class="btn training-play-btn" data-action="training-toggle-play" data-role="training-play-btn">${PLAY_ICON_HTML} 播放</button>
         <button type="button" class="btn" data-action="training-next" title="${nextLabel}"${canGoNext ? '' : ' disabled'}>下一句</button>
       </div>
       ${renderTrainingSettings()}
@@ -7480,6 +8323,15 @@ body.single-doc .btn-listening {
 
     if (isTyping) {
 
+      // 填空框只装一个词，Ctrl + ← → 原本"按词移动光标"用处不大，接管来换句；普通 ← → 仍在框里移动光标
+      const isCtrlArrow = event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey
+        && (event.key === 'ArrowLeft' || event.key === 'ArrowRight');
+
+      if (targetEl.dataset.role === 'training-blank' && isCtrlArrow) {
+        event.preventDefault();
+        goToTrainingSentence(state.training.index + (event.key === 'ArrowRight' ? 1 : -1));
+      }
+
       if (targetEl.dataset.role === 'training-blank' && event.key === 'Enter') {
         event.preventDefault();
         handleTrainingPrimary({ isFromKeyboard: true });
@@ -7504,6 +8356,22 @@ body.single-doc .btn-listening {
       return;
     }
 
+    // Ctrl + ← → 换句；只认 Ctrl 单独按（按 Windows 习惯做，Mac 上这组键被系统切换桌面占用）
+    if (event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        goToTrainingSentence(state.training.index - 1);
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        goToTrainingSentence(state.training.index + 1);
+      }
+
+      return;
+    }
+
     if (event.ctrlKey || event.metaKey || event.altKey) {
 
       return;
@@ -7519,11 +8387,13 @@ body.single-doc .btn-listening {
     }
 
     if (event.key === 'ArrowLeft') {
-      goToTrainingSentence(state.training.index - 1);
+      event.preventDefault();
+      seekTrainingPlayback(-1);
     }
 
     if (event.key === 'ArrowRight') {
-      goToTrainingSentence(state.training.index + 1);
+      event.preventDefault();
+      seekTrainingPlayback(1);
     }
 
     if (event.key === 'Enter') {
@@ -7726,6 +8596,222 @@ body.single-doc .btn-listening {
 
     if (doc) {
       renderContent(doc);
+    }
+  }
+
+  /**
+   * 正文里所有卡片（普通卡片 + 泛读卡片），按页面顺序
+   * @returns {HTMLElement[]}
+   */
+  function getContentCards() {
+
+    return [...document.querySelectorAll('[data-role="content"] .item')];
+  }
+
+  /**
+   * 把某张卡片设为当前卡片（高亮，只在电脑上显示，见 CSS）
+   * @param {HTMLElement} itemEl
+   * @param {{ shouldScroll?: boolean }} [options] - 键盘切换时滚动到视野中间；鼠标点击时不滚
+   * @returns {void}
+   */
+  function setActiveCard(itemEl, options = {}) {
+
+    document.querySelectorAll('.item.is-active-card').forEach((el) => el.classList.remove('is-active-card'));
+    itemEl.classList.add('is-active-card');
+    state.activeCard = { slug: currentSlug(), key: itemEl.dataset.key };
+
+    if (options.shouldScroll) {
+      itemEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }
+
+  /**
+   * 正文重新渲染后（切 EN⇄CN 等）把当前卡片的高亮补回去；换了一篇就清空
+   * @returns {void}
+   */
+  function restoreActiveCard() {
+
+    if (!state.activeCard || state.activeCard.slug !== currentSlug()) {
+      state.activeCard = null;
+
+      return;
+    }
+
+    const itemEl = getContentCards().find((el) => el.dataset.key === state.activeCard.key);
+
+    if (itemEl) {
+      itemEl.classList.add('is-active-card');
+    }
+  }
+
+  /**
+   * 当前高亮的卡片元素；还没选过时返回 null
+   * @returns {HTMLElement|null}
+   */
+  function getActiveCardEl() {
+
+    return document.querySelector('[data-role="content"] .item.is-active-card');
+  }
+
+  /**
+   * 元素是否至少有一部分在当前屏幕里
+   * @param {HTMLElement} el
+   * @returns {boolean}
+   */
+  function isElementInViewport(el) {
+
+    const rect = el.getBoundingClientRect();
+
+    return rect.bottom > 0 && rect.top < window.innerHeight;
+  }
+
+  /**
+   * ↑↓ 切到上一张 / 下一张卡片并自动朗读；还没选过卡片、或者它已经滚出屏幕时，从屏幕上第一张看得见的开始
+   * @param {number} direction - -1 上一张，1 下一张
+   * @returns {void}
+   */
+  function moveActiveCard(direction) {
+
+    const cards = getContentCards();
+    const activeEl = getActiveCardEl();
+    let targetEl = null;
+
+
+    if (cards.length === 0) {
+
+      return;
+    }
+
+    // 用滚轮翻远了再按 ↑↓，从眼前接着走，不跳回之前那张
+    if (activeEl && isElementInViewport(activeEl)) {
+      targetEl = cards[cards.indexOf(activeEl) + direction] || null;
+    } else {
+      targetEl = cards.find((el) => el.getBoundingClientRect().bottom > 0) || cards[0];
+    }
+
+    if (!targetEl) {
+
+      return;
+    }
+
+    setActiveCard(targetEl, { shouldScroll: true });
+
+    const speakBtnEl = targetEl.querySelector('.speak-btn');
+
+    if (speakBtnEl) {
+      startCardSpeak(speakBtnEl);
+    }
+  }
+
+  /**
+   * Enter 揭示当前卡片：普通卡片翻面（再按收起）；泛读卡片按 原文 → 讲解 顺序展开，全部展开后再按收起
+   * @param {HTMLElement} itemEl
+   * @returns {void}
+   */
+  function revealActiveCard(itemEl) {
+
+    if (!itemEl.classList.contains('reading-item')) {
+      toggleItem(itemEl);
+
+      return;
+    }
+
+    const textBtnEl = itemEl.querySelector('[data-action="reveal-reading-text"]');
+    const explainBtnEl = itemEl.querySelector('[data-action="reveal-reading-explain"]');
+
+    if (!itemEl.classList.contains('show-text')) {
+      handleRevealReadingStage(textBtnEl, 'text');
+
+      return;
+    }
+
+    if (!itemEl.classList.contains('show-explain')) {
+      handleRevealReadingStage(explainBtnEl, 'explain');
+
+      return;
+    }
+
+    handleRevealReadingStage(textBtnEl, 'text');
+    handleRevealReadingStage(explainBtnEl, 'explain');
+  }
+
+  /**
+   * 正文视图快捷键：↑↓ 切卡片并朗读、空格 播放 / 暂停当前卡片、Enter 揭示当前卡片、
+   * ← → 泛读卡片后退 / 前进几个词
+   * @param {KeyboardEvent} event
+   * @returns {void}
+   */
+  function handleDocKeydown(event) {
+
+    if (state.view !== 'doc' || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) {
+
+      return;
+    }
+
+    const targetEl = event.target;
+
+    // 输入框、下拉框里按键保持原样
+    if (targetEl.matches && targetEl.matches('input, textarea, select')) {
+
+      return;
+    }
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+
+      // 鼠标点过的按钮会留着焦点，不移开的话接下来按空格会去点那个旧按钮，而不是新的当前卡片
+      if (targetEl.matches && targetEl.matches('button')) {
+        targetEl.blur();
+      }
+
+      moveActiveCard(event.key === 'ArrowDown' ? 1 : -1);
+
+      return;
+    }
+
+    // 鼠标点过的按钮会留着焦点：正文卡片里的按钮（▶、查看原文……）上按空格 / Enter 还是操作当前卡片，
+    // 不然点完 ▶ 再按 Enter 会变成暂停朗读；工具栏、侧边栏的按钮保持浏览器默认（点这个按钮）
+    if (targetEl.matches && targetEl.matches('button')) {
+      const ownerCardEl = targetEl.closest('[data-role="content"] .item');
+
+      if (!ownerCardEl) {
+
+        return;
+      }
+
+      setActiveCard(ownerCardEl);
+    }
+
+    const activeEl = getActiveCardEl();
+
+    // 还没选过卡片时，空格 / Enter 保持浏览器默认（空格翻页）
+    if (!activeEl) {
+
+      return;
+    }
+
+    if (event.key === ' ') {
+      const speakBtnEl = activeEl.querySelector('.speak-btn');
+
+      if (speakBtnEl) {
+        event.preventDefault();
+        toggleCardSpeak(speakBtnEl);
+      }
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      revealActiveCard(activeEl);
+    }
+
+    // ← → 前进 / 后退只给泛读卡片（整段原文比较长）；普通卡片一句话很短，保持浏览器默认
+    if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && activeEl.classList.contains('reading-item')) {
+      const speakBtnEl = activeEl.querySelector('.speak-btn');
+
+      if (speakBtnEl) {
+        event.preventDefault();
+        seekCardSpeak(speakBtnEl, event.key === 'ArrowRight' ? 1 : -1);
+      }
     }
   }
 
@@ -8198,6 +9284,13 @@ body.single-doc .btn-listening {
         return;
       }
 
+      // 正文里点到哪张卡片（包括卡片上的按钮），哪张就成为键盘 ↑↓ / 空格 / Enter 的当前卡片
+      const clickedCardEl = state.view === 'doc' && event.target.closest('[data-role="content"] .item');
+
+      if (clickedCardEl) {
+        setActiveCard(clickedCardEl);
+      }
+
       const actionEl = event.target.closest('[data-action]');
 
       if (actionEl) {
@@ -8221,7 +9314,7 @@ body.single-doc .btn-listening {
         if (action === 'remove-favorite') removeFavorite(actionEl.dataset.kind, actionEl.dataset.id);
         if (action === 'jump-to-doc') jumpToDoc(actionEl.dataset.slug);
         if (action === 'jump-to-item') jumpToItem(actionEl.dataset.slug, actionEl.dataset.key);
-        if (action === 'speak') speakText(actionEl.dataset.text);
+        if (action === 'speak') toggleCardSpeak(actionEl);
         if (action === 'prev-doc' || action === 'next-doc') selectDoc(actionEl.dataset.slug);
         if (action === 'export-favorites') exportFavorites();
         if (action === 'import-favorites') document.querySelector('[data-role="favorites-import-input"]').click();
@@ -8259,6 +9352,7 @@ body.single-doc .btn-listening {
         if (action === 'toggle-reading-vocab') handleToggleReadingVocab(actionEl);
         if (action === 'toggle-training-view') toggleTrainingView();
         if (action === 'training-tab') switchTrainingTab(actionEl.dataset.tab);
+        if (action === 'training-toggle-done') toggleCurrentTrainingDone();
         if (action === 'training-toggle-play') toggleTrainingPlayback();
         if (action === 'training-primary') handleTrainingPrimary();
         if (action === 'training-prev') goToTrainingSentence(state.training.index - 1);
@@ -8320,6 +9414,7 @@ body.single-doc .btn-listening {
     });
 
     document.addEventListener('keydown', handleTrainingKeydown);
+    document.addEventListener('keydown', handleDocKeydown);
 
     // 记住听写最近聚焦的空：点 💡 按钮时输入框已经失焦，靠这个知道提示该给哪个空
     document.addEventListener('focusin', (event) => {
@@ -8353,6 +9448,7 @@ body.single-doc .btn-listening {
     setupAutoHideTopbar();
     setupBackToTop();
     setupVoiceSelect();
+    setupSpeechHighlightSelect();
 
     // 恢复侧边栏宽度与宽屏下的收起状态
     applySidebarWidth(loadSidebarWidth());
