@@ -1272,6 +1272,52 @@ body.single-doc .btn-listening {
 
 .chapter { border-bottom: 1px solid var(--color-border); }
 
+/* 章节多的课程按级别多分一层（Beginner / Intermediate…，见 app.js 的 buildChapterLevelGroups）：
+   分组标题比章节标题大一号、带浅底，里面的章节往右缩进一点，看得出层级 */
+.chapter-group { border-bottom: 1px solid var(--color-border); }
+
+.chapter-group-title {
+  padding: 10px 6px;
+  font-size: 1.05em;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.chapter-group-count {
+  margin-left: 8px;
+  font-size: 0.78em;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+.chapter-group-progress {
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-size: 0.75em;
+  font-weight: 400;
+  color: var(--color-muted);
+  white-space: nowrap;
+  border-radius: 999px;
+}
+
+.chapter-group-progress.is-partial {
+  color: var(--color-accent);
+  font-weight: 700;
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+
+.chapter-group-progress.is-done {
+  color: var(--color-on-accent);
+  font-weight: 700;
+  background: var(--color-accent);
+}
+
+.chapter-group-body { padding-left: 10px; }
+
+.chapter-group-body > .chapter:last-child { border-bottom: 0; }
+
 .chapter-title {
   padding: 10px 6px;
   font-weight: 600;
@@ -1776,6 +1822,295 @@ body[data-view="training"] .doc-link.is-active,
 .resident {
   color: var(--color-muted);
   font-size: 0.9em;
+}
+
+/* ── 句子成分分析（句型卡片的「句子结构」，数据见 src/analysis.js）──
+   每种成分一种颜色：主语蓝、谓语红、宾语绿、表语青，用下划线标；修饰灰字虚线；从句紫色虚线框；连接词不标。
+   --analysis-color 在各成分的 class 上设，片段下划线、片段下方的成分名、说明列表里的片段名共用 */
+.analysis { margin-top: 8px; }
+
+/* 结构 / 造句 / 搭配 / 易错 / 语序 一排小按钮，选中的那个实心强调色 */
+.analysis-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.analysis-tab-btn {
+  min-height: 30px;
+  padding: 2px 12px;
+  font: inherit;
+  font-size: 0.85em;
+  color: var(--color-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.analysis-tab-btn.is-active {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.analysis-panel {
+  display: none;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--mask-bg) 40%, var(--color-surface));
+  border-radius: 8px;
+  cursor: default;
+}
+
+/* 卡片上 data-analysis-tab 记着展开的是哪一块（app.js 的 toggleAnalysisTab），只显示对应的面板 */
+.item[data-analysis-tab="structure"] .analysis-panel[data-panel="structure"],
+.item[data-analysis-tab="practice"] .analysis-panel[data-panel="practice"],
+.item[data-analysis-tab="chunks"] .analysis-panel[data-panel="chunks"],
+.item[data-analysis-tab="mistakes"] .analysis-panel[data-panel="mistakes"],
+.item[data-analysis-tab="order"] .analysis-panel[data-panel="order"] {
+  display: block;
+}
+
+.analysis-seg--subject { --analysis-color: #2563eb; }
+.analysis-seg--predicate { --analysis-color: #dc2626; }
+.analysis-seg--object { --analysis-color: #16a34a; }
+.analysis-seg--complement { --analysis-color: #0891b2; }
+.analysis-seg--modifier { --analysis-color: var(--color-muted); }
+.analysis-seg--clause { --analysis-color: #7c3aed; }
+.analysis-seg--connector { --analysis-color: var(--color-muted); }
+
+.analysis-segments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 8px;
+  margin-bottom: 10px;
+}
+
+/* 每个片段上面是原文、下面是成分名，换行时整个片段一起换 */
+.analysis-seg {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+}
+
+.analysis-seg-text {
+  padding: 0 2px 2px;
+  font-size: 1.05em;
+  font-weight: 600;
+  border-bottom: 3px solid var(--analysis-color);
+  overflow-wrap: anywhere;
+}
+
+.analysis-seg-role {
+  margin-top: 2px;
+  font-size: 0.75em;
+  color: var(--analysis-color);
+}
+
+/* 骨架（主语 / 谓语 / 宾语 / 表语 / 主干从句）：加粗、大一号、带一层成分色的底，一眼看出是句子的骨头 */
+.analysis-seg--core .analysis-seg-text {
+  padding: 1px 5px 2px;
+  font-size: 1.12em;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--analysis-color) 14%, transparent);
+  border-radius: 4px 4px 0 0;
+}
+
+.analysis-seg--core .analysis-seg-role { font-weight: 700; }
+
+/* 枝叶（修饰、状语 / 定语从句、连接词）：灰色、小一号、细虚线，退到后面 */
+.analysis-seg--minor .analysis-seg-text {
+  font-size: 0.95em;
+  font-weight: 400;
+  color: var(--color-muted);
+  border-bottom: 2px dashed color-mix(in srgb, var(--color-muted) 60%, transparent);
+}
+
+.analysis-seg--minor .analysis-seg-role { color: var(--color-muted); }
+
+/* 从句加框：主干从句紫色框，枝叶从句灰色框 */
+.analysis-seg--clause .analysis-seg-text {
+  padding: 1px 6px 2px;
+  border: 1px dashed var(--analysis-color);
+  border-radius: 6px;
+}
+
+.analysis-seg--clause.analysis-seg--minor .analysis-seg-text { border-color: var(--color-border); }
+
+.analysis-seg--connector .analysis-seg-text { border-bottom-color: transparent; }
+
+.analysis-label {
+  margin-right: 8px;
+  font-size: 0.8em;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+/* 主干：放在「结构」最上面单独一块，强调色左竖条 + 浅底，英文大一号加粗，中文意思另起一行 */
+.analysis-skeleton {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+  border-left: 4px solid var(--color-accent);
+  border-radius: 6px;
+}
+
+.analysis-skeleton-en {
+  font-size: 1.2em;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.analysis-explain {
+  margin-top: 2px;
+  color: var(--color-muted);
+}
+
+.analysis-notes,
+.analysis-points {
+  margin: 4px 0 8px;
+  padding-left: 18px;
+  font-size: 0.9em;
+}
+
+.analysis-notes li,
+.analysis-points li { margin: 2px 0; }
+
+.analysis-note-key {
+  margin-right: 6px;
+  font-weight: 600;
+  color: var(--analysis-color);
+}
+
+.analysis-note-key--subject { --analysis-color: #2563eb; }
+.analysis-note-key--predicate { --analysis-color: #dc2626; }
+.analysis-note-key--object { --analysis-color: #16a34a; }
+.analysis-note-key--complement { --analysis-color: #0891b2; }
+.analysis-note-key--modifier { --analysis-color: var(--color-muted); }
+.analysis-note-key--clause { --analysis-color: #7c3aed; }
+.analysis-note-key--connector { --analysis-color: var(--color-muted); }
+
+/* 结构里最下面的语法标签 */
+.analysis-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.analysis-tag {
+  padding: 1px 8px;
+  font-size: 0.8em;
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+/* 造句：句型框架 + 例句（每句前面一个小 ▶ 单独朗读） */
+.analysis-frame {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.analysis-practice,
+.analysis-chunks,
+.analysis-mistakes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.analysis-practice-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.analysis-speak-btn {
+  flex: 0 0 auto;
+  min-width: 32px;
+  min-height: 28px;
+  font-size: 12px;
+  color: var(--color-play);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.analysis-practice-en,
+.analysis-chunk-en {
+  display: block;
+  font-weight: 600;
+}
+
+.analysis-practice-cn,
+.analysis-chunk-cn {
+  display: block;
+  font-size: 0.9em;
+  color: var(--color-muted);
+}
+
+.analysis-chunks li { margin: 6px 0; }
+
+/* 易错：错的红色划线，对的绿色 */
+.analysis-mistakes li { margin: 8px 0; }
+
+.analysis-wrong {
+  color: #dc2626;
+  text-decoration: line-through;
+}
+
+.analysis-right {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.analysis-mistake-note {
+  font-size: 0.9em;
+  color: var(--color-muted);
+}
+
+/* 语序：英文 / 中文两行，同一块同一个颜色和编号 */
+.analysis-order-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.analysis-order-block {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: color-mix(in srgb, var(--order-color) 18%, var(--color-surface));
+  border: 1px solid var(--order-color);
+  border-radius: 6px;
+}
+
+.analysis-order-num {
+  font-size: 0.75em;
+  font-weight: 700;
+  color: var(--order-color);
+}
+
+.analysis-order-block--1 { --order-color: #2563eb; }
+.analysis-order-block--2 { --order-color: #dc2626; }
+.analysis-order-block--3 { --order-color: #16a34a; }
+.analysis-order-block--4 { --order-color: #d97706; }
+.analysis-order-block--5 { --order-color: #7c3aed; }
+
+.analysis-order-note {
+  font-size: 0.9em;
+  color: var(--color-muted);
 }
 
 /* 词汇表单元格排版：单词加大加粗突出主角，词性/音标进一步弱化拉开主次对比 */
@@ -2526,7 +2861,19 @@ body[data-view="training"] .doc-link.is-active,
 
   // 键盘 ↑↓ / 空格 / Enter / ← → 操作卡片的视图，和这些视图里卡片的选择器（训练页另有自己的快捷键）
   const CARD_KEY_VIEWS = ['doc', 'favorites', 'quiz', 'listening'];
+  const CHAPTER_GROUP_MIN_CHAPTERS = 20; // 章节超过这么多、又认得出级别（Beginner / Intermediate…）时，侧边栏按级别多分一层
   const CARD_SELECTOR = '[data-role="content"] .item, [data-role="content"] .favorite-row';
+
+  // 句子成分分析的成分类型 → 卡片上显示的中文名（类型列表跟 src/analysis.js 的 ANALYSIS_ROLES 一致）
+  const ANALYSIS_ROLE_LABELS = {
+    subject: '主语',
+    predicate: '谓语',
+    object: '宾语',
+    complement: '表语',
+    modifier: '修饰',
+    clause: '从句',
+    connector: '连接',
+  };
 
   // 非正文视图的页面名：内容区顶部标题栏、顶部标题、浏览器标签页都用这个
   const VIEW_TITLES = {
@@ -2661,6 +3008,7 @@ body[data-view="training"] .doc-link.is-active,
     syncPanelOpen: false, // "同步设置"面板是否展开，只存内存，刷新页面重置为收起
     favoritesTab: 'fav', // 收藏页当前标签：'fav' 收藏 | 'todo' 待看，只存内存
     isDoneChaptersOpen: false, // 侧边栏顶部"已看完的章节"列表是否展开，只存内存
+    chapterLevelGroups: null, // 侧边栏按级别分的组（buildChapterLevelGroups），不分组时为 null
 
     // 阅读进度：以下都只存内存，持久化的数据在收藏列表里的 read / position / course 记录
     resumeHint: null, // 打开页面时"上次看到"提示条要指向的位置记录，null 表示不显示
@@ -3922,6 +4270,12 @@ body[data-view="training"] .doc-link.is-active,
 
     if (chapterEl) {
       chapterEl.open = true;
+    }
+
+    const levelGroupEl = chapterEl && chapterEl.closest('.chapter-group');
+
+    if (levelGroupEl) {
+      levelGroupEl.open = true;
     }
 
     selectDoc(targetFile.slug);
@@ -5192,6 +5546,222 @@ body[data-view="training"] .doc-link.is-active,
     return `<div class="resident resident--${field}">${escapeHtml(item[field])}</div>`;
   }
 
+  /**
+   * 句型卡片的 AI 分析：一排按钮（结构 / 造句 / 搭配 / 易错 / 语序），每个按钮展开对应的一块，同一时间只展开一块。
+   * 数据由 AI 离线生成、构建时合并进 item.analysis（见 src/analysis.js）；没有分析就不渲染，某一项没数据就不显示那个按钮
+   * @param {object} item - 句型表的 item（用 item.en.text_en 算造句的句型框架）
+   * @returns {string}
+   */
+  function renderAnalysis(item) {
+
+    const analysis = item.analysis;
+
+    if (!analysis || !Array.isArray(analysis.segments) || analysis.segments.length === 0) {
+
+      return '';
+    }
+
+    const panels = [
+      { tab: 'structure', label: '结构', html: renderAnalysisStructure(analysis) },
+      { tab: 'practice', label: '造句', html: renderAnalysisPractice(item.en.text_en, analysis) },
+      { tab: 'chunks', label: '搭配', html: renderAnalysisChunks(analysis.chunks) },
+      { tab: 'mistakes', label: '易错', html: renderAnalysisMistakes(analysis.mistakes) },
+      { tab: 'order', label: '语序', html: renderAnalysisOrder(analysis.order) },
+    ].filter((panel) => panel.html);
+
+    const buttonsHtml = panels.map((panel) => (
+      `<button type="button" class="analysis-tab-btn" data-action="analysis-tab" data-tab="${panel.tab}">${panel.label}</button>`
+    )).join('');
+
+    const panelsHtml = panels.map((panel) => (
+      `<div class="analysis-panel" data-panel="${panel.tab}">${panel.html}</div>`
+    )).join('');
+
+    return `
+      <div class="analysis">
+        <div class="analysis-tabs">${buttonsHtml}</div>
+        ${panelsHtml}
+      </div>`;
+  }
+
+  /**
+   * 分析按钮点击：展开这个按钮对应的那一块，已经展开的再点一次收起；同一张卡片同一时间只展开一块
+   * @param {HTMLElement} buttonEl - .analysis-tab-btn
+   * @returns {void}
+   */
+  function toggleAnalysisTab(buttonEl) {
+
+    const itemEl = buttonEl.closest('.item');
+
+    if (!itemEl) {
+
+      return;
+    }
+
+    const tab = buttonEl.dataset.tab;
+    const isClosing = itemEl.dataset.analysisTab === tab;
+
+
+    if (isClosing) {
+      delete itemEl.dataset.analysisTab;
+    } else {
+      itemEl.dataset.analysisTab = tab;
+    }
+
+    itemEl.querySelectorAll('.analysis-tab-btn').forEach((el) => {
+      el.classList.toggle('is-active', !isClosing && el.dataset.tab === tab);
+    });
+  }
+
+  /**
+   * 「结构」：成分分段（主语 / 谓语 / 宾语…各一种颜色）、主干、片段说明、要点、语法标签
+   * @param {object} analysis
+   * @returns {string}
+   */
+  function renderAnalysisStructure(analysis) {
+
+    // 骨架（主语 / 谓语 / 宾语 / 表语，以及标了 isCore 的主语、宾语从句）加粗加底色，其余（修饰、状语 / 定语从句、连接）弱化
+    const segmentsHtml = analysis.segments.map((segment) => (
+      `<span class="analysis-seg analysis-seg--${escapeAttr(segment.role)} ${isCoreSegment(segment) ? 'analysis-seg--core' : 'analysis-seg--minor'}">`
+      + `<span class="analysis-seg-text">${escapeHtml(segment.text)}</span>`
+      + `<span class="analysis-seg-role">${escapeHtml(ANALYSIS_ROLE_LABELS[segment.role] || segment.role)}</span>`
+      + '</span>'
+    )).join('');
+
+    const notesHtml = analysis.segments
+      .filter((segment) => segment.note)
+      .map((segment) => (
+        `<li><span class="analysis-note-key analysis-note-key--${escapeAttr(segment.role)}">${escapeHtml(segment.text)}</span>${escapeHtml(segment.note)}</li>`
+      )).join('');
+
+    const pointsHtml = (analysis.points || []).map((point) => `<li>${escapeHtml(point)}</li>`).join('');
+    const tagsHtml = (analysis.tags || []).map((tag) => `<span class="analysis-tag">${escapeHtml(tag)}</span>`).join('');
+
+    // 主干放在最上面单独一块，打开「结构」第一眼就看到
+    const skeletonHtml = analysis.skeleton
+      ? `<div class="analysis-skeleton"><div class="analysis-label">主干</div><div class="analysis-skeleton-en">${escapeHtml(analysis.skeleton)}</div>${analysis.explain ? `<div class="analysis-explain">${escapeHtml(analysis.explain)}</div>` : ''}</div>`
+      : '';
+
+    return `
+      ${skeletonHtml}
+      <div class="analysis-segments">${segmentsHtml}</div>
+      ${notesHtml ? `<ul class="analysis-notes">${notesHtml}</ul>` : ''}
+      ${pointsHtml ? `<div class="analysis-label">要点</div><ul class="analysis-points">${pointsHtml}</ul>` : ''}
+      ${tagsHtml ? `<div class="analysis-tags">${tagsHtml}</div>` : ''}`;
+  }
+
+  /**
+   * 这个片段是不是句子骨架：主语 / 谓语 / 宾语 / 表语一定是；从句要看 isCore（主语、宾语从句是，状语、定语从句不是）
+   * @param {{ role: string, isCore?: boolean }} segment
+   * @returns {boolean}
+   */
+  function isCoreSegment(segment) {
+
+    if (segment.role === 'clause') {
+
+      return segment.isCore === true;
+    }
+
+    return ['subject', 'predicate', 'object', 'complement'].includes(segment.role);
+  }
+
+  /**
+   * 「造句」：句型框架 + 几个替换后的例句，每句可以单独朗读。框架优先用分析里的 frame（讲解句没有括号，由 AI 写），
+   * 没有就把原句括号里可替换的部分换成 ___
+   * @param {string} sentence - 原句（括号标出可替换部分）
+   * @param {{ frame?: string, practice: { en: string, cn: string }[] }} analysis
+   * @returns {string} 没有例句返回空串
+   */
+  function renderAnalysisPractice(sentence, analysis) {
+
+    const practice = analysis.practice;
+
+    if (!practice || practice.length === 0) {
+
+      return '';
+    }
+
+    const frame = analysis.frame || String(sentence || '').replace(/\([^)]*\)/g, '___');
+    const listHtml = practice.map((example) => (
+      '<li class="analysis-practice-item">'
+      + `<button type="button" class="analysis-speak-btn" data-action="speak-plain" data-text="${escapeAttr(example.en)}" aria-label="朗读这句">▶</button>`
+      + `<span><span class="analysis-practice-en">${escapeHtml(example.en)}</span><span class="analysis-practice-cn">${escapeHtml(example.cn)}</span></span>`
+      + '</li>'
+    )).join('');
+
+    return `
+      <div class="analysis-frame"><span class="analysis-label">句型</span>${escapeHtml(frame)}</div>
+      <ul class="analysis-practice">${listHtml}</ul>`;
+  }
+
+  /**
+   * 「搭配」：句子里该整块记的词块
+   * @param {{ en: string, cn: string }[]} chunks
+   * @returns {string}
+   */
+  function renderAnalysisChunks(chunks) {
+
+    if (!chunks || chunks.length === 0) {
+
+      return '';
+    }
+
+    const listHtml = chunks.map((chunk) => (
+      `<li><span class="analysis-chunk-en">${escapeHtml(chunk.en)}</span><span class="analysis-chunk-cn">${escapeHtml(chunk.cn)}</span></li>`
+    )).join('');
+
+    return `<ul class="analysis-chunks">${listHtml}</ul>`;
+  }
+
+  /**
+   * 「易错」：中国学习者常见错误，错的标红、对的标绿
+   * @param {{ wrong: string, right: string, note?: string }[]} mistakes
+   * @returns {string}
+   */
+  function renderAnalysisMistakes(mistakes) {
+
+    if (!mistakes || mistakes.length === 0) {
+
+      return '';
+    }
+
+    const listHtml = mistakes.map((mistake) => (
+      '<li>'
+      + `<div class="analysis-wrong">✗ ${escapeHtml(mistake.wrong)}</div>`
+      + `<div class="analysis-right">✓ ${escapeHtml(mistake.right)}</div>`
+      + (mistake.note ? `<div class="analysis-mistake-note">${escapeHtml(mistake.note)}</div>` : '')
+      + '</li>'
+    )).join('');
+
+    return `<ul class="analysis-mistakes">${listHtml}</ul>`;
+  }
+
+  /**
+   * 「语序」：英文按原顺序分块编号，中文按中文习惯的顺序排同样的块，同一块同一个颜色和编号，一眼看出哪里换了位置。
+   * 中英语序基本一样的句子不给这项数据，不显示按钮
+   * @param {{ blocks: { en: string, cn: string }[], cnOrder: number[], note: string }|null} order
+   * @returns {string}
+   */
+  function renderAnalysisOrder(order) {
+
+    if (!order || !order.blocks || order.blocks.length === 0) {
+
+      return '';
+    }
+
+    const renderBlock = (text, number) => (
+      `<span class="analysis-order-block analysis-order-block--${((number - 1) % 5) + 1}"><span class="analysis-order-num">${number}</span>${escapeHtml(text)}</span>`
+    );
+
+    const enHtml = order.blocks.map((block, index) => renderBlock(block.en, index + 1)).join('');
+    const cnHtml = (order.cnOrder || []).map((number) => renderBlock(order.blocks[number - 1].cn, number)).join('');
+
+    return `
+      <div class="analysis-order-row"><span class="analysis-label">英文</span>${enHtml}</div>
+      <div class="analysis-order-row"><span class="analysis-label">中文</span>${cnHtml}</div>
+      ${order.note ? `<div class="analysis-order-note">${escapeHtml(order.note)}</div>` : ''}`;
+  }
+
   // ── 阅读进度（已看标记 + 上次看到的位置） ───────────────────────────
   // 跟收藏存在同一个 localStorage 列表里（livenotes:favorites），借用收藏的 Gist 同步 / 导出导入，
   // 用三种 kind 区分：
@@ -5462,6 +6032,24 @@ body[data-view="training"] .doc-link.is-active,
         progressEl.classList.toggle('is-done', isDone);
         progressEl.classList.toggle('is-partial', readCount > 0 && !isDone);
       }
+    });
+
+    // 级别分组后面的"已看 x / 总篇数"，样式跟章节进度一样（读了一部分带底色、全部读完实心 + ✓）
+    document.querySelectorAll('.chapter-group[data-level-index]').forEach((groupEl) => {
+      const levelGroup = (state.chapterLevelGroups || [])[Number(groupEl.dataset.levelIndex)];
+      const progressEl = groupEl.querySelector('.chapter-group-progress');
+
+      if (!levelGroup || !progressEl) {
+        return;
+      }
+
+      const files = levelGroup.chapterIndexes.flatMap((index) => state.data.tree[index].files);
+      const readCount = files.filter((file) => readSlugs.has(file.slug)).length;
+      const isDone = readCount === files.length;
+
+      progressEl.textContent = `${isDone ? '✓ ' : ''}${readCount}/${files.length}`;
+      progressEl.classList.toggle('is-done', isDone);
+      progressEl.classList.toggle('is-partial', readCount > 0 && !isDone);
     });
 
     const courseProgressEl = document.querySelector('[data-role="course-progress"]');
@@ -5818,7 +6406,7 @@ body[data-view="training"] .doc-link.is-active,
    * @param {string} chapter - 章节文件夹名
    * @returns {string} summary 里的 HTML（含进度 span）
    */
-  function renderChapterTitle(chapter) {
+  function renderChapterTitle(chapter, levelKey = '') {
 
     const parts = chapter.split(' - ');
     const progressHtml = '<span class="chapter-progress"></span>';
@@ -5828,10 +6416,81 @@ body[data-view="training"] .doc-link.is-active,
       return `${escapeHtml(chapter)}${progressHtml}`;
     }
 
-    const head = `${parts[0]} · ${parts[1]}`;
+    // 在级别分组里，分组名已经写了级别，章节名里重复的级别词去掉："Beginner Unit 1" → "Unit 1"；"Grammar" → 只留编号
+    let middle = parts[1];
+
+    if (levelKey && middle === levelKey) {
+      middle = '';
+    } else if (levelKey && middle.startsWith(`${levelKey} `)) {
+      middle = middle.slice(levelKey.length + 1);
+
+      // 漏了 Unit 的（"Advanced 27"）补上，跟同组其它章节写法一致
+      if (/^\d+$/.test(middle)) {
+        middle = `Unit ${middle}`;
+      }
+    }
+
+    const head = middle ? `${parts[0]} · ${middle}` : parts[0];
     const topic = parts.slice(2).join(' - ');
 
     return `<span class="chapter-head">${escapeHtml(head)}</span>${progressHtml}<span class="chapter-topic">${escapeHtml(topic)}</span>`;
+  }
+
+  /**
+   * 章节名里的级别（分组用）："02 - Beginner Unit 1 - …" → "Beginner"；"125 - Advanced 27 - …" → "Advanced"；
+   * "129 - Grammar - Beginner Unit 1" → "Grammar"；
+   * 只有两段的（"01 - Introduction"）没有级别
+   * @param {string} chapter
+   * @returns {string} 没有级别返回空串
+   */
+  function getChapterLevel(chapter) {
+
+    const parts = chapter.split(' - ');
+
+    if (parts.length < 3) {
+
+      return '';
+    }
+
+    // 源文件夹名有的漏了 Unit（"Advanced 27"），有没有 Unit 都算同一级
+    const unitMatch = parts[1].match(/^(.+?) (?:Unit )?\d+$/);
+
+    return unitMatch ? unitMatch[1] : parts[1];
+  }
+
+  /**
+   * 把章节树按级别分成连续的几段（Beginner / Intermediate / …），侧边栏多一层可折叠的分组。
+   * 只在章节很多（超过 CHAPTER_GROUP_MIN_CHAPTERS）、并且认得出至少两个级别时分组，其它课程保持一层；
+   * 没有级别的章节（如 Introduction）单独放，不进分组
+   * @param {{ chapter: string }[]} tree
+   * @returns {{ level: string, chapterIndexes: number[] }[]|null} 不分组返回 null
+   */
+  function buildChapterLevelGroups(tree) {
+
+    if (tree.length <= CHAPTER_GROUP_MIN_CHAPTERS) {
+
+      return null;
+    }
+
+    const groups = [];
+
+
+    tree.forEach((group, index) => {
+      const level = getChapterLevel(group.chapter);
+      const lastGroup = groups[groups.length - 1];
+
+      if (level && lastGroup && lastGroup.level === level) {
+        lastGroup.chapterIndexes.push(index);
+
+        return;
+      }
+
+      groups.push({ level, chapterIndexes: [index] });
+    });
+
+    const levelCount = new Set(groups.filter((group) => group.level).map((group) => group.level)).size;
+
+    return levelCount >= 2 ? groups : null;
   }
 
   /**
@@ -5843,8 +6502,15 @@ body[data-view="training"] .doc-link.is-active,
 
     const sidebarEl = document.querySelector('[data-role="sidebar"]');
     const favorites = loadFavorites();
+    const levelGroups = buildChapterLevelGroups(tree);
+    const levelByChapterIndex = new Map();
 
-    const groupsHtml = tree.map((group, groupIndex) => {
+
+    (levelGroups || []).forEach((levelGroup) => {
+      levelGroup.chapterIndexes.forEach((index) => levelByChapterIndex.set(index, levelGroup.level));
+    });
+
+    const chapterHtmls = tree.map((group, groupIndex) => {
 
       const linksHtml = group.files.map((file) => {
 
@@ -5861,10 +6527,31 @@ body[data-view="training"] .doc-link.is-active,
       // 默认展开第一个章节
       return `
         <details class="chapter"${groupIndex === 0 ? ' open' : ''} data-chapter-index="${groupIndex}">
-          <summary class="chapter-title">${renderChapterMarkButtons(favorites, group.chapter)}${renderChapterTitle(group.chapter)}</summary>
+          <summary class="chapter-title">${renderChapterMarkButtons(favorites, group.chapter)}${renderChapterTitle(group.chapter, levelByChapterIndex.get(groupIndex))}</summary>
           <ul class="doc-list">${linksHtml}</ul>
         </details>`;
-    }).join('');
+    });
+
+    // 有级别分组时外面再包一层可折叠的分组（默认收起，highlightActiveLink 会展开当前篇所在的分组）
+    const groupsHtml = levelGroups
+      ? levelGroups.map((levelGroup, levelIndex) => {
+
+        const innerHtml = levelGroup.chapterIndexes.map((index) => chapterHtmls[index]).join('');
+
+        if (!levelGroup.level) {
+
+          return innerHtml;
+        }
+
+        return `
+          <details class="chapter-group" data-level-index="${levelIndex}">
+            <summary class="chapter-group-title">${escapeHtml(levelGroup.level)}<span class="chapter-group-count">${levelGroup.chapterIndexes.length} 章</span><span class="chapter-group-progress"></span></summary>
+            <div class="chapter-group-body">${innerHtml}</div>
+          </details>`;
+      }).join('')
+      : chapterHtmls.join('');
+
+    state.chapterLevelGroups = levelGroups;
 
     // 构建期传了 homeLink 才显示"返回全部课程"，本地单独跑一门课时不出现；固定贴在
     // 侧边栏最底部（配合 .sidebar-scroll 的 flex 布局，章节数少时也不会往上飘），
@@ -5895,6 +6582,15 @@ body[data-view="training"] .doc-link.is-active,
     document.querySelectorAll('.doc-link').forEach((el) => {
       el.classList.toggle('is-active', el.dataset.slug === slug);
     });
+
+    // 有级别分组时，当前篇所在的分组和章节要展开，不然分组默认收起，看不到正在读的是哪一篇
+    const activeEl = document.querySelector('.doc-link.is-active');
+    const levelGroupEl = activeEl && activeEl.closest('.chapter-group');
+
+    if (levelGroupEl) {
+      levelGroupEl.open = true;
+      activeEl.closest('.chapter').open = true;
+    }
   }
 
   /**
@@ -6194,6 +6890,7 @@ body[data-view="training"] .doc-link.is-active,
             </div>
             <div class="hidden-side">${formatSide(section.type, hiddenSide, item[hiddenSide])}</div>
             ${formatResident(section, item)}
+            ${renderAnalysis(item)}
           </li>`;
       }).join('');
 
@@ -10204,6 +10901,11 @@ body[data-view="training"] .doc-link.is-active,
         if (action === 'remove-favorite') removeFavorite(actionEl.dataset.kind, actionEl.dataset.id);
         if (action === 'jump-to-doc') jumpToDoc(actionEl.dataset.slug);
         if (action === 'back-to-doc') backToDoc();
+        if (action === 'analysis-tab') toggleAnalysisTab(actionEl);
+        if (action === 'speak-plain') {
+          stopCardSpeak();
+          speakText(actionEl.dataset.text);
+        }
 
         // 按钮在章节标题 <summary> 里，阻止默认行为，不然点按钮会顺带展开 / 收起这一章
         if (action === 'toggle-chapter-record') {
@@ -10306,10 +11008,12 @@ body[data-view="training"] .doc-link.is-active,
       // 点击 item 的揭示按钮或整行；听力卡片、泛读卡片排除在外——听力卡片里选项之间
       // 空隙多，容易点到空白处误触发展开（只认"查看原文"这个专门按钮，见上面的
       // toggle-listening-reveal）；泛读卡片是单向顺序揭示，只认卡片里的专门按钮
-      // （查看原文/查看讲解/点词），点卡片空白处不应该有任何反应
+      // （查看原文/查看讲解/点词），点卡片空白处不应该有任何反应。展开的句子结构区域里点击也不翻面，
+      // 不然边看分析边点，卡片会来回翻
       const itemEl = event.target.closest('.item');
+      const isInAnalysis = Boolean(event.target.closest('.analysis-panel'));
 
-      if (itemEl && !itemEl.classList.contains('listening-item') && !itemEl.classList.contains('reading-item')) {
+      if (itemEl && !isInAnalysis && !itemEl.classList.contains('listening-item') && !itemEl.classList.contains('reading-item')) {
         toggleItem(itemEl);
       }
     });
