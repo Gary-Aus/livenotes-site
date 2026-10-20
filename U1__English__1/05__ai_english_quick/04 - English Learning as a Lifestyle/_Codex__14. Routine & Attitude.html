@@ -1883,6 +1883,32 @@ body[data-view="training"] .doc-link.is-active,
   display: block;
 }
 
+/* 展开内容底部的「收起」：单独占一行，居中、加宽，用强调色边框和字，一眼能找到；手机上卡片内宽约 315px，200px 放得下 */
+.analysis-close {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.analysis-close-btn {
+  min-width: 200px;
+  min-height: 40px;
+  padding: 4px 24px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-accent);
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.analysis-close-btn:hover {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+
 .analysis-seg--subject { --analysis-color: #2563eb; }
 .analysis-seg--predicate { --analysis-color: #dc2626; }
 .analysis-seg--object { --analysis-color: #16a34a; }
@@ -5694,8 +5720,10 @@ body[data-view="training"] .doc-link.is-active,
       `<button type="button" class="analysis-tab-btn" data-action="analysis-tab" data-tab="${panel.tab}">${panel.label}</button>`
     )).join('');
 
+    // 每块底部放一个「收起」，内容长时不用滚回上面那排按钮再点一次
+    const closeBtnHtml = '<div class="analysis-close"><button type="button" class="analysis-close-btn" data-action="analysis-close">收起 ▲</button></div>';
     const panelsHtml = panels.map((panel) => (
-      `<div class="analysis-panel" data-panel="${panel.tab}">${panel.html}</div>`
+      `<div class="analysis-panel" data-panel="${panel.tab}">${panel.html}${closeBtnHtml}</div>`
     )).join('');
 
     return `
@@ -5732,6 +5760,34 @@ body[data-view="training"] .doc-link.is-active,
     itemEl.querySelectorAll('.analysis-tab-btn').forEach((el) => {
       el.classList.toggle('is-active', !isClosing && el.dataset.tab === tab);
     });
+  }
+
+  /**
+   * 展开内容底部的「收起」：收起这张卡片当前展开的那一块，效果同再点一次上面的按钮
+   * @param {HTMLElement} buttonEl - .analysis-close-btn
+   * @returns {void}
+   */
+  function closeAnalysisPanel(buttonEl) {
+
+    const itemEl = buttonEl.closest('.item');
+
+    if (!itemEl) {
+
+      return;
+    }
+
+    delete itemEl.dataset.analysisTab;
+
+    itemEl.querySelectorAll('.analysis-tab-btn').forEach((el) => {
+      el.classList.remove('is-active');
+    });
+
+    // 内容长时收起后那排按钮可能已经在屏幕上方，只在看不见时滚回去，看得见就不动
+    const tabsEl = itemEl.querySelector('.analysis-tabs');
+
+    if (tabsEl && tabsEl.getBoundingClientRect().top < 0) {
+      tabsEl.scrollIntoView({ block: 'center' });
+    }
   }
 
   /**
@@ -11029,6 +11085,7 @@ body[data-view="training"] .doc-link.is-active,
         if (action === 'jump-to-doc') jumpToDoc(actionEl.dataset.slug);
         if (action === 'back-to-doc') backToDoc();
         if (action === 'analysis-tab') toggleAnalysisTab(actionEl);
+        if (action === 'analysis-close') closeAnalysisPanel(actionEl);
         if (action === 'speak-plain') {
           stopCardSpeak();
           speakText(actionEl.dataset.text);
