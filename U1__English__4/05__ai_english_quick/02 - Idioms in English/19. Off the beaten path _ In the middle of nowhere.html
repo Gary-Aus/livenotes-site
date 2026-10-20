@@ -1326,26 +1326,107 @@ body.single-doc .btn-listening {
   font-weight: 700;
 }
 
-/* 章节标题后的 "3/5"，全部看完时换强调色 */
+/* 章节标题后的 "3/5"：没读是灰字；读了一部分加浅强调色底、字加粗；全部读完实心强调色底 + ✓ */
 .chapter-progress {
   margin-left: 8px;
+  padding: 1px 7px;
   color: var(--color-muted);
   font-size: 0.8em;
   font-weight: 400;
   white-space: nowrap;
+  border-radius: 999px;
 }
 
-.chapter-progress.is-done { color: var(--color-accent); }
+.chapter-progress.is-partial {
+  color: var(--color-accent);
+  font-weight: 700;
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
 
-/* 侧边栏顶部整门课进度 */
-.course-progress {
-  padding: 8px 6px;
+.chapter-progress.is-done {
+  color: var(--color-surface);
+  font-weight: 700;
+  background: var(--color-accent);
+}
+
+/* 章节标题右上角的 ☆ 整章收藏 / 待看：浮动到右边，只占第一行，主题那一行仍然用满整个宽度 */
+.chapter-actions {
+  float: right;
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 6px;
+}
+
+.chapter-mark-btn {
+  min-width: 32px;
+  min-height: 28px;
+  padding: 2px 6px;
+  font: inherit;
+  font-size: 0.8em;
+  font-weight: 400;
+  line-height: 1;
   color: var(--color-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.chapter-mark-btn.is-active {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.chapter-mark-btn--todo.is-active {
+  color: var(--color-surface);
+  background: var(--color-accent);
+}
+
+/* 侧边栏顶部整门课进度：可以点开"已看完的章节"列表 */
+.course-progress-wrap { border-bottom: 1px solid var(--color-border); }
+
+.course-progress {
+  display: block;
+  width: 100%;
+  padding: 8px 6px;
+  font: inherit;
   font-size: 0.85em;
-  border-bottom: 1px solid var(--color-border);
+  color: var(--color-muted);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 .course-progress:empty { display: none; }
+
+.done-chapters ul {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.done-chapter-link {
+  display: block;
+  width: 100%;
+  padding: 6px 6px 6px 12px;
+  font: inherit;
+  font-size: 0.85em;
+  color: var(--color-accent);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.done-chapters-empty {
+  margin: 0 0 8px;
+  padding: 0 6px;
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
 
 /* 正文顶部"上次看到"提示条：文字和按钮一行放不下时按钮换到下一行 */
 .resume-hint {
@@ -1565,6 +1646,27 @@ body.single-doc .btn-listening {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 后退 / 前进图标：跟 ▶ 一样用 CSS 画实心三角（两个并排），用灰棕色、比 ▶ 小一圈，跟主按钮分出主次 */
+.seek-icon {
+  display: inline-flex;
+}
+
+.seek-icon::before,
+.seek-icon::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 11px solid var(--color-muted);
+}
+
+.seek-icon--back::before,
+.seek-icon--back::after {
+  border-left: 0;
+  border-right: 11px solid var(--color-muted);
 }
 
 .seek-btn:active { transform: translateY(1px); }
@@ -2001,6 +2103,35 @@ body.single-doc .btn-listening {
   font-size: 0.85em;
 }
 
+/* 收藏页「收藏 / 待看」标签 */
+.favorites-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.favorites-tab.is-active {
+  color: var(--color-surface);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* 整章收藏 / 待看记录：课程名一行小字，章节名链接一行 */
+.chapter-record-text {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chapter-done-mark {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.favorite-row.is-done .fav-jump { color: var(--color-muted); }
+
 /* ── 宽屏：侧边栏收起/展开、拖拽调宽、正文相对整窗居中 ── */
 @media (min-width: 901px) {
   /* 默认展开，.is-collapsed 时滑出隐藏 */
@@ -2397,6 +2528,8 @@ body.single-doc .btn-listening {
     favoritesSearchTimer: null, // 搜索框 debounce 用的 setTimeout 句柄
 
     syncPanelOpen: false, // "同步设置"面板是否展开，只存内存，刷新页面重置为收起
+    favoritesTab: 'fav', // 收藏页当前标签：'fav' 收藏 | 'todo' 待看，只存内存
+    isDoneChaptersOpen: false, // 侧边栏顶部"已看完的章节"列表是否展开，只存内存
 
     // 阅读进度：以下都只存内存，持久化的数据在收藏列表里的 read / position / course 记录
     resumeHint: null, // 打开页面时"上次看到"提示条要指向的位置记录，null 表示不显示
@@ -2862,9 +2995,14 @@ body.single-doc .btn-listening {
    */
   function isFavoriteRecordEmpty(fav) {
 
-    if (fav.kind === 'doc') {
+    if (fav.kind === 'doc' || fav.kind === 'chapter-fav') {
 
       return !fav.favorited;
+    }
+
+    if (fav.kind === 'chapter-todo') {
+
+      return !fav.todo;
     }
 
     // 取消"已看"的记录只是为了同步覆盖别的设备，跟取消收藏一样过期后可以清理
@@ -3460,6 +3598,258 @@ body.single-doc .btn-listening {
     persistFavorites(list);
   }
 
+  // ── 整章收藏 / 待看 ───────────────────────────────────────────────
+  // 跟收藏存在同一个 localStorage 列表里，借用 Gist 同步 / 导出导入：
+  //   chapter-fav   整章收藏，favorited: true/false（取消保留 false 用于同步覆盖）
+  //   chapter-todo  整章待看，todo: true/false（只能手动移除，看完也不自动移除）
+  // id = <课程>::<章节名>，带课程前缀，不同课程同名章节不会串。记录里存课程页网址（courseUrl）和这一章的
+  // 文档 slug（docSlugs），在别的课程页里也能跳过去、也能算出这一章看完没有
+
+  /**
+   * 章节在收藏列表里的 id
+   * @param {string} chapter - 章节名
+   * @returns {string}
+   */
+  function getChapterRecordId(chapter) {
+
+    return `${getCourseKey()}::${chapter}`;
+  }
+
+  /**
+   * 当前课程里某一章的章节树分组，找不到返回 null
+   * @param {string} chapter
+   * @returns {{ chapter: string, files: object[] }|null}
+   */
+  function findChapterGroup(chapter) {
+
+    return ((state.data && state.data.tree) || []).find((group) => group.chapter === chapter) || null;
+  }
+
+  /**
+   * 判断当前课程的某一章是否已整章收藏 / 已加入待看
+   * @param {object[]} list - loadFavorites() 的结果（渲染整个侧边栏时只读一次）
+   * @param {'chapter-fav'|'chapter-todo'} kind
+   * @param {string} chapter
+   * @returns {boolean}
+   */
+  function isChapterMarked(list, kind, chapter) {
+
+    const record = list.find((fav) => fav.kind === kind && fav.id === getChapterRecordId(chapter));
+
+    if (!record) {
+
+      return false;
+    }
+
+    return kind === 'chapter-fav' ? Boolean(record.favorited) : Boolean(record.todo);
+  }
+
+  /**
+   * 切换当前课程某一章的整章收藏 / 待看状态。取消也不物理删除记录（同步要靠这条记录覆盖别的设备）
+   * @param {'chapter-fav'|'chapter-todo'} kind
+   * @param {string} chapter
+   * @returns {boolean} 切换后的状态
+   */
+  function toggleChapterRecord(kind, chapter) {
+
+    const list = loadFavorites();
+    const id = getChapterRecordId(chapter);
+    const group = findChapterGroup(chapter);
+    const now = new Date().toISOString();
+    let record = list.find((fav) => fav.kind === kind && fav.id === id);
+
+
+    if (!record) {
+      record = { kind, id, addedAt: now };
+      list.push(record);
+    }
+
+    record.courseLabel = getCourseKey();
+    record.chapter = chapter;
+    record.courseUrl = window.location.origin + window.location.pathname;
+    record.updatedAt = now;
+
+    if (group) {
+      record.docSlugs = group.files.map((file) => file.slug);
+    }
+
+    if (kind === 'chapter-fav') {
+      record.favorited = !record.favorited;
+      record.favoritedAt = record.favorited ? now : null;
+    } else {
+      record.todo = !record.todo;
+      record.addedAt = record.todo ? now : record.addedAt;
+    }
+
+    persistFavorites(list);
+
+    return kind === 'chapter-fav' ? record.favorited : record.todo;
+  }
+
+  /**
+   * 侧边栏章节标题上 ☆ / 待看 按钮点击：切换状态并原地改按钮外观，不重绘侧边栏（保留展开状态）
+   * @param {HTMLElement} buttonEl
+   * @returns {void}
+   */
+  function handleToggleChapterRecord(buttonEl) {
+
+    const kind = buttonEl.dataset.kind;
+    const isOn = toggleChapterRecord(kind, buttonEl.dataset.chapter);
+
+    buttonEl.classList.toggle('is-active', isOn);
+
+    if (kind === 'chapter-fav') {
+      buttonEl.textContent = isOn ? '★' : '☆';
+      buttonEl.setAttribute('aria-label', isOn ? '取消收藏整章' : '收藏整章');
+    } else {
+      buttonEl.setAttribute('aria-label', isOn ? '移出待看' : '加入待看');
+    }
+  }
+
+  /**
+   * 按收藏列表原地刷新侧边栏所有章节的 ☆ / 待看 按钮（在收藏页里移除后侧边栏要跟着变）
+   * @returns {void}
+   */
+  function refreshSidebarChapterButtons() {
+
+    const list = loadFavorites();
+
+
+    document.querySelectorAll('.chapter-mark-btn').forEach((buttonEl) => {
+      const kind = buttonEl.dataset.kind;
+      const isOn = isChapterMarked(list, kind, buttonEl.dataset.chapter);
+
+      buttonEl.classList.toggle('is-active', isOn);
+
+      if (kind === 'chapter-fav') {
+        buttonEl.textContent = isOn ? '★' : '☆';
+      }
+    });
+  }
+
+  /**
+   * 侧边栏章节标题右上角的 ☆ 整章收藏 / 待看 两个按钮
+   * @param {object[]} list - loadFavorites() 的结果
+   * @param {string} chapter
+   * @returns {string}
+   */
+  function renderChapterMarkButtons(list, chapter) {
+
+    const isFav = isChapterMarked(list, 'chapter-fav', chapter);
+    const isTodo = isChapterMarked(list, 'chapter-todo', chapter);
+
+    return `<span class="chapter-actions">`
+      + `<button type="button" class="chapter-mark-btn${isFav ? ' is-active' : ''}" data-action="toggle-chapter-record" data-kind="chapter-fav" data-chapter="${escapeAttr(chapter)}" aria-label="${isFav ? '取消收藏整章' : '收藏整章'}">${isFav ? '★' : '☆'}</button>`
+      + `<button type="button" class="chapter-mark-btn chapter-mark-btn--todo${isTodo ? ' is-active' : ''}" data-action="toggle-chapter-record" data-kind="chapter-todo" data-chapter="${escapeAttr(chapter)}" aria-label="${isTodo ? '移出待看' : '加入待看'}">待看</button>`
+      + `</span>`;
+  }
+
+  /**
+   * 一章是否已全部看完：按记录里存的文档 slug 和对应课程的已看记录算，不依赖当前页面的章节树，
+   * 所以别的课程的章节也能算
+   * @param {object} record - chapter-fav / chapter-todo 记录
+   * @param {object[]} list - loadFavorites() 的结果
+   * @returns {boolean}
+   */
+  function isChapterRecordDone(record, list) {
+
+    const docSlugs = record.docSlugs || [];
+
+    if (docSlugs.length === 0) {
+
+      return false;
+    }
+
+    const readSlugs = new Set(
+      list
+        .filter((fav) => fav.kind === 'read' && fav.read && fav.courseLabel === record.courseLabel)
+        .map((fav) => fav.docSlug)
+    );
+
+    return docSlugs.every((slug) => readSlugs.has(slug));
+  }
+
+  /**
+   * 跳到当前课程的某一章：选这一章第一篇没看过的（都看过就选第一篇），侧边栏展开这一章
+   * @param {string} chapter
+   * @returns {void}
+   */
+  function jumpToChapter(chapter) {
+
+    const group = findChapterGroup(chapter);
+
+    if (!group || group.files.length === 0) {
+
+      return;
+    }
+
+    const readSlugs = loadReadSlugs();
+    const targetFile = group.files.find((file) => !readSlugs.has(file.slug)) || group.files[0];
+    const chapterEl = document.querySelector(`.chapter[data-chapter-index="${state.data.tree.indexOf(group)}"]`);
+
+
+    if (chapterEl) {
+      chapterEl.open = true;
+    }
+
+    selectDoc(targetFile.slug);
+
+    const linkEl = document.querySelector(`.doc-link[data-slug="${CSS.escape(targetFile.slug)}"]`);
+
+    if (linkEl) {
+      linkEl.scrollIntoView({ block: 'nearest' });
+    }
+
+    window.scrollTo(0, 0);
+  }
+
+  /**
+   * 渲染一个跳到某一章的链接：本课程页面里直接切换；别的课程用记录里的课程网址 + #chapter= 打开
+   * @param {object} record - chapter-fav / chapter-todo 记录
+   * @param {string} labelHtml - 已转义的链接文字
+   * @returns {string}
+   */
+  function renderChapterJumpLink(record, labelHtml) {
+
+    if (record.courseLabel === getCourseKey() && findChapterGroup(record.chapter)) {
+
+      return `<button type="button" class="fav-jump" data-action="jump-to-chapter" data-chapter="${escapeAttr(record.chapter)}">${labelHtml}</button>`;
+    }
+
+    if (record.courseUrl) {
+
+      return `<a class="fav-jump" href="${escapeAttr(`${record.courseUrl}#chapter=${encodeURIComponent(record.chapter)}`)}">${labelHtml}</a>`;
+    }
+
+    return `<span class="fav-jump fav-jump--disabled">${labelHtml}</span>`;
+  }
+
+  /**
+   * 页面网址带 #chapter=<章节名>（从别的课程的收藏 / 待看点过来）时打开那一章，然后清掉 hash，刷新不再重复跳
+   * @returns {void}
+   */
+  function openChapterFromHash() {
+
+    const match = window.location.hash.match(/^#chapter=(.+)$/);
+
+    if (!match) {
+
+      return;
+    }
+
+    let chapter = '';
+
+    try {
+      chapter = decodeURIComponent(match[1]);
+    } catch (err) {
+
+      return;
+    }
+
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    jumpToChapter(chapter);
+  }
+
   /**
    * 组装 toggleFavoriteItem / setItemMark 需要的 context
    * @param {object} doc - NoteDoc
@@ -3626,10 +4016,10 @@ body.single-doc .btn-listening {
   }
 
   /**
-   * 「我的收藏」视图里取消收藏（doc / item 用同一套逻辑）：只清掉 favorited，
+   * 「我的收藏」视图里取消收藏（doc / item / chapter-fav 用同一套逻辑，chapter-todo 清的是 todo）：只清掉 favorited，
    * 不物理删除记录——item 如果还有评分（mark）会继续显示评分；doc/item 的"取消"记录本身
    * 需要保留下来才能在跨设备同步时覆盖别的设备上的旧数据（见 mergeFavoriteLists）
-   * @param {'doc'|'item'} kind
+   * @param {'doc'|'item'|'chapter-fav'|'chapter-todo'} kind
    * @param {string} id
    * @returns {void}
    */
@@ -3645,12 +4035,18 @@ body.single-doc .btn-listening {
 
     const record = list[index];
 
-    record.favorited = false;
-    record.favoritedAt = null;
+    if (kind === 'chapter-todo') {
+      record.todo = false;
+    } else {
+      record.favorited = false;
+      record.favoritedAt = null;
+    }
+
     record.updatedAt = new Date().toISOString();
 
     persistFavorites(list);
     renderFavoritesView();
+    refreshSidebarChapterButtons();
   }
 
   /**
@@ -3909,9 +4305,9 @@ body.single-doc .btn-listening {
       return '';
     }
 
-    // « » 放在 ▶ 前面：按钮区靠右对齐，出现时只把左边的按钮往左推，▶ 不挪位置，不会点到别的按钮上
-    return `<button type="button" class="seek-btn" data-action="speak-seek" data-direction="-1" aria-label="后退 ${SPEECH_SEEK_WORDS} 个词">«</button>`
-      + `<button type="button" class="seek-btn" data-action="speak-seek" data-direction="1" aria-label="前进 ${SPEECH_SEEK_WORDS} 个词">»</button>`
+    // 后退 / 前进按钮放在 ▶ 前面：按钮区靠右对齐，出现时只把左边的按钮往左推，▶ 不挪位置，不会点到别的按钮上
+    return `<button type="button" class="seek-btn" data-action="speak-seek" data-direction="-1" aria-label="后退 ${SPEECH_SEEK_WORDS} 个词"><span class="seek-icon seek-icon--back"></span></button>`
+      + `<button type="button" class="seek-btn" data-action="speak-seek" data-direction="1" aria-label="前进 ${SPEECH_SEEK_WORDS} 个词"><span class="seek-icon"></span></button>`
       + `<button type="button" class="speak-btn" data-action="speak" data-text="${escapeAttr(text)}" aria-label="朗读">${PLAY_ICON_HTML}</button>`;
   }
 
@@ -4272,7 +4668,7 @@ body.single-doc .btn-listening {
   }
 
   /**
-   * 只在正在念 / 刚暂停的那张卡片上显示 « » 后退 / 前进按钮，其它卡片不显示，免得每张卡片都多两个按钮
+   * 只在正在念 / 刚暂停的那张卡片上显示后退 / 前进按钮，其它卡片不显示，免得每张卡片都多两个按钮
    * @returns {void}
    */
   function refreshSpeakSeekButtons() {
@@ -4916,14 +5312,23 @@ body.single-doc .btn-listening {
 
     updateTrainingDoneUI();
 
+    const doneGroups = [];
+
     document.querySelectorAll('.chapter[data-chapter-index]').forEach((chapterEl) => {
       const group = state.data.tree[Number(chapterEl.dataset.chapterIndex)];
       const readCount = group ? group.files.filter((file) => readSlugs.has(file.slug)).length : 0;
       const progressEl = chapterEl.querySelector('.chapter-progress');
+      const isDone = Boolean(group) && readCount === group.files.length;
 
+      if (isDone) {
+        doneGroups.push(group);
+      }
+
+      // 读了一部分的章节也要一眼看出来：没读灰字，读了一部分带底色，全部读完实心底色加 ✓
       if (progressEl && group) {
-        progressEl.textContent = `${readCount}/${group.files.length}`;
-        progressEl.classList.toggle('is-done', readCount === group.files.length);
+        progressEl.textContent = `${isDone ? '✓ ' : ''}${readCount}/${group.files.length}`;
+        progressEl.classList.toggle('is-done', isDone);
+        progressEl.classList.toggle('is-partial', readCount > 0 && !isDone);
       }
     });
 
@@ -4932,8 +5337,10 @@ body.single-doc .btn-listening {
     if (courseProgressEl) {
       const readCount = state.data.docs.filter((doc) => readSlugs.has(doc.slug)).length;
 
-      courseProgressEl.textContent = `已看 ${readCount} / ${state.data.docs.length}`;
+      courseProgressEl.textContent = `已看 ${readCount} / ${state.data.docs.length} · 看完 ${doneGroups.length} 章 ${state.isDoneChaptersOpen ? '▾' : '▸'}`;
     }
+
+    renderDoneChapters(doneGroups);
 
     // 正文底部按钮可能是同步合并后状态变了，原地更新文字
     const toggleEl = document.querySelector('[data-action="toggle-read"]');
@@ -4944,6 +5351,44 @@ body.single-doc .btn-listening {
       toggleEl.classList.toggle('is-read', isRead);
       toggleEl.textContent = isRead ? '✓ 已看完' : '标记为已看完';
     }
+  }
+
+  /**
+   * 渲染侧边栏顶部"已看完的章节"列表（收起时不渲染内容）
+   * @param {{ chapter: string, files: object[] }[]} doneGroups - 整章都看完的章节，按章节顺序
+   * @returns {void}
+   */
+  function renderDoneChapters(doneGroups) {
+
+    const listEl = document.querySelector('[data-role="done-chapters"]');
+
+    if (!listEl) {
+
+      return;
+    }
+
+    listEl.hidden = !state.isDoneChaptersOpen;
+
+    if (!state.isDoneChaptersOpen) {
+
+      return;
+    }
+
+    listEl.innerHTML = doneGroups.length
+      ? `<ul>${doneGroups.map((group) => (
+        `<li><button type="button" class="done-chapter-link" data-action="jump-to-chapter" data-chapter="${escapeAttr(group.chapter)}">✓ ${escapeHtml(group.chapter)}</button></li>`
+      )).join('')}</ul>`
+      : '<p class="done-chapters-empty">还没有整章看完的章节</p>';
+  }
+
+  /**
+   * 展开 / 收起侧边栏顶部"已看完的章节"列表
+   * @returns {void}
+   */
+  function toggleDoneChapters() {
+
+    state.isDoneChaptersOpen = !state.isDoneChaptersOpen;
+    updateReadProgressUI();
   }
 
   /**
@@ -5284,7 +5729,7 @@ body.single-doc .btn-listening {
       // 默认展开第一个章节
       return `
         <details class="chapter"${groupIndex === 0 ? ' open' : ''} data-chapter-index="${groupIndex}">
-          <summary class="chapter-title">${renderChapterTitle(group.chapter)}</summary>
+          <summary class="chapter-title">${renderChapterMarkButtons(favorites, group.chapter)}${renderChapterTitle(group.chapter)}</summary>
           <ul class="doc-list">${linksHtml}</ul>
         </details>`;
     }).join('');
@@ -5297,7 +5742,14 @@ body.single-doc .btn-listening {
       ? `<a class="sidebar-home" href="${escapeAttr(homeLink)}">◀ 全部课程</a>`
       : '';
 
-    sidebarEl.innerHTML = `<div class="sidebar-scroll"><div class="course-progress" data-role="course-progress"></div>${groupsHtml}</div>${homeLinkHtml}`;
+    // 顶部"已看 x / 总数"可以点开，列出整章都看完的章节
+    const courseProgressHtml = `
+      <div class="course-progress-wrap">
+        <button type="button" class="course-progress" data-role="course-progress" data-action="toggle-done-chapters"></button>
+        <div class="done-chapters" data-role="done-chapters"${state.isDoneChaptersOpen ? '' : ' hidden'}></div>
+      </div>`;
+
+    sidebarEl.innerHTML = `<div class="sidebar-scroll">${courseProgressHtml}${groupsHtml}</div>${homeLinkHtml}`;
     updateReadProgressUI();
   }
 
@@ -5698,6 +6150,75 @@ body.single-doc .btn-listening {
           </div>
         </div>
       </li>`;
+  }
+
+  /**
+   * 收藏页顶部「收藏 / 待看」两个标签，待看后面带数量
+   * @param {object[]} favorites - loadFavorites() 的结果
+   * @returns {string}
+   */
+  function renderFavoritesTabs(favorites) {
+
+    const todoCount = favorites.filter((fav) => fav.kind === 'chapter-todo' && fav.todo).length;
+
+    return `
+      <div class="favorites-tabs">
+        <button type="button" class="btn favorites-tab${state.favoritesTab === 'fav' ? ' is-active' : ''}" data-action="favorites-tab" data-tab="fav">收藏</button>
+        <button type="button" class="btn favorites-tab${state.favoritesTab === 'todo' ? ' is-active' : ''}" data-action="favorites-tab" data-tab="todo">待看${todoCount ? `（${todoCount}）` : ''}</button>
+      </div>`;
+  }
+
+  /**
+   * 渲染一条整章收藏 / 待看记录：只是一个跳到那一章的链接，待看的整章看完了打 ✓（不自动移除）
+   * @param {object} record - chapter-fav / chapter-todo 记录
+   * @param {object[]} favorites - loadFavorites() 的结果
+   * @returns {string}
+   */
+  function renderChapterRecordRow(record, favorites) {
+
+    const isTodo = record.kind === 'chapter-todo';
+    const isDone = isTodo && isChapterRecordDone(record, favorites);
+    const removeHtml = isTodo
+      ? `<button type="button" class="btn chapter-todo-remove" data-action="remove-favorite" data-kind="chapter-todo" data-id="${escapeAttr(record.id)}">移除</button>`
+      : `<button type="button" class="fav-btn is-favorited" data-action="remove-favorite" data-kind="chapter-fav" data-id="${escapeAttr(record.id)}" aria-label="取消收藏">★</button>`;
+
+    return `
+      <li class="favorite-row${isDone ? ' is-done' : ''}">
+        <div class="shown-side">
+          <div class="side-cells-row">
+            ${isDone ? '<span class="chapter-done-mark" title="整章已看完">✓</span>' : ''}
+            <span class="chapter-record-text">
+              <span class="cell cell--chapter">${formatCoursePrefix(record).replace(/ · $/, '')}</span>
+              ${renderChapterJumpLink(record, escapeHtml(record.chapter))}
+            </span>
+            <div class="item-actions">${removeHtml}</div>
+          </div>
+        </div>
+      </li>`;
+  }
+
+  /**
+   * 渲染「待看」标签页：全部课程的待看章节，按课程、章节顺序排
+   * @param {object[]} favorites - loadFavorites() 的结果
+   * @returns {string}
+   */
+  function renderTodoChapters(favorites) {
+
+    const todos = favorites
+      .filter((fav) => fav.kind === 'chapter-todo' && fav.todo)
+      .sort((a, b) => NATURAL_COLLATOR.compare(a.courseLabel || '', b.courseLabel || '')
+        || NATURAL_COLLATOR.compare(a.chapter || '', b.chapter || ''));
+
+    if (todos.length === 0) {
+
+      return '<p class="favorites-empty">还没有待看的章节。点侧边栏章节标题旁的「待看」加入。</p>';
+    }
+
+    return `
+      <section class="section">
+        <h2 class="section-title">待看的章节（${todos.length}）</h2>
+        <ul class="item-list">${todos.map((record) => renderChapterRecordRow(record, favorites)).join('')}</ul>
+      </section>`;
   }
 
   /**
@@ -6154,17 +6675,28 @@ body.single-doc .btn-listening {
 
     syncBodyView();
     const favorites = loadFavorites();
+    const tabsHtml = renderFavoritesTabs(favorites);
 
-    // 两个列表都是最新收藏排最上面（词条列表另外还能在排序下拉里改）
+    if (state.favoritesTab === 'todo') {
+      contentEl.innerHTML = `${renderFavoritesToolbar()}${tabsHtml}${renderTodoChapters(favorites)}`;
+
+      return;
+    }
+
+    // 几个列表都是最新收藏排最上面（词条列表另外还能在排序下拉里改）
+    const chapterFavs = favorites
+      .filter((fav) => fav.kind === 'chapter-fav' && fav.favorited)
+      .sort((a, b) => getFavoriteSortTime(b) - getFavoriteSortTime(a));
     const docFavs = favorites
       .filter((fav) => fav.kind === 'doc' && fav.favorited)
       .sort((a, b) => getFavoriteSortTime(b) - getFavoriteSortTime(a));
     const itemFavs = favorites.filter((fav) => fav.kind === 'item' && fav.favorited);
 
-    if (docFavs.length === 0 && itemFavs.length === 0) {
+    if (chapterFavs.length === 0 && docFavs.length === 0 && itemFavs.length === 0) {
       contentEl.innerHTML = `
         ${renderFavoritesToolbar()}
-        <p class="favorites-empty">还没有收藏。点击文档旁或词条旁的 ☆ 试试。</p>`;
+        ${tabsHtml}
+        <p class="favorites-empty">还没有收藏。点击章节、文档或词条旁的 ☆ 试试。</p>`;
 
       return;
     }
@@ -6173,6 +6705,12 @@ body.single-doc .btn-listening {
 
     contentEl.innerHTML = `
       ${renderFavoritesToolbar()}
+      ${tabsHtml}
+      ${chapterFavs.length ? `
+        <section class="section">
+          <h2 class="section-title">收藏的章节（${chapterFavs.length}）</h2>
+          <ul class="item-list">${chapterFavs.map((fav) => renderChapterRecordRow(fav, favorites)).join('')}</ul>
+        </section>` : ''}
       ${docFavs.length ? `
         <section class="section">
           <h2 class="section-title">收藏的文档（${docFavs.length}）</h2>
@@ -9437,6 +9975,18 @@ body.single-doc .btn-listening {
         if (action === 'toggle-favorite-item') handleToggleFavoriteItem(actionEl);
         if (action === 'remove-favorite') removeFavorite(actionEl.dataset.kind, actionEl.dataset.id);
         if (action === 'jump-to-doc') jumpToDoc(actionEl.dataset.slug);
+
+        // 按钮在章节标题 <summary> 里，阻止默认行为，不然点按钮会顺带展开 / 收起这一章
+        if (action === 'toggle-chapter-record') {
+          event.preventDefault();
+          handleToggleChapterRecord(actionEl);
+        }
+        if (action === 'jump-to-chapter') jumpToChapter(actionEl.dataset.chapter);
+        if (action === 'toggle-done-chapters') toggleDoneChapters();
+        if (action === 'favorites-tab') {
+          state.favoritesTab = actionEl.dataset.tab;
+          renderFavoritesView();
+        }
         if (action === 'jump-to-item') jumpToItem(actionEl.dataset.slug, actionEl.dataset.key);
         if (action === 'speak') toggleCardSpeak(actionEl);
         if (action === 'speak-seek') {
@@ -9604,6 +10154,7 @@ body.single-doc .btn-listening {
     }
 
     setupReadingProgress();
+    openChapterFromHash();
   }
 
   init();

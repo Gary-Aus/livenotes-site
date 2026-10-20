@@ -35,10 +35,6 @@
     /* 阅读进度：读的是这台设备上存的进度，课程页同步过 Gist 之后才包含别的设备的进度 */
     a .progress { display: block; margin-top: 6px; font-size: 0.82em; color: #7a5c3e; }
     a .progress:empty { display: none; }
-    /* 全部看完的课程挪到底部「已看完」区块，颜色调淡，跟还在学的课程分开 */
-    .done-section h2 { margin: 36px 0 0; font-size: 1.05em; color: #7a5c3e; }
-    .done-section ul { margin-top: 12px; }
-    .done-section a { opacity: 0.72; }
   </style>
 </head>
 <body>
@@ -56,17 +52,11 @@
     <li><a href="Extensive_Reading/VOA_Conversations/" data-course-label="VOA Conversations"><strong>泛读 · VOA Conversations</strong><span class="desc">职场对话 + 商务习语（连载中）</span></a></li>
     <li><a href="Business_English/Office_English_Phrases/" data-course-label="商务英语 · 办公室常用语"><strong>商务英语 · 办公室常用语</strong><span class="desc">200 句办公室沟通中英对照</span></a></li>
   </ul>
-  <section class="done-section" data-role="done-section" hidden>
-    <h2>已看完</h2>
-    <ul data-role="done-list"></ul>
-  </section>
   <script>
     // 读取课程页存在 localStorage 里的进度记录（kind: read / position / course，见项目 ARCHITECTURE.md），
-    // 在每门课下面显示"已看 x / 总数 · 上次：标题"；全部看完的课程挪到底部「已看完」区块
+    // 在每门课下面显示"已看 x / 总数 · 上次：标题"
     (function () {
       var records = [];
-      var doneSectionEl = document.querySelector('[data-role="done-section"]');
-      var doneListEl = document.querySelector('[data-role="done-list"]');
 
       try {
         records = JSON.parse(localStorage.getItem('livenotes:favorites') || '[]');
@@ -101,12 +91,6 @@
         progressEl.className = 'progress';
         progressEl.textContent = parts.join(' · ');
         linkEl.appendChild(progressEl);
-
-        // 课程篇数只有打开过课程页才会记下来，没记过的不算看完
-        if (course && course.docCount > 0 && readCount >= course.docCount) {
-          doneListEl.appendChild(linkEl.parentNode);
-          doneSectionEl.hidden = false;
-        }
       });
     })();
   </script>
