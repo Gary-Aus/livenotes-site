@@ -195,7 +195,7 @@
  * 消费掉，减少被宿主 App 误判成"点了空白页面"的概率（如果宿主用的是原生手势识别器，
  * 这个也不一定完全压得住，是尽力而为的兼容写法）。
  */
-.item, .doc-link, .btn, .fav-btn, .mark-btn, .fav-jump, .speak-btn,
+.item, .doc-link, .btn, .fav-btn, .mark-btn, .fav-jump, .speak-btn, .seek-btn,
 .drawer-toggle, .theme-picker-wrap, .sidebar-resizer {
   touch-action: manipulation;
 }
@@ -1217,6 +1217,19 @@ body.single-doc .btn-listening {
   cursor: pointer;
 }
 
+/* 三段式章节名拆两行：第一行编号 · 分组弱化，主题单独一行，左边跟第一行文字对齐（让出 ▶ 的宽度） */
+.chapter-head {
+  color: var(--color-muted);
+  font-size: 0.85em;
+  font-weight: 400;
+}
+
+.chapter-topic {
+  display: block;
+  margin-top: 2px;
+  padding-left: 1.1em;
+}
+
 .doc-list {
   list-style: none;
   margin: 0 0 8px;
@@ -1526,9 +1539,36 @@ body.single-doc .btn-listening {
 /* 朗读按钮紧挨着收藏按钮，两个都是容易被拇指扫到的位置，单独加宽间隔防止连续误触
    （用相邻选择器只加宽这两者之间的间隔，评分对号/跳转链接之间的间隔不受影响） */
 .speak-btn + .fav-btn,
-.fav-btn + .speak-btn {
+.fav-btn + .speak-btn,
+.fav-btn + .seek-btn,
+.seek-btn + .speak-btn {
   margin-left: 12px;
 }
+
+/* 朗读后退 / 前进按钮：只在正在念 / 刚暂停的卡片上显示（JS 给按钮区加 .has-active-speech）。
+   隐藏时 .seek-btn + .speak-btn 仍然生效，正好顶替原来收藏 → 朗读之间的间隔 */
+.seek-btn {
+  display: none;
+  min-width: var(--hit-size);
+  min-height: var(--hit-size);
+  padding: 4px 10px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--color-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.has-active-speech > .seek-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.seek-btn:active { transform: translateY(1px); }
+.seek-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 /* 卡片里的收藏星标单独加宽（桌面端 --hit-size 44px 的 2 倍），移动端另有更大倍数的
    覆盖（见 @media 区块）。高度维持项目原本统一的 --hit-size，不额外加高 */
@@ -2078,6 +2118,12 @@ body.single-doc .btn-listening {
     padding: 2px 8px;
     font-size: 14px;
   }
+
+  .item-actions .seek-btn {
+    min-width: 40px;
+    min-height: 36px;
+    padding: 2px 6px;
+  }
 }
 
 /*
@@ -2226,6 +2272,7 @@ body.single-doc .btn-listening {
   const TRAINING_LOOP_GAP_MS = 600; // 句子训练单句循环时，两遍之间停顿多久，太紧凑听不出句子边界
   const TRAINING_POS_MAX_ENTRIES = 300; // 「每篇练到第几句」最多记多少篇，超出删最早记的，避免 localStorage 越攒越大
   const SPEECH_SEEK_WORDS = 3; // ← → 一次往回 / 往前跳几个词
+  const SPEECH_RESTART_TAIL_WORDS = 2; // 卡片朗读暂停在最后这么几个词时，下次从头念
   const SPEECH_HIGHLIGHT_NAME = 'livenotes-speech';
 
   // 朗读逐词高亮可选颜色（设置菜单里选，只存本机）；避开黄色（跟牛皮纸等偏黄主题分不开）和绿色（跟"答对"混）
@@ -3862,7 +3909,10 @@ body.single-doc .btn-listening {
       return '';
     }
 
-    return `<button type="button" class="speak-btn" data-action="speak" data-text="${escapeAttr(text)}" aria-label="朗读">${PLAY_ICON_HTML}</button>`;
+    // « » 放在 ▶ 前面：按钮区靠右对齐，出现时只把左边的按钮往左推，▶ 不挪位置，不会点到别的按钮上
+    return `<button type="button" class="seek-btn" data-action="speak-seek" data-direction="-1" aria-label="后退 ${SPEECH_SEEK_WORDS} 个词">«</button>`
+      + `<button type="button" class="seek-btn" data-action="speak-seek" data-direction="1" aria-label="前进 ${SPEECH_SEEK_WORDS} 个词">»</button>`
+      + `<button type="button" class="speak-btn" data-action="speak" data-text="${escapeAttr(text)}" aria-label="朗读">${PLAY_ICON_HTML}</button>`;
   }
 
   /**
@@ -4157,8 +4207,9 @@ body.single-doc .btn-listening {
   /**
    * 用浏览器自带的语音合成朗读一段英文；不支持的浏览器（极少见）静默跳过
    * @param {string} text
-   * @param {{ rate?: number, onEnd?: Function, onError?: Function, onBoundary?: Function }} [options] -
-   *   语速、念完回调（句子训练用来做单句循环）、出错回调、念到每个词的回调（记位置用）
+   * @param {{ rate?: number, onStart?: Function, onEnd?: Function, onError?: Function, onBoundary?: Function }} [options] -
+   *   语速、真正出声时的回调（估算位置的起点）、念完回调（句子训练用来做单句循环）、出错回调、
+   *   念到每个词的回调（记位置用）
    * @returns {void}
    */
   function speakText(text, options = {}) {
@@ -4168,8 +4219,11 @@ body.single-doc .btn-listening {
       return;
     }
 
-    // 先打断上一次还没念完的朗读，避免连续点击时声音叠在一起
-    window.speechSynthesis.cancel();
+    // 先打断上一次还没念完的朗读，避免连续点击时声音叠在一起；
+    // 没在念时不调 cancel()，Chrome / Edge 空调一次也会让紧接着的 speak() 晚一点出声
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel();
+    }
 
     const utterance = new SpeechSynthesisUtterance(sanitizeSpeechText(text));
     const voice = pickBestEnglishVoice();
@@ -4182,6 +4236,10 @@ body.single-doc .btn-listening {
     }
 
     utterance.rate = options.rate || 1;
+
+    if (options.onStart) {
+      utterance.onstart = options.onStart;
+    }
 
     if (options.onEnd) {
       utterance.onend = options.onEnd;
@@ -4208,6 +4266,29 @@ body.single-doc .btn-listening {
       btn.classList.remove('is-playing');
       btn.innerHTML = PLAY_ICON_HTML;
       btn.setAttribute('aria-label', '朗读');
+    });
+
+    refreshSpeakSeekButtons();
+  }
+
+  /**
+   * 只在正在念 / 刚暂停的那张卡片上显示 « » 后退 / 前进按钮，其它卡片不显示，免得每张卡片都多两个按钮
+   * @returns {void}
+   */
+  function refreshSpeakSeekButtons() {
+
+    const activeBtnEls = [...document.querySelectorAll('.speak-btn.is-playing')];
+
+
+    if (state.pausedCardSpeech) {
+      activeBtnEls.push(state.pausedCardSpeech.btnEl);
+    }
+
+    document.querySelectorAll('.has-active-speech').forEach((el) => el.classList.remove('has-active-speech'));
+    activeBtnEls.forEach((btnEl) => {
+      if (btnEl.parentElement) {
+        btnEl.parentElement.classList.add('has-active-speech');
+      }
     });
   }
 
@@ -4237,6 +4318,7 @@ body.single-doc .btn-listening {
       startWord,
       currentWord: startWord,
       hasBoundary: false, // 有的语音（如 Chrome 的 Google 在线语音）不触发 boundary，只能按时间估算
+      hasStarted: false,
       startedAt: Date.now(),
       rate: options.rate || 1,
     };
@@ -4246,6 +4328,15 @@ body.single-doc .btn-listening {
 
     speakText(cleanText.slice(wordStarts[startWord]), {
       rate: options.rate,
+
+      // 在线语音从 speak() 到出声要等零点几秒，从调用时就开始估算会把这段等待也算成"念过了"，
+      // 连按几次暂停 / 继续，位置就一路往后漂，最后只剩最后一个词
+      onStart: () => {
+        if (state.speechCursor === cursor) {
+          cursor.hasStarted = true;
+          cursor.startedAt = Date.now();
+        }
+      },
 
       // 念完就清掉位置：训练页循环两遍之间的停顿里按暂停，继续时应该从头念，而不是按时间估算到最后一个词
       onEnd: (event) => {
@@ -4449,6 +4540,11 @@ body.single-doc .btn-listening {
       return cursor.currentWord;
     }
 
+    if (!cursor.hasStarted) {
+
+      return cursor.startWord;
+    }
+
     const elapsedChars = ((Date.now() - cursor.startedAt) / 1000) * SPEECH_FALLBACK_CHARS_PER_SEC * cursor.rate;
 
     return findWordIndexAt(cursor.wordStarts, cursor.wordStarts[cursor.startWord] + elapsedChars);
@@ -4499,6 +4595,7 @@ body.single-doc .btn-listening {
     btnEl.classList.add('is-playing');
     btnEl.innerHTML = STOP_ICON_HTML;
     btnEl.setAttribute('aria-label', '暂停朗读');
+    refreshSpeakSeekButtons();
   }
 
   /**
@@ -4511,10 +4608,16 @@ body.single-doc .btn-listening {
     const paused = state.pausedCardSpeech;
 
     if (btnEl.classList.contains('is-playing')) {
+      const cursor = state.speechCursor;
+      const wordCount = cursor && cursor.owner === btnEl ? cursor.wordStarts.length : 0;
       const word = getSpeechCursorWord(btnEl);
 
+      // 停在最后几个词时下次从头念：接着念只会听到半截尾巴，基本都是想重听整句
+      const resumeWord = word >= wordCount - SPEECH_RESTART_TAIL_WORDS ? 0 : word;
+
       stopCardSpeak();
-      state.pausedCardSpeech = { btnEl, word };
+      state.pausedCardSpeech = { btnEl, word: resumeWord };
+      refreshSpeakSeekButtons();
 
       return;
     }
@@ -5133,6 +5236,28 @@ body.single-doc .btn-listening {
   }
 
   /**
+   * 侧边栏章节标题：「编号 - 分组 - 主题」三段式拆成两行（编号 · 分组 小字一行，主题单独一行），
+   * 长标题一眼看清主题；「编号 - 名称」两段式本来就短，保持一行
+   * @param {string} chapter - 章节文件夹名
+   * @returns {string} summary 里的 HTML（含进度 span）
+   */
+  function renderChapterTitle(chapter) {
+
+    const parts = chapter.split(' - ');
+    const progressHtml = '<span class="chapter-progress"></span>';
+
+    if (parts.length < 3) {
+
+      return `${escapeHtml(chapter)}${progressHtml}`;
+    }
+
+    const head = `${parts[0]} · ${parts[1]}`;
+    const topic = parts.slice(2).join(' - ');
+
+    return `<span class="chapter-head">${escapeHtml(head)}</span>${progressHtml}<span class="chapter-topic">${escapeHtml(topic)}</span>`;
+  }
+
+  /**
    * 渲染侧边栏章节树（仅 index 模式）
    * @param {{ chapter: string, files: object[] }[]} tree
    * @returns {void}
@@ -5159,7 +5284,7 @@ body.single-doc .btn-listening {
       // 默认展开第一个章节
       return `
         <details class="chapter"${groupIndex === 0 ? ' open' : ''} data-chapter-index="${groupIndex}">
-          <summary class="chapter-title">${escapeHtml(group.chapter)}<span class="chapter-progress"></span></summary>
+          <summary class="chapter-title">${renderChapterTitle(group.chapter)}</summary>
           <ul class="doc-list">${linksHtml}</ul>
         </details>`;
     }).join('');
@@ -8737,7 +8862,7 @@ body.single-doc .btn-listening {
 
   /**
    * 正文视图快捷键：↑↓ 切卡片并朗读、空格 播放 / 暂停当前卡片、Enter 揭示当前卡片、
-   * ← → 泛读卡片后退 / 前进几个词
+   * ← → 当前卡片朗读后退 / 前进几个词
    * @param {KeyboardEvent} event
    * @returns {void}
    */
@@ -8804,8 +8929,7 @@ body.single-doc .btn-listening {
       revealActiveCard(activeEl);
     }
 
-    // ← → 前进 / 后退只给泛读卡片（整段原文比较长）；普通卡片一句话很短，保持浏览器默认
-    if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && activeEl.classList.contains('reading-item')) {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       const speakBtnEl = activeEl.querySelector('.speak-btn');
 
       if (speakBtnEl) {
@@ -9315,6 +9439,13 @@ body.single-doc .btn-listening {
         if (action === 'jump-to-doc') jumpToDoc(actionEl.dataset.slug);
         if (action === 'jump-to-item') jumpToItem(actionEl.dataset.slug, actionEl.dataset.key);
         if (action === 'speak') toggleCardSpeak(actionEl);
+        if (action === 'speak-seek') {
+          const speakBtnEl = actionEl.parentElement.querySelector('.speak-btn');
+
+          if (speakBtnEl) {
+            seekCardSpeak(speakBtnEl, Number(actionEl.dataset.direction));
+          }
+        }
         if (action === 'prev-doc' || action === 'next-doc') selectDoc(actionEl.dataset.slug);
         if (action === 'export-favorites') exportFavorites();
         if (action === 'import-favorites') document.querySelector('[data-role="favorites-import-input"]').click();
