@@ -396,11 +396,21 @@ body {
 }
 
 /* ── 页面区分：收藏 / 测验 / 听力 / 训练各一种颜色（--view-color），用在内容区顶部标题栏、内容区左边竖条、
-   工具栏对应按钮选中时的底色；正文保持主题强调色。四种颜色都是中等饱和度，浅色 / 深色主题上都看得清 ── */
-body[data-view="favorites"] { --view-color: #d97706; }
-body[data-view="quiz"] { --view-color: #7c3aed; }
-body[data-view="listening"] { --view-color: #2563eb; }
-body[data-view="training"] { --view-color: #16a34a; }
+   工具栏对应按钮选中时的底色；正文保持主题强调色。配色是用户在本地预览里逐个挑的：收藏蓝 / 测验黄 / 听力紫 / 训练金
+   （最早训练用绿色，跟 ▶ 和侧边栏绿点撞色，换掉） ── */
+body[data-view="favorites"] { --view-color: #2563eb; }
+body[data-view="listening"] { --view-color: #7c3aed; }
+body[data-view="training"] { --view-color: #d97706; }
+
+/* 测验用黄色：底色 / 标题栏用淡黄 --view-color 低浓度混色；--view-strong 是标题栏左边条、内容区竖条、选中按钮用的明黄
+   （用户试过 #fef08a 太淡、不好看）；黄底上白字看不清，选中按钮用深褐色字 */
+body[data-view="quiz"] {
+  --view-color: #fde047;
+  --view-strong: #facc15;
+  --view-on-color: #3d2e00;
+  --view-bg-mix: 8%;
+  --view-header-mix: 16%;
+}
 
 .view-header {
   display: flex;
@@ -410,9 +420,9 @@ body[data-view="training"] { --view-color: #16a34a; }
   gap: 10px;
   margin-bottom: 20px;
   padding: 10px 12px 10px 16px;
-  background: color-mix(in srgb, var(--view-color) 14%, var(--color-surface));
+  background: color-mix(in srgb, var(--view-color) var(--view-header-mix, 14%), var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--view-color) 45%, transparent);
-  border-left: 6px solid var(--view-color);
+  border-left: 6px solid var(--view-strong, var(--view-color));
   border-radius: var(--radius);
 }
 
@@ -424,21 +434,31 @@ body[data-view="training"] { --view-color: #16a34a; }
   color: var(--color-text);
 }
 
-/* 内容区左边一道页面颜色的竖条，余光就能看出不在正文 */
+/* 内容区整块铺一层很淡的页面颜色（一直到屏幕底部）+ 左边一道竖条，余光就能看出不在正文；
+   跟 --color-bg 混色，深色主题下自动变成深一点的同色系 */
 body[data-view="favorites"] .content,
 body[data-view="quiz"] .content,
 body[data-view="listening"] .content,
 body[data-view="training"] .content {
-  box-shadow: inset 4px 0 0 var(--view-color);
+  min-height: 100vh;
+  background: color-mix(in srgb, var(--view-color) var(--view-bg-mix, 9%), var(--color-bg));
+  box-shadow: inset 4px 0 0 var(--view-strong, var(--view-color));
+}
+
+/* 侧边栏当前篇的绿点表示"正在读这一篇"：收藏 / 测验 / 听力不是在读某一篇，不显示；训练练的就是当前这篇，保留 */
+body[data-view="favorites"] .doc-link.is-active::before,
+body[data-view="quiz"] .doc-link.is-active::before,
+body[data-view="listening"] .doc-link.is-active::before {
+  display: none;
 }
 
 body[data-view="favorites"] .btn-favorites.is-active,
 body[data-view="quiz"] .btn-quiz.is-active,
 body[data-view="listening"] .btn-listening.is-active,
 body[data-view="training"] .btn-training.is-active {
-  color: #fff;
-  background: var(--view-color);
-  border-color: var(--view-color);
+  color: var(--view-on-color, #fff);
+  background: var(--view-strong, var(--view-color));
+  border-color: var(--view-strong, var(--view-color));
 }
 
 /* 「全部展开/收起」和「⇄」在收藏 / 听力 / 训练视图里不起作用，不显示（data-view 由 app.js 的 syncBodyView 写）。
@@ -1346,6 +1366,22 @@ body.single-doc .btn-listening {
 
 :root[data-theme="kraft"] .doc-item.is-read .doc-link.is-active {
   box-shadow: inset 4px 0 0 #1e3a8a;
+}
+
+/* 收藏 / 测验 / 听力 / 训练页里，侧边栏当前篇不用"正在读"的深蓝底，统一换成灰底 + 灰竖条（能看出从哪一篇进来的，
+   又不会被当成正在读）。用户试过跟着页面变色，不要，四个页面统一一种就行。
+   带 :root[data-theme] 的那组是为了盖过上面牛皮纸主题的规则 */
+body[data-view="favorites"] .doc-link.is-active,
+body[data-view="quiz"] .doc-link.is-active,
+body[data-view="listening"] .doc-link.is-active,
+body[data-view="training"] .doc-link.is-active,
+:root[data-theme] body[data-view="favorites"] .doc-item .doc-link.is-active,
+:root[data-theme] body[data-view="quiz"] .doc-item .doc-link.is-active,
+:root[data-theme] body[data-view="listening"] .doc-item .doc-link.is-active,
+:root[data-theme] body[data-view="training"] .doc-item .doc-link.is-active {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-muted) 20%, var(--color-surface));
+  box-shadow: inset 4px 0 0 color-mix(in srgb, var(--color-muted) 55%, var(--color-surface));
 }
 
 /* 标题后面的「听 选 写 译」：练完的强调色，没练完的淡灰；一种都没练完时整组不渲染 */
@@ -7161,7 +7197,6 @@ body.single-doc .btn-listening {
 
     if (state.quizPool.length === 0) {
       contentEl.innerHTML = `
-        <header class="doc-header"><h2 class="doc-title">📇 测验模式</h2></header>
         <p class="favorites-empty">没有可供测验的内容。</p>`;
       updateExpandToggleIcon();
 
@@ -7180,7 +7215,6 @@ body.single-doc .btn-listening {
     const currentBatch = Math.floor(state.quizBatchOffset / QUIZ_BATCH_SIZE) + 1;
 
     contentEl.innerHTML = `
-      <header class="doc-header"><h2 class="doc-title">📇 测验模式</h2></header>
       <div class="favorites-toolbar">
         <button type="button" class="btn" data-action="next-quiz-batch">换一批</button>
         <span class="favorites-hint">
@@ -7476,7 +7510,6 @@ body.single-doc .btn-listening {
 
     if (state.listeningPool.length === 0) {
       contentEl.innerHTML = `
-        <header class="doc-header"><h2 class="doc-title">🎧 听力测试</h2></header>
         <p class="favorites-empty">没有可供听力测试的内容。</p>`;
 
       return;
@@ -7494,7 +7527,6 @@ body.single-doc .btn-listening {
     const currentBatch = Math.floor(state.listeningBatchOffset / QUIZ_BATCH_SIZE) + 1;
 
     contentEl.innerHTML = `
-      <header class="doc-header"><h2 class="doc-title">🎧 听力测试</h2></header>
       <div class="favorites-toolbar">
         <button type="button" class="btn" data-action="next-listening-batch">换一批</button>
         <span class="favorites-hint">
