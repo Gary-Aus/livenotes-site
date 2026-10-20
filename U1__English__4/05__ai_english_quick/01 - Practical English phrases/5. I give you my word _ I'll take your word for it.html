@@ -395,6 +395,52 @@ body {
   margin-left: var(--training-tab-gap);
 }
 
+/* ── 页面区分：收藏 / 测验 / 听力 / 训练各一种颜色（--view-color），用在内容区顶部标题栏、内容区左边竖条、
+   工具栏对应按钮选中时的底色；正文保持主题强调色。四种颜色都是中等饱和度，浅色 / 深色主题上都看得清 ── */
+body[data-view="favorites"] { --view-color: #d97706; }
+body[data-view="quiz"] { --view-color: #7c3aed; }
+body[data-view="listening"] { --view-color: #2563eb; }
+body[data-view="training"] { --view-color: #16a34a; }
+
+.view-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 10px 12px 10px 16px;
+  background: color-mix(in srgb, var(--view-color) 14%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--view-color) 45%, transparent);
+  border-left: 6px solid var(--view-color);
+  border-radius: var(--radius);
+}
+
+.view-header[hidden] { display: none; }
+
+.view-header-title {
+  margin: 0;
+  font-size: 1.3em;
+  color: var(--color-text);
+}
+
+/* 内容区左边一道页面颜色的竖条，余光就能看出不在正文 */
+body[data-view="favorites"] .content,
+body[data-view="quiz"] .content,
+body[data-view="listening"] .content,
+body[data-view="training"] .content {
+  box-shadow: inset 4px 0 0 var(--view-color);
+}
+
+body[data-view="favorites"] .btn-favorites.is-active,
+body[data-view="quiz"] .btn-quiz.is-active,
+body[data-view="listening"] .btn-listening.is-active,
+body[data-view="training"] .btn-training.is-active {
+  color: #fff;
+  background: var(--view-color);
+  border-color: var(--view-color);
+}
+
 /* 「全部展开/收起」和「⇄」在收藏 / 听力 / 训练视图里不起作用，不显示（data-view 由 app.js 的 syncBodyView 写）。
    顶部工具条里只隐藏不让位（visibility），后面「收藏 / 测验 / 听力 / 训练」的位置在各个页面都不变；
    底部那排没有这个问题，直接不占位 */
@@ -2380,8 +2426,12 @@ body.single-doc .btn-listening {
     <!-- 拖拽调宽分隔条：仅宽屏出现，鼠标拖动改 --sidebar-width -->
     <div class="sidebar-resizer" data-role="sidebar-resizer" aria-hidden="true"></div>
 
-    <!-- 内容区：由 app.js 按当前 NoteDoc 渲染三段表格 -->
-    <main class="content" data-role="content"></main>
+    <!-- 内容区：由 app.js 按当前 NoteDoc 渲染三段表格。页面标题栏（收藏 / 测验 / 听力 / 训练才显示）放在
+         [data-role="content"] 外面，各视图重绘内容时不会被冲掉 -->
+    <main class="content">
+      <div class="view-header" data-role="view-header" hidden></div>
+      <div data-role="content"></div>
+    </main>
   </div>
 
   <!-- 悬浮的"回到顶部"按钮：滚动超过一定距离才出现，见 app.js 的 setupBackToTop -->
@@ -2441,6 +2491,14 @@ body.single-doc .btn-listening {
   // 键盘 ↑↓ / 空格 / Enter / ← → 操作卡片的视图，和这些视图里卡片的选择器（训练页另有自己的快捷键）
   const CARD_KEY_VIEWS = ['doc', 'favorites', 'quiz', 'listening'];
   const CARD_SELECTOR = '[data-role="content"] .item, [data-role="content"] .favorite-row';
+
+  // 非正文视图的页面名：内容区顶部标题栏、顶部标题、浏览器标签页都用这个
+  const VIEW_TITLES = {
+    favorites: '我的收藏',
+    quiz: '测验',
+    listening: '听力练习',
+    training: '句子训练',
+  };
   const SPEECH_HIGHLIGHT_NAME = 'livenotes-speech';
 
   // 朗读逐词高亮可选颜色（设置菜单里选，只存本机）；避开黄色（跟牛皮纸等偏黄主题分不开）和绿色（跟"答对"混）
@@ -2641,7 +2699,7 @@ body.single-doc .btn-listening {
   }
 
   /**
-   * 更新顶部标题文字（课程标识 + 当前章节，没有章节就只显示课程标识）和浏览器标签页
+   * 更新顶部标题文字（课程标识 + 页面名（非正文视图）+ 当前章节，没有的部分省略）和浏览器标签页
    * 标题；正文视图切换文档、进/出收藏 · 测验视图都要调用这个保持同步
    * @param {string} [chapter] - 当前章节，不传就只显示课程标识（收藏/测验视图没有
    *   "当前章节"这个概念）
@@ -2650,9 +2708,10 @@ body.single-doc .btn-listening {
   function updateAppTitle(chapter) {
 
     const courseLabel = currentCourseLabel();
-    const text = courseLabel
-      ? (chapter ? `${courseLabel} · ${chapter}` : courseLabel)
-      : (chapter || 'livenotes');
+
+    // 收藏 / 测验 / 听力 / 训练页在课程名后面加上页面名，顶部标题和浏览器标签页都能看出在哪个页面
+    const parts = [courseLabel || 'livenotes', VIEW_TITLES[state.view], chapter].filter(Boolean);
+    const text = !courseLabel && !VIEW_TITLES[state.view] && chapter ? chapter : parts.join(' · ');
 
     const titleEl = document.querySelector('.app-title');
 
@@ -5831,6 +5890,53 @@ body.single-doc .btn-listening {
   function syncBodyView() {
 
     document.body.dataset.view = state.view;
+    renderViewHeader();
+  }
+
+  /**
+   * 收藏 / 测验 / 听力 / 训练页内容区最上方的页面标题栏（页面名 + 返回课程），正文不显示。
+   * 配色按 body[data-view] 区分，见 style.css 的 --view-color
+   * @returns {void}
+   */
+  function renderViewHeader() {
+
+    const headerEl = document.querySelector('[data-role="view-header"]');
+    const title = VIEW_TITLES[state.view];
+
+
+    if (!headerEl) {
+
+      return;
+    }
+
+    headerEl.hidden = !title;
+
+    if (!title) {
+
+      return;
+    }
+
+    headerEl.innerHTML = `
+      <h1 class="view-header-title">${escapeHtml(title)}</h1>
+      <button type="button" class="btn view-header-back" data-action="back-to-doc">← 返回课程</button>`;
+  }
+
+  /**
+   * 标题栏「返回课程」：回到进来之前正在看的那一篇（各视图的切换函数再调一次就是退回正文）
+   * @returns {void}
+   */
+  function backToDoc() {
+
+    const toggles = {
+      favorites: toggleFavoritesView,
+      quiz: toggleQuizView,
+      listening: toggleListeningView,
+      training: toggleTrainingView,
+    };
+
+    if (toggles[state.view]) {
+      toggles[state.view]();
+    }
   }
 
   /**
@@ -10065,6 +10171,7 @@ body.single-doc .btn-listening {
         if (action === 'toggle-favorite-item') handleToggleFavoriteItem(actionEl);
         if (action === 'remove-favorite') removeFavorite(actionEl.dataset.kind, actionEl.dataset.id);
         if (action === 'jump-to-doc') jumpToDoc(actionEl.dataset.slug);
+        if (action === 'back-to-doc') backToDoc();
 
         // 按钮在章节标题 <summary> 里，阻止默认行为，不然点按钮会顺带展开 / 收起这一章
         if (action === 'toggle-chapter-record') {
