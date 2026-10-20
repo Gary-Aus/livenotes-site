@@ -1829,18 +1829,18 @@ body[data-view="training"] .doc-link.is-active,
    --analysis-color 在各成分的 class 上设，片段下划线、片段下方的成分名、说明列表里的片段名共用 */
 .analysis { margin-top: 8px; }
 
-/* 结构 / 造句 / 搭配 / 易错 / 语序 一排小按钮，选中的那个实心强调色 */
+/* 结构 / 造句 / 搭配 / 易错 / 语序 一排按钮，选中的那个实心强调色；放不下时自动换行 */
 .analysis-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .analysis-tab-btn {
-  min-height: 30px;
-  padding: 2px 12px;
+  min-width: 64px;
+  min-height: 38px;
+  padding: 4px 16px;
   font: inherit;
-  font-size: 0.85em;
   color: var(--color-muted);
   background: transparent;
   border: 1px solid var(--color-border);
@@ -1849,7 +1849,16 @@ body[data-view="training"] .doc-link.is-active,
   touch-action: manipulation;
 }
 
-.analysis-tab-btn.is-active {
+/* 「结构」最常用：宽约 1.5 倍，强调色边框和字，没选中时也比其它按钮显眼 */
+.analysis-tab-btn[data-tab="structure"] {
+  min-width: 96px;
+  font-weight: 700;
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.analysis-tab-btn.is-active,
+.analysis-tab-btn[data-tab="structure"].is-active {
   color: var(--color-on-accent);
   background: var(--color-accent);
   border-color: var(--color-accent);
@@ -1858,8 +1867,9 @@ body[data-view="training"] .doc-link.is-active,
 .analysis-panel {
   display: none;
   margin-top: 8px;
-  padding: 10px 12px;
-  background: color-mix(in srgb, var(--mask-bg) 40%, var(--color-surface));
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   cursor: default;
 }
@@ -1881,12 +1891,17 @@ body[data-view="training"] .doc-link.is-active,
 .analysis-seg--clause { --analysis-color: #7c3aed; }
 .analysis-seg--connector { --analysis-color: var(--color-muted); }
 
+/* 成分分段单独放进一个浅色框，跟上面的「主干」框、下面的片段说明分成三块 */
 .analysis-segments {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 10px 8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--color-muted) 6%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
 }
 
 /* 每个片段上面是原文、下面是成分名，换行时整个片段一起换 */
@@ -1916,7 +1931,7 @@ body[data-view="training"] .doc-link.is-active,
   padding: 1px 5px 2px;
   font-size: 1.12em;
   font-weight: 700;
-  background: color-mix(in srgb, var(--analysis-color) 14%, transparent);
+  background: color-mix(in srgb, var(--analysis-color) 16%, var(--color-surface));
   border-radius: 4px 4px 0 0;
 }
 
@@ -1970,29 +1985,80 @@ body[data-view="training"] .doc-link.is-active,
   color: var(--color-muted);
 }
 
-.analysis-notes,
-.analysis-points {
-  margin: 4px 0 8px;
-  padding-left: 18px;
+/* 片段说明：左列英文片段、右列中文说明，中文从同一个位置开始。左列按最长的片段定宽，最多占一半，
+   太长的片段在左列里换行（手机上改成上下两行，见下方 @media） */
+.analysis-notes {
+  display: grid;
+  grid-template-columns: fit-content(50%) 1fr;
+  gap: 4px 0;
+  margin: 4px 0 12px;
   font-size: 0.9em;
 }
 
-.analysis-notes li,
-.analysis-points li { margin: 2px 0; }
-
-.analysis-note-key {
-  margin-right: 6px;
-  font-weight: 600;
-  color: var(--analysis-color);
+/* 每一行（片段 + 说明）铺一层跟片段成分色对应的浅底，左右两格用 subgrid 跟整张表共用列宽，所以中文仍然对齐 */
+.analysis-note-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  column-gap: 14px;
+  padding: 4px 8px;
+  background: color-mix(in srgb, var(--analysis-color) 10%, var(--color-surface));
+  border-radius: 6px;
 }
 
-.analysis-note-key--subject { --analysis-color: #2563eb; }
-.analysis-note-key--predicate { --analysis-color: #dc2626; }
-.analysis-note-key--object { --analysis-color: #16a34a; }
-.analysis-note-key--complement { --analysis-color: #0891b2; }
-.analysis-note-key--modifier { --analysis-color: var(--color-muted); }
-.analysis-note-key--clause { --analysis-color: #7c3aed; }
-.analysis-note-key--connector { --analysis-color: var(--color-muted); }
+.analysis-note-key {
+  font-weight: 600;
+  color: var(--analysis-color);
+  overflow-wrap: anywhere;
+}
+
+/* 要点：暖黄色左竖条 + 浅底框，跟上面强调色的「主干」框区分开；①②③ 编号，字比片段说明大一号 */
+.analysis-points-box {
+  margin: 4px 0 10px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, #f59e0b 12%, var(--color-surface));
+  border-left: 4px solid #f59e0b;
+  border-radius: 6px;
+}
+
+.analysis-points-title {
+  margin-bottom: 4px;
+  font-weight: 700;
+  color: color-mix(in srgb, #f59e0b 65%, var(--color-text));
+}
+
+.analysis-points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.analysis-points li {
+  display: flex;
+  gap: 6px;
+  margin: 3px 0;
+  color: var(--color-text);
+}
+
+.analysis-point-num {
+  flex: 0 0 auto;
+  font-weight: 700;
+  color: color-mix(in srgb, #f59e0b 65%, var(--color-text));
+}
+
+@media (max-width: 480px) {
+  .analysis-notes { grid-template-columns: 1fr; gap: 0; }
+
+  .analysis-note-text { padding-left: 12px; }
+}
+
+.analysis-note-row--subject { --analysis-color: #2563eb; }
+.analysis-note-row--predicate { --analysis-color: #dc2626; }
+.analysis-note-row--object { --analysis-color: #16a34a; }
+.analysis-note-row--complement { --analysis-color: #0891b2; }
+.analysis-note-row--modifier { --analysis-color: var(--color-muted); }
+.analysis-note-row--clause { --analysis-color: #7c3aed; }
+.analysis-note-row--connector { --analysis-color: var(--color-muted); }
 
 /* 结构里最下面的语法标签 */
 .analysis-tags {
@@ -2874,6 +2940,9 @@ body[data-view="training"] .doc-link.is-active,
     clause: '从句',
     connector: '连接',
   };
+
+  // 句子分析「要点」的编号
+  const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥'];
 
   // 非正文视图的页面名：内容区顶部标题栏、顶部标题、浏览器标签页都用这个
   const VIEW_TITLES = {
@@ -5628,13 +5697,19 @@ body[data-view="training"] .doc-link.is-active,
       + '</span>'
     )).join('');
 
+    // 片段说明是两列网格（左片段、右说明），每条一行，行底色跟片段的成分色对应
     const notesHtml = analysis.segments
       .filter((segment) => segment.note)
       .map((segment) => (
-        `<li><span class="analysis-note-key analysis-note-key--${escapeAttr(segment.role)}">${escapeHtml(segment.text)}</span>${escapeHtml(segment.note)}</li>`
+        `<div class="analysis-note-row analysis-note-row--${escapeAttr(segment.role)}">`
+        + `<span class="analysis-note-key">${escapeHtml(segment.text)}</span>`
+        + `<span class="analysis-note-text">${escapeHtml(segment.note)}</span>`
+        + '</div>'
       )).join('');
 
-    const pointsHtml = (analysis.points || []).map((point) => `<li>${escapeHtml(point)}</li>`).join('');
+    const pointsHtml = (analysis.points || []).map((point, index) => (
+      `<li><span class="analysis-point-num">${CIRCLED_NUMBERS[index] || `${index + 1}.`}</span><span>${escapeHtml(point)}</span></li>`
+    )).join('');
     const tagsHtml = (analysis.tags || []).map((tag) => `<span class="analysis-tag">${escapeHtml(tag)}</span>`).join('');
 
     // 主干放在最上面单独一块，打开「结构」第一眼就看到
@@ -5645,8 +5720,8 @@ body[data-view="training"] .doc-link.is-active,
     return `
       ${skeletonHtml}
       <div class="analysis-segments">${segmentsHtml}</div>
-      ${notesHtml ? `<ul class="analysis-notes">${notesHtml}</ul>` : ''}
-      ${pointsHtml ? `<div class="analysis-label">要点</div><ul class="analysis-points">${pointsHtml}</ul>` : ''}
+      ${notesHtml ? `<div class="analysis-notes">${notesHtml}</div>` : ''}
+      ${pointsHtml ? `<div class="analysis-points-box"><div class="analysis-points-title">要点</div><ol class="analysis-points">${pointsHtml}</ol></div>` : ''}
       ${tagsHtml ? `<div class="analysis-tags">${tagsHtml}</div>` : ''}`;
   }
 
