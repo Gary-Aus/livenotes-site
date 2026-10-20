@@ -2050,6 +2050,16 @@ body[data-view="training"] .doc-link.is-active,
   .analysis-notes { grid-template-columns: 1fr; gap: 0; }
 
   .analysis-note-text { padding-left: 12px; }
+
+  /* 手机上五个按钮要排进一行（卡片内宽 375 屏约 315px）：「结构」收到 72px 仍比其它宽，其它按钮内边距和间距收小 */
+  .analysis-tabs { gap: 6px; }
+
+  .analysis-tab-btn {
+    min-width: 0;
+    padding: 4px 10px;
+  }
+
+  .analysis-tab-btn[data-tab="structure"] { min-width: 72px; }
 }
 
 .analysis-note-row--subject { --analysis-color: #2563eb; }
@@ -2781,6 +2791,48 @@ body[data-view="training"] .doc-link.is-active,
   .training-tabs { --training-tab-gap: 8px; }
 
   .training-player { --training-player-gap: 12px; }
+}
+
+/*
+ * 手机竖屏：顶部按钮组、词汇卡片排得更紧凑，避免零散换行
+ * - 按钮组不换行，按钮等宽铺满一行（⚙️ 原来会单独掉到第二行）；
+ *   收藏 / 听力 / 训练页的 ⇄ ➕ 仍是只隐藏不让位，各页面按钮位置不变
+ * - 词汇卡片英文面：第一行单词 + 右侧 ▶☆，第二行词性 + 音标（字小，放第二行不挤），卡片矮一截。
+ *   只调 flex 顺序，用 ::after 占满一整行当换行符；中文面没有 .cell--word，不受影响
+ */
+@media (max-width: 480px) {
+  /* 按钮组本身占满工具条剩余宽度（默认跟着内容宽）；用 grid 等分列而不是 flex，
+     flex 等分时按钮自带的内边距会算进基础宽度，⚙️ 外面那层 span 没有内边距，会比别的窄一截 */
+  .controls {
+    flex: 1 1 auto;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .controls .btn {
+    min-width: 0;
+    padding: 6px 4px;
+    white-space: nowrap;
+  }
+
+  .controls .settings-menu-wrap > .btn { width: 100%; }
+
+  .section--vocab .side-cells-row:has(> .cell--word) { row-gap: 2px; }
+
+  .section--vocab .side-cells-row > .cell--word { order: 0; }
+
+  .section--vocab .side-cells-row:has(> .cell--word) > .item-actions { order: 1; }
+
+  .section--vocab .side-cells-row:has(> .cell--word)::after {
+    content: '';
+    order: 2;
+    flex-basis: 100%;
+  }
+
+  .section--vocab .side-cells-row > .cell--pos,
+  .section--vocab .side-cells-row > .cell--ipa { order: 3; }
 }
 
 /*
