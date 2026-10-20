@@ -318,13 +318,8 @@ body {
   line-height: 1;
 }
 
-/* 「★ 收藏」入口按钮：平时浅色底，跟收藏星标的金色呼应但不抢眼；打开收藏列表视图时换成强调色 */
-.btn-favorites {
-  color: #b45f06;
-  background: rgba(245, 165, 36, 0.15);
-  border-color: rgba(245, 165, 36, 0.5);
-}
-
+/* 「收藏」入口按钮：没选中时跟测验 / 听力 / 训练一样是普通素色按钮（原来单独带浅橙底，用户觉得不统一），
+   打开收藏视图时高亮 */
 .btn-favorites.is-active {
   color: var(--color-on-accent);
   background: var(--color-accent);
@@ -1344,7 +1339,7 @@ body.single-doc .btn-listening {
 }
 
 .chapter-progress.is-done {
-  color: var(--color-surface);
+  color: var(--color-on-accent);
   font-weight: 700;
   background: var(--color-accent);
 }
@@ -1379,7 +1374,7 @@ body.single-doc .btn-listening {
 }
 
 .chapter-mark-btn--todo.is-active {
-  color: var(--color-surface);
+  color: var(--color-on-accent);
   background: var(--color-accent);
 }
 
@@ -1589,7 +1584,8 @@ body.single-doc .btn-listening {
 
 /* 键盘 ↑↓ 选中的当前卡片：只在有鼠标的设备上描边，手机点卡片不出现高亮 */
 @media (hover: hover) and (pointer: fine) {
-  .item.is-active-card {
+  .item.is-active-card,
+  .favorite-row.is-active-card {
     border-color: var(--color-accent);
     box-shadow: 0 0 0 1px var(--color-accent), var(--shadow);
   }
@@ -1681,6 +1677,9 @@ body.single-doc .btn-listening {
   justify-content: center;
   min-width: 88px;
 }
+
+/* 朗读按钮比收藏星标再长一半，最常点的按钮更好点中 */
+.item-actions .speak-btn { min-width: 132px; }
 
 .hidden-side {
   display: none;
@@ -1911,22 +1910,40 @@ body.single-doc .btn-listening {
 
 /* 类型 / 重要性档位两个筛选下拉，跟工具条分开单独一个类（之前误用 .favorites-toolbar，
    工具条改成纵向堆叠时筛选条被一起带歪，拆开避免以后互相影响） */
+/* 筛选条跟下面的收藏列表一样宽、右边对齐：课程 / 章节各占满一行，类型 / 档位 / 排序三个等宽一行
+   （窄屏见下方 @media 改成两列）。宽度不再跟着文字走，否则每个下拉右边都对不齐 */
 .favorites-filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 12px;
 }
 
-/* 收藏页筛选下拉：宽度跟内容走、最小 150px（原来固定 150px，选项文案加长成"全部类型"后数量会被截掉）；
-   等宽字体配合 app.js 的 renderAlignedOptions 补空格，让同一个下拉里各选项的 "--" 分隔符尽量对齐 */
+.favorites-filter-bar > .favorites-filter-select--wide { grid-column: 1 / -1; }
+
+/* 收藏页筛选下拉：等宽字体配合 app.js 的 renderAlignedOptions 补空格，让同一个下拉里各选项的 "--" 分隔符尽量对齐。
+   浏览器自带的下拉箭头贴着右边框、位置改不了，换成自己画的箭头，离右边 12px，文字右侧留出箭头的位置；
+   箭头用中灰色，浅色 / 深色主题都看得清 */
 .favorites-filter-select {
-  width: auto;
-  min-width: 150px;
-  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  padding-right: 36px;
   text-align: left;
   font-family: ui-monospace, "Cascadia Code", Consolas, "Courier New", monospace;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238a8a8a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+  text-overflow: ellipsis;
+}
+
+/* 手机上三个一行太挤：类型 / 档位一行两个，排序单独一行占满 */
+@media (max-width: 560px) {
+  .favorites-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .favorites-filter-bar > [data-role="favorites-sort"] { grid-column: 1 / -1; }
 }
 
 .favorites-hint {
@@ -1955,7 +1972,7 @@ body.single-doc .btn-listening {
 /* 翻页后 scrollIntoView 到这个区块顶部，留出窄屏吸顶标题栏的高度，避免搜索框被挡住 */
 .favorites-items-section { scroll-margin-top: 72px; }
 
-/* 课程 / 章节名字长；max-width（见上）保证窄屏不撑出横向滚动，选中项过长时由浏览器截断。
+/* 课程 / 章节名字长；宽度固定占满一行（见上），窄屏不撑出横向滚动，选中项过长时由浏览器截断。
    这两个不做 "--" 对齐（见 app.js 的 renderPlainOptions），不需要等宽字体，用正文字体更紧凑 */
 .favorites-filter-select--wide {
   font-family: inherit;
@@ -2124,7 +2141,7 @@ body.single-doc .btn-listening {
 }
 
 .favorites-tab.is-active {
-  color: var(--color-surface);
+  color: var(--color-on-accent);
   background: var(--color-accent);
   border-color: var(--color-accent);
 }
@@ -2262,6 +2279,9 @@ body.single-doc .btn-listening {
     padding: 2px 8px;
     font-size: 14px;
   }
+
+  /* 朗读按钮比收藏星标长一半（64 → 96px）。用户电脑浏览器窗口也不到 900px，电脑上看到的也是这条 */
+  .item-actions .speak-btn { min-width: 96px; }
 
   .item-actions .seek-btn {
     min-width: 40px;
@@ -2417,6 +2437,10 @@ body.single-doc .btn-listening {
   const TRAINING_POS_MAX_ENTRIES = 300; // 「每篇练到第几句」最多记多少篇，超出删最早记的，避免 localStorage 越攒越大
   const SPEECH_SEEK_WORDS = 3; // ← → 一次往回 / 往前跳几个词
   const SPEECH_RESTART_TAIL_WORDS = 2; // 卡片朗读暂停在最后这么几个词时，下次从头念
+
+  // 键盘 ↑↓ / 空格 / Enter / ← → 操作卡片的视图，和这些视图里卡片的选择器（训练页另有自己的快捷键）
+  const CARD_KEY_VIEWS = ['doc', 'favorites', 'quiz', 'listening'];
+  const CARD_SELECTOR = '[data-role="content"] .item, [data-role="content"] .favorite-row';
   const SPEECH_HIGHLIGHT_NAME = 'livenotes-speech';
 
   // 朗读逐词高亮可选颜色（设置菜单里选，只存本机）；避开黄色（跟牛皮纸等偏黄主题分不开）和绿色（跟"答对"混）
@@ -8876,7 +8900,7 @@ body.single-doc .btn-listening {
 
     const enterLabels = { listen: '全部显示', dictation: '检查', pick: '显示答案', backtrans: '对比（输入框里用 Ctrl + Enter）' };
     const shortcutsHtml = `
-      <p class="training-shortcuts">快捷键：空格 播放/暂停 · R 从头重听 · ← → 后退/前进 ${SPEECH_SEEK_WORDS} 个词 · Ctrl+← → 上一句/下一句 · Enter ${enterLabels[settings.tab]}${settings.tab === 'dictation' ? ' · 填空时按空格跳到下一个空' : ''} · 点任意单词单独发音</p>`;
+      <p class="training-shortcuts">快捷键：空格 播放/暂停 · R 从头重听 · ← → 后退/前进 ${SPEECH_SEEK_WORDS} 个词 · ↑↓ 或 Ctrl+← → 上一句/下一句 · Enter ${enterLabels[settings.tab]}${settings.tab === 'dictation' ? ' · 填空时按空格跳到下一个空' : ''} · 点任意单词单独发音</p>`;
 
     // 训练页内容短，一屏就能看完，不放底部那排「收藏 / 测验……」按钮（用户要求去掉），视图切换用顶部工具条
     // 设置行和进度条放在播放控制下面（用户要求）：上方只留标签页，句子卡片更靠上、更突出
@@ -8976,7 +9000,18 @@ body.single-doc .btn-listening {
   }
 
   /**
-   * 句子训练快捷键；输入框里只处理 Enter（检查 / 下一句）和空格（听写跳到下一个空）
+   * 是否单独按了 ↑ 或 ↓（没按 Ctrl / Alt / Shift / Cmd）
+   * @param {KeyboardEvent} event
+   * @returns {boolean}
+   */
+  function isPlainVerticalArrow(event) {
+
+    return (event.key === 'ArrowUp' || event.key === 'ArrowDown')
+      && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
+  }
+
+  /**
+   * 句子训练快捷键；输入框里只处理 Enter（检查 / 下一句）、空格（听写跳到下一个空）、↑↓ / Ctrl+← →（换句）
    * @param {KeyboardEvent} event
    * @returns {void}
    */
@@ -9006,6 +9041,12 @@ body.single-doc .btn-listening {
       if (targetEl.dataset.role === 'training-blank' && isCtrlArrow) {
         event.preventDefault();
         goToTrainingSentence(state.training.index + (event.key === 'ArrowRight' ? 1 : -1));
+      }
+
+      // 填空框是单行的，↑↓ 在里面没用处，也接管来换句（跟其它页面"↑↓ 换一条"一致）；回译的多行文本框不接管
+      if (targetEl.dataset.role === 'training-blank' && isPlainVerticalArrow(event)) {
+        event.preventDefault();
+        goToTrainingSentence(state.training.index + (event.key === 'ArrowDown' ? 1 : -1));
       }
 
       if (targetEl.dataset.role === 'training-blank' && event.key === 'Enter') {
@@ -9051,6 +9092,12 @@ body.single-doc .btn-listening {
     if (event.ctrlKey || event.metaKey || event.altKey) {
 
       return;
+    }
+
+    // ↑↓ 上一句 / 下一句，跟正文、收藏、测验、听力里"↑↓ 换一条"一致
+    if (isPlainVerticalArrow(event)) {
+      event.preventDefault();
+      goToTrainingSentence(state.training.index + (event.key === 'ArrowDown' ? 1 : -1));
     }
 
     if (event.key === ' ') {
@@ -9276,12 +9323,32 @@ body.single-doc .btn-listening {
   }
 
   /**
-   * 正文里所有卡片（普通卡片 + 泛读卡片），按页面顺序
+   * 内容区里所有能用键盘 ↑↓ 切换的卡片，按页面顺序：正文（普通卡片 + 泛读卡片）、测验、听力的 .item，
+   * 收藏页的词条
    * @returns {HTMLElement[]}
    */
   function getContentCards() {
 
-    return [...document.querySelectorAll('[data-role="content"] .item')];
+    // 收藏页的 .favorite-row 只算能朗读的词条，收藏的章节 / 整篇只是链接，跳过
+    return [...document.querySelectorAll(CARD_SELECTOR)]
+      .filter((el) => el.classList.contains('item') || el.querySelector('.speak-btn'));
+  }
+
+  /**
+   * 某个元素所在的、能用键盘操作的卡片（规则同 getContentCards），不在卡片里返回 null
+   * @param {HTMLElement} el
+   * @returns {HTMLElement|null}
+   */
+  function findOwnerCard(el) {
+
+    const cardEl = el.closest && el.closest(CARD_SELECTOR);
+
+    if (!cardEl) {
+
+      return null;
+    }
+
+    return cardEl.classList.contains('item') || cardEl.querySelector('.speak-btn') ? cardEl : null;
   }
 
   /**
@@ -9292,9 +9359,13 @@ body.single-doc .btn-listening {
    */
   function setActiveCard(itemEl, options = {}) {
 
-    document.querySelectorAll('.item.is-active-card').forEach((el) => el.classList.remove('is-active-card'));
+    document.querySelectorAll('.is-active-card').forEach((el) => el.classList.remove('is-active-card'));
     itemEl.classList.add('is-active-card');
-    state.activeCard = { slug: currentSlug(), key: itemEl.dataset.key };
+
+    // 只有正文需要重绘后补回高亮（restoreActiveCard）；收藏 / 测验 / 听力的卡片没有稳定的 key，不记
+    if (state.view === 'doc') {
+      state.activeCard = { slug: currentSlug(), key: itemEl.dataset.key };
+    }
 
     if (options.shouldScroll) {
       itemEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -9326,7 +9397,7 @@ body.single-doc .btn-listening {
    */
   function getActiveCardEl() {
 
-    return document.querySelector('[data-role="content"] .item.is-active-card');
+    return getContentCards().find((el) => el.classList.contains('is-active-card')) || null;
   }
 
   /**
@@ -9380,11 +9451,17 @@ body.single-doc .btn-listening {
   }
 
   /**
-   * Enter 揭示当前卡片：普通卡片翻面（再按收起）；泛读卡片按 原文 → 讲解 顺序展开，全部展开后再按收起
+   * Enter 揭示当前卡片：普通卡片 / 测验翻面、听力查看原文（再按收起）；泛读卡片按 原文 → 讲解 顺序展开，
+   * 全部展开后再按收起；收藏页的词条两面本来都显示，不做事
    * @param {HTMLElement} itemEl
    * @returns {void}
    */
   function revealActiveCard(itemEl) {
+
+    if (itemEl.classList.contains('favorite-row')) {
+
+      return;
+    }
 
     if (!itemEl.classList.contains('reading-item')) {
       toggleItem(itemEl);
@@ -9412,14 +9489,14 @@ body.single-doc .btn-listening {
   }
 
   /**
-   * 正文视图快捷键：↑↓ 切卡片并朗读、空格 播放 / 暂停当前卡片、Enter 揭示当前卡片、
+   * 正文 / 收藏 / 测验 / 听力视图快捷键：↑↓ 切卡片并朗读、空格 播放 / 暂停当前卡片、Enter 揭示当前卡片、
    * ← → 当前卡片朗读后退 / 前进几个词
    * @param {KeyboardEvent} event
    * @returns {void}
    */
   function handleDocKeydown(event) {
 
-    if (state.view !== 'doc' || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) {
+    if (!CARD_KEY_VIEWS.includes(state.view) || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) {
 
       return;
     }
@@ -9448,7 +9525,7 @@ body.single-doc .btn-listening {
     // 鼠标点过的按钮会留着焦点：正文卡片里的按钮（▶、查看原文……）上按空格 / Enter 还是操作当前卡片，
     // 不然点完 ▶ 再按 Enter 会变成暂停朗读；工具栏、侧边栏的按钮保持浏览器默认（点这个按钮）
     if (targetEl.matches && targetEl.matches('button')) {
-      const ownerCardEl = targetEl.closest('[data-role="content"] .item');
+      const ownerCardEl = findOwnerCard(targetEl);
 
       if (!ownerCardEl) {
 
@@ -9959,8 +10036,8 @@ body.single-doc .btn-listening {
         return;
       }
 
-      // 正文里点到哪张卡片（包括卡片上的按钮），哪张就成为键盘 ↑↓ / 空格 / Enter 的当前卡片
-      const clickedCardEl = state.view === 'doc' && event.target.closest('[data-role="content"] .item');
+      // 正文 / 收藏 / 测验 / 听力里点到哪张卡片（包括卡片上的按钮），哪张就成为键盘 ↑↓ / 空格 / Enter 的当前卡片
+      const clickedCardEl = CARD_KEY_VIEWS.includes(state.view) && findOwnerCard(event.target);
 
       if (clickedCardEl) {
         setActiveCard(clickedCardEl);
