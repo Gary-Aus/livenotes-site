@@ -1890,12 +1890,24 @@ body.single-doc .btn-listening {
   margin-bottom: 20px;
 }
 
-.favorites-toolbar-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+/* 导出 / 导入、同步设置 / 立即同步、收藏 / 待看 三行都是两列等宽，左右列上下对齐；
+   最宽 360px，电脑上不会拉得过宽，手机 390px 屏幕也正好放两列，不用另写手机规则 */
+.favorites-toolbar-group,
+.favorites-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  max-width: 360px;
 }
+
+.favorites-toolbar-group > .btn,
+.favorites-tabs > .btn {
+  width: 100%;
+  white-space: nowrap;
+}
+
+/* 同步状态文字单独占一行，不跟按钮抢宽度 */
+.favorites-toolbar-group > .sync-status { grid-column: 1 / -1; }
 
 /* 类型 / 重要性档位两个筛选下拉，跟工具条分开单独一个类（之前误用 .favorites-toolbar，
    工具条改成纵向堆叠时筛选条被一起带歪，拆开避免以后互相影响） */
@@ -2103,11 +2115,12 @@ body.single-doc .btn-listening {
   font-size: 0.85em;
 }
 
-/* 收藏页「收藏 / 待看」标签 */
+/* 收藏页「收藏 / 待看」标签：布局跟上面工具条一样两列等宽（见 .favorites-toolbar-group），
+   上方多留一段间隔、加一条分隔线，跟导出 / 同步那几个按钮分开，不像同一组 */
 .favorites-tabs {
-  display: flex;
-  gap: 8px;
   margin-bottom: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
 }
 
 .favorites-tab.is-active {
