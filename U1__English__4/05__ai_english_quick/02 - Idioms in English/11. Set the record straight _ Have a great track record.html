@@ -19,7 +19,7 @@
 :root {
   --breakpoint: 900px;
   --hit-size: 44px;
-  --sidebar-width: 288px;
+  --sidebar-width: 390px; /* 够放下一行级别分组标题（"Pre-intermediate 第 14–38 章（共 25） 0/125"） */
   --sidebar-min-width: 220px;
   --sidebar-max-width: 480px;
   --topbar-h: 56px;
@@ -1277,7 +1277,7 @@ body.single-doc .btn-listening {
 .chapter-group { border-bottom: 1px solid var(--color-border); }
 
 .chapter-group-title {
-  padding: 10px 6px;
+  padding: 8px 6px;
   font-size: 1.05em;
   font-weight: 700;
   background: color-mix(in srgb, var(--color-accent) 8%, transparent);
@@ -1285,15 +1285,18 @@ body.single-doc .btn-listening {
   cursor: pointer;
 }
 
+/* 章节范围整块不断开：目录太窄（手机）放不下一行时整块换到下一行 */
 .chapter-group-count {
-  margin-left: 8px;
-  font-size: 0.78em;
+  display: inline-block;
+  white-space: nowrap;
+  margin-left: 6px;
+  font-size: 0.74em;
   font-weight: 400;
   color: var(--color-muted);
 }
 
 .chapter-group-progress {
-  margin-left: 8px;
+  margin-left: 6px;
   padding: 1px 7px;
   font-size: 0.75em;
   font-weight: 400;
@@ -1315,6 +1318,16 @@ body.single-doc .btn-listening {
 }
 
 .chapter-group-body { padding-left: 10px; }
+
+/* 手风琴目录（有级别分组的课程，见 app.js 的 updateLevelGroupLayout）：级别标题一直看得见，
+   打开的那一组章节区由 JS 写 max-height 占满剩余高度，只在章节区里滚动；窗口太矮时 JS 去掉 .is-accordion，
+   退回整个目录一起滚动 */
+.sidebar-scroll.is-accordion { overflow-y: hidden; }
+
+.sidebar-scroll.is-accordion .chapter-group[open] > .chapter-group-body {
+  overflow-y: auto;
+  overscroll-behavior: contain; /* 章节区滚到头不带着正文一起滚 */
+}
 
 .chapter-group-body > .chapter:last-child { border-bottom: 0; }
 
@@ -2719,7 +2732,7 @@ body[data-view="training"] .doc-link.is-active,
 /* ── 窄屏：侧边栏转抽屉 ───────────────────── */
 @media (max-width: 900px) {
   .sidebar {
-    width: min(84vw, 320px);
+    width: min(88vw, 390px);
     z-index: 70;
     transform: translateX(-100%);
     box-shadow: var(--shadow);
@@ -3006,6 +3019,7 @@ body[data-view="training"] .doc-link.is-active,
   // 键盘 ↑↓ / 空格 / Enter / ← → 操作卡片的视图，和这些视图里卡片的选择器（训练页另有自己的快捷键）
   const CARD_KEY_VIEWS = ['doc', 'favorites', 'quiz', 'listening'];
   const CHAPTER_GROUP_MIN_CHAPTERS = 20; // 章节超过这么多、又认得出级别（Beginner / Intermediate…）时，侧边栏按级别多分一层
+  const LEVEL_GROUP_MIN_BODY_HEIGHT = 160; // 手风琴目录里打开的分组至少留这么高给章节列表，不够（窗口太矮）就退回整个目录一起滚动
   const CARD_SELECTOR = '[data-role="content"] .item, [data-role="content"] .favorite-row';
 
   // 句子成分分析的成分类型 → 卡片上显示的中文名（类型列表跟 src/analysis.js 的 ANALYSIS_ROLES 一致）
@@ -4419,20 +4433,8 @@ body[data-view="training"] .doc-link.is-active,
       chapterEl.open = true;
     }
 
-    const levelGroupEl = chapterEl && chapterEl.closest('.chapter-group');
-
-    if (levelGroupEl) {
-      levelGroupEl.open = true;
-    }
-
+    // selectDoc 里的 highlightActiveLink 会展开所在的级别分组并把这一篇滚进可见区域
     selectDoc(targetFile.slug);
-
-    const linkEl = document.querySelector(`.doc-link[data-slug="${CSS.escape(targetFile.slug)}"]`);
-
-    if (linkEl) {
-      linkEl.scrollIntoView({ block: 'nearest' });
-    }
-
     window.scrollTo(0, 0);
   }
 
@@ -6292,6 +6294,9 @@ body[data-view="training"] .doc-link.is-active,
 
     state.isDoneChaptersOpen = !state.isDoneChaptersOpen;
     updateReadProgressUI();
+
+    // 列表展开 / 收起改变了顶部高度，手风琴目录要重新分配剩余高度
+    updateLevelGroupLayout();
   }
 
   /**
@@ -6642,6 +6647,41 @@ body[data-view="training"] .doc-link.is-active,
   }
 
   /**
+   * 章节名开头的编号："14 - Pre-intermediate Unit 1 - …" → 14（"02" 去掉前导零 → 2）
+   * @param {string} chapter
+   * @returns {number|null} 不以数字编号开头返回 null
+   */
+  function getChapterNumber(chapter) {
+
+    const match = chapter.match(/^(\d+)\s*-/);
+
+    return match ? Number(match[1]) : null;
+  }
+
+  /**
+   * 级别分组标题后面的章节范围："第 14–38 章（共 25）"；只有一章写"第 14 章（共 1）"；
+   * 章节名没有数字编号时退回"25 章"
+   * @param {{ chapter: string }[]} tree
+   * @param {number[]} chapterIndexes - 这一组的章节在 tree 里的下标（连续、按顺序）
+   * @returns {string}
+   */
+  function formatChapterRange(tree, chapterIndexes) {
+
+    const firstNumber = getChapterNumber(tree[chapterIndexes[0]].chapter);
+    const lastNumber = getChapterNumber(tree[chapterIndexes[chapterIndexes.length - 1]].chapter);
+
+
+    if (firstNumber === null || lastNumber === null) {
+
+      return `${chapterIndexes.length} 章`;
+    }
+
+    const range = firstNumber === lastNumber ? `${firstNumber}` : `${firstNumber}–${lastNumber}`;
+
+    return `第 ${range} 章（共 ${chapterIndexes.length}）`;
+  }
+
+  /**
    * 把章节树按级别分成连续的几段（Beginner / Intermediate / …），侧边栏多一层可折叠的分组。
    * 只在章节很多（超过 CHAPTER_GROUP_MIN_CHAPTERS）、并且认得出至少两个级别时分组，其它课程保持一层；
    * 没有级别的章节（如 Introduction）单独放，不进分组
@@ -6728,7 +6768,7 @@ body[data-view="training"] .doc-link.is-active,
 
         return `
           <details class="chapter-group" data-level-index="${levelIndex}">
-            <summary class="chapter-group-title">${escapeHtml(levelGroup.level)}<span class="chapter-group-count">${levelGroup.chapterIndexes.length} 章</span><span class="chapter-group-progress"></span></summary>
+            <summary class="chapter-group-title">${escapeHtml(levelGroup.level)}<span class="chapter-group-count">${escapeHtml(formatChapterRange(tree, levelGroup.chapterIndexes))}</span><span class="chapter-group-progress"></span></summary>
             <div class="chapter-group-body">${innerHtml}</div>
           </details>`;
       }).join('')
@@ -6751,8 +6791,153 @@ body[data-view="training"] .doc-link.is-active,
         <div class="done-chapters" data-role="done-chapters"${state.isDoneChaptersOpen ? '' : ' hidden'}></div>
       </div>`;
 
-    sidebarEl.innerHTML = `<div class="sidebar-scroll">${courseProgressHtml}${groupsHtml}</div>${homeLinkHtml}`;
+    // 有级别分组的课程用手风琴目录（见 updateLevelGroupLayout）
+    const scrollClass = levelGroups ? 'sidebar-scroll has-level-groups' : 'sidebar-scroll';
+
+    sidebarEl.innerHTML = `<div class="${scrollClass}">${courseProgressHtml}${groupsHtml}</div>${homeLinkHtml}`;
     updateReadProgressUI();
+  }
+
+  /**
+   * 手风琴目录的高度分配：级别分组标题一直显示，打开的那一组的章节区占满剩余高度、只在章节区里滚动。
+   * 剩余高度不到 LEVEL_GROUP_MIN_BODY_HEIGHT（窗口太矮）时退回原来整个目录一起滚动。
+   * <details> 当弹性布局容器各浏览器支持不一，所以用 JS 量出剩余高度写成章节区的 max-height
+   * @returns {void}
+   */
+  function updateLevelGroupLayout() {
+
+    const scrollEl = document.querySelector('.sidebar-scroll.has-level-groups');
+
+    if (!scrollEl) {
+
+      return;
+    }
+
+    const openBodyEl = scrollEl.querySelector('.chapter-group[open] > .chapter-group-body');
+    const savedBodyScrollTop = openBodyEl ? openBodyEl.scrollTop : 0;
+
+
+    // 先清掉上次的限高
+    scrollEl.classList.remove('is-accordion');
+    scrollEl.querySelectorAll('.chapter-group-body').forEach((bodyEl) => {
+      bodyEl.style.maxHeight = '';
+    });
+
+    if (!openBodyEl || scrollEl.clientHeight === 0) {
+
+      return;
+    }
+
+    // 章节区先压成 0 高，量出标题、进度条等其它部分一共占多高（加上 scrollTop 抵消整个目录已经滚动的距离）
+    scrollEl.classList.add('is-accordion');
+    openBodyEl.style.maxHeight = '0px';
+
+    const scrollRect = scrollEl.getBoundingClientRect();
+    const contentBottom = scrollEl.lastElementChild.getBoundingClientRect().bottom;
+    const othersHeight = contentBottom - scrollRect.top + scrollEl.scrollTop;
+    const remainingHeight = Math.floor(scrollEl.clientHeight - othersHeight) - 1;
+
+    if (remainingHeight < LEVEL_GROUP_MIN_BODY_HEIGHT) {
+      scrollEl.classList.remove('is-accordion');
+      openBodyEl.style.maxHeight = '';
+
+      return;
+    }
+
+    openBodyEl.style.maxHeight = `${remainingHeight}px`;
+
+    // 压成 0 高时章节区的滚动位置被清零了，恢复回去
+    openBodyEl.scrollTop = savedBodyScrollTop;
+  }
+
+  /**
+   * 手风琴：打开一个级别分组时，收起其它级别分组，以及不属于任何分组的章节（如 Introduction），
+   * 把高度都让给这一组的章节区
+   * @param {HTMLElement} keepGroupEl - 要保留打开的级别分组
+   * @returns {void}
+   */
+  function collapseOtherSidebarSections(keepGroupEl) {
+
+    document.querySelectorAll('.sidebar-scroll > .chapter-group[open], .sidebar-scroll > .chapter[open]').forEach((el) => {
+
+      if (el !== keepGroupEl) {
+        el.open = false;
+      }
+    });
+  }
+
+  /**
+   * 侧边栏里的 <details> 展开 / 收起：级别分组同一时间只开一个（手风琴），然后重新分配高度；
+   * 窗口大小变了也重新分配
+   * @returns {void}
+   */
+  function setupSidebarAccordion() {
+
+    const sidebarEl = document.querySelector('[data-role="sidebar"]');
+
+    if (!sidebarEl) {
+
+      return;
+    }
+
+    // toggle 事件不冒泡，在捕获阶段统一监听侧边栏里所有 <details>
+    sidebarEl.addEventListener('toggle', (event) => {
+
+      const detailsEl = event.target;
+
+      if (detailsEl.matches('.chapter-group') && detailsEl.open) {
+        collapseOtherSidebarSections(detailsEl);
+      }
+
+      // 打开的分组里面展开 / 收起章节，只是章节区内部变长变短，不影响高度分配
+      if (detailsEl.closest('.chapter-group-body')) {
+
+        return;
+      }
+
+      updateLevelGroupLayout();
+    }, true);
+
+    window.addEventListener('resize', updateLevelGroupLayout);
+  }
+
+  /**
+   * 目录定位到当前篇：展开它所在的级别分组（其它分组收起）和章节，不在可见区域里就滚到中间。
+   * 打开目录、切换文章时调用；在收藏 / 测验等视图里打开目录，定位到最后看的那一篇
+   * @returns {void}
+   */
+  function revealCurrentDocInSidebar() {
+
+    const slug = state.currentSlug;
+    const linkEl = slug ? document.querySelector(`.doc-link[data-slug="${CSS.escape(slug)}"]`) : null;
+
+
+    if (!linkEl) {
+
+      return;
+    }
+
+    const levelGroupEl = linkEl.closest('.chapter-group');
+
+    if (levelGroupEl) {
+      collapseOtherSidebarSections(levelGroupEl);
+      levelGroupEl.open = true;
+    }
+
+    linkEl.closest('.chapter').open = true;
+    updateLevelGroupLayout();
+
+    // 手风琴模式滚章节区，否则滚整个目录
+    const containerEl = linkEl.closest('.sidebar-scroll.is-accordion')
+      ? linkEl.closest('.chapter-group-body')
+      : linkEl.closest('.sidebar-scroll');
+    const containerRect = containerEl.getBoundingClientRect();
+    const linkRect = linkEl.getBoundingClientRect();
+    const isVisible = linkRect.top >= containerRect.top && linkRect.bottom <= containerRect.bottom;
+
+    if (!isVisible) {
+      containerEl.scrollTop += linkRect.top - containerRect.top - (containerEl.clientHeight - linkRect.height) / 2;
+    }
   }
 
   /**
@@ -6766,14 +6951,8 @@ body[data-view="training"] .doc-link.is-active,
       el.classList.toggle('is-active', el.dataset.slug === slug);
     });
 
-    // 有级别分组时，当前篇所在的分组和章节要展开，不然分组默认收起，看不到正在读的是哪一篇
-    const activeEl = document.querySelector('.doc-link.is-active');
-    const levelGroupEl = activeEl && activeEl.closest('.chapter-group');
-
-    if (levelGroupEl) {
-      levelGroupEl.open = true;
-      activeEl.closest('.chapter').open = true;
-    }
+    // 当前篇所在的分组和章节要展开、滚进可见区域，不然分组默认收起，看不到正在读的是哪一篇
+    revealCurrentDocInSidebar();
   }
 
   /**
@@ -10852,7 +11031,7 @@ body[data-view="training"] .doc-link.is-active,
    */
   function loadSidebarWidth() {
 
-    const defaultWidth = readCssNumberVar('--sidebar-width', 288);
+    const defaultWidth = readCssNumberVar('--sidebar-width', 390);
 
     try {
       const raw = localStorage.getItem(STORAGE_SIDEBAR_WIDTH_KEY);
@@ -10897,14 +11076,23 @@ body[data-view="training"] .doc-link.is-active,
 
     const sidebarEl = document.querySelector('.sidebar');
 
+    // 每次打开目录都定位到当前篇
     if (isNarrowViewport()) {
-      sidebarEl.classList.toggle('is-open');
+      const isOpen = sidebarEl.classList.toggle('is-open');
+
+      if (isOpen) {
+        revealCurrentDocInSidebar();
+      }
 
       return;
     }
 
     const collapsed = sidebarEl.classList.toggle('is-collapsed');
     saveSidebarCollapsed(collapsed);
+
+    if (!collapsed) {
+      revealCurrentDocInSidebar();
+    }
   }
 
   /**
@@ -10943,7 +11131,7 @@ body[data-view="training"] .doc-link.is-active,
         resizerEl.classList.remove('is-dragging');
         document.body.classList.remove('is-resizing-sidebar');
 
-        saveSidebarWidth(readCssNumberVar('--sidebar-width', 288));
+        saveSidebarWidth(readCssNumberVar('--sidebar-width', 390));
       };
 
       document.addEventListener('mousemove', onMouseMove);
@@ -11243,6 +11431,7 @@ body[data-view="training"] .doc-link.is-active,
     setupSyncConfigImport();
     setupFavoritesSync();
     setupSidebarResize();
+    setupSidebarAccordion();
     setupAutoHideTopbar();
     setupBackToTop();
     setupVoiceSelect();
