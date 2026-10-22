@@ -403,6 +403,8 @@ body {
 body[data-view="favorites"] { --view-color: #2563eb; }
 body[data-view="listening"] { --view-color: #7c3aed; }
 body[data-view="training"] { --view-color: #d97706; }
+/* 目录总览跟「精简」等选中按钮一样用主题强调色（用户要求从青绿改成橙色系，各主题下跟着强调色走） */
+body[data-view="catalog"] { --view-color: var(--color-accent); }
 
 /* 测验用黄色：底色 / 标题栏用淡黄 --view-color 低浓度混色；--view-strong 是标题栏左边条、内容区竖条、选中按钮用的明黄
    （用户试过 #fef08a 太淡、不好看）；黄底上白字看不清，选中按钮用深褐色字 */
@@ -450,7 +452,8 @@ body[data-view="training"] .content {
 /* 侧边栏当前篇的绿点表示"正在读这一篇"：收藏 / 测验 / 听力不是在读某一篇，不显示；训练练的就是当前这篇，保留 */
 body[data-view="favorites"] .doc-link.is-active::before,
 body[data-view="quiz"] .doc-link.is-active::before,
-body[data-view="listening"] .doc-link.is-active::before {
+body[data-view="listening"] .doc-link.is-active::before,
+body[data-view="catalog"] .doc-link.is-active::before {
   display: none;
 }
 
@@ -471,7 +474,9 @@ body[data-view="listening"] .btn-expand-toggle,
 body[data-view="training"] .btn-expand-toggle,
 body[data-view="favorites"] .btn-mode,
 body[data-view="listening"] .btn-mode,
-body[data-view="training"] .btn-mode {
+body[data-view="training"] .btn-mode,
+body[data-view="catalog"] .btn-expand-toggle,
+body[data-view="catalog"] .btn-mode {
   display: none;
 }
 
@@ -480,7 +485,9 @@ body[data-view="listening"] .controls .btn-expand-toggle,
 body[data-view="training"] .controls .btn-expand-toggle,
 body[data-view="favorites"] .controls .btn-mode,
 body[data-view="listening"] .controls .btn-mode,
-body[data-view="training"] .controls .btn-mode {
+body[data-view="training"] .controls .btn-mode,
+body[data-view="catalog"] .controls .btn-expand-toggle,
+body[data-view="catalog"] .controls .btn-mode {
   display: inline-block;
   visibility: hidden;
 }
@@ -1439,7 +1446,9 @@ body[data-view="training"] .doc-link.is-active,
 :root[data-theme] body[data-view="favorites"] .doc-item .doc-link.is-active,
 :root[data-theme] body[data-view="quiz"] .doc-item .doc-link.is-active,
 :root[data-theme] body[data-view="listening"] .doc-item .doc-link.is-active,
-:root[data-theme] body[data-view="training"] .doc-item .doc-link.is-active {
+body[data-view="catalog"] .doc-link.is-active,
+:root[data-theme] body[data-view="training"] .doc-item .doc-link.is-active,
+:root[data-theme] body[data-view="catalog"] .doc-item .doc-link.is-active {
   color: var(--color-text);
   background: color-mix(in srgb, var(--color-muted) 20%, var(--color-surface));
   box-shadow: inset 4px 0 0 color-mix(in srgb, var(--color-muted) 55%, var(--color-surface));
@@ -1539,6 +1548,453 @@ body[data-view="training"] .doc-link.is-active,
 }
 
 .course-progress:empty { display: none; }
+
+/* 侧边栏顶部「目录总览」入口：整行宽、比进度那行醒目一点 */
+.catalog-open-btn {
+  display: block;
+  width: calc(100% - 12px);
+  margin: 8px 6px 2px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: left;
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.catalog-open-btn:hover { background: color-mix(in srgb, var(--color-accent) 22%, var(--color-surface)); }
+
+.catalog-open-btn.is-active {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+
+/* ── 目录总览：上方一个工具面板（搜索 + 详细精简 / 级别 / 类别，三组用细线隔开），下面按级别分段的卡片墙 ── */
+.catalog-toolbar {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+/* 搜索框占满剩余宽度，「详细 / 精简」切换贴右 */
+.catalog-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 组名（级别 / 类别）灰色小字在左，按钮按内容宽度排、满一行换行 */
+.catalog-tool-group {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.catalog-tool-label {
+  flex: none;
+  color: var(--color-muted);
+  font-size: 0.8em;
+}
+
+.catalog-tool-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  min-width: 0;
+}
+
+.catalog-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 0.85em;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.catalog-tool-btn:hover { border-color: var(--color-muted); }
+
+/* 鼠标点过不留黑色焦点框，键盘 Tab 过来时才显示 */
+.catalog-tool-btn:focus { outline: none; }
+
+.catalog-tool-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+
+.catalog-tool-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--cat-color);
+  border-radius: 50%;
+}
+
+/* 级别用小方块，跟类别的圆点区分开 */
+.catalog-tool-dot.is-level {
+  background: var(--level-color);
+  border-radius: 2px;
+}
+
+.catalog-density {
+  display: flex;
+  flex: none;
+}
+
+.catalog-density-btn {
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 0.85em;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.catalog-density-btn:first-child { border-radius: 8px 0 0 8px; }
+
+.catalog-density-btn:last-child {
+  margin-left: -1px;
+  border-radius: 0 8px 8px 0;
+}
+
+.catalog-density-btn.is-active {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.catalog-search {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 0.9em;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.catalog-search:focus {
+  outline: 2px solid color-mix(in srgb, var(--view-color) 60%, transparent);
+  outline-offset: 0;
+}
+
+.catalog-summary {
+  margin: 0 0 12px;
+  color: var(--color-muted);
+  font-size: 0.9em;
+}
+
+/* 每个级别一个独立面板，跟上方工具面板同一套：浅色底 + 普通灰边框（用户试过级别底色、级别色边框，都觉得乱），
+   级别只靠标题前的色块区分；scroll-margin-top 让级别跳转滚过来时别被吸顶的工具条盖住标题 */
+.catalog-level {
+  margin-bottom: 16px;
+  padding: 10px 12px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  scroll-margin-top: calc(var(--topbar-h) + 12px);
+}
+
+.catalog-level-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0 0 10px;
+  font-size: 1.1em;
+}
+
+.catalog-level-meta {
+  color: var(--color-muted);
+  font-size: 0.8em;
+  font-weight: 400;
+}
+
+/* 卡片最小 200px，窗口约 1100px 时一行 4～5 张，手机一行 1 张；
+   align-items: start 让展开的卡片只撑高自己，同一行其它卡片不跟着变高 */
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+/* 卡片带一点所在级别的颜色（同一级别的卡片同一种淡色），没有级别的用普通底色 */
+.catalog-card {
+  background: color-mix(in srgb, var(--level-color, var(--color-surface)) 5%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+/* 级别颜色：按级别出现的顺序轮流取（app.js 写 catalog-level--c0～c5），避开关键词用的蓝 / 橙 */
+.catalog-level--c0 { --level-color: #16a34a; }
+.catalog-level--c1 { --level-color: #0891b2; }
+.catalog-level--c2 { --level-color: #7c3aed; }
+.catalog-level--c3 { --level-color: #db2777; }
+.catalog-level--c4 { --level-color: #dc2626; }
+.catalog-level--c5 { --level-color: #8b7355; }
+
+.catalog-level-title::before {
+  content: '';
+  align-self: center;
+  width: 6px;
+  height: 1.1em;
+  background: var(--level-color, transparent);
+  border-radius: 3px;
+}
+
+.catalog-card.is-current {
+  border-color: var(--view-color);
+  box-shadow: 0 0 0 1px var(--view-color);
+}
+
+/* 第一行小字：编号 · 单元靠左、进度靠右；主题换到下一行占满整张卡片宽度（order + flex-basis 100%） */
+.catalog-card-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  padding: 7px 10px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.catalog-card-summary::-webkit-details-marker { display: none; }
+
+.catalog-card-head {
+  flex: none;
+  color: var(--color-muted);
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+
+.catalog-card-topic {
+  order: 2;
+  flex-basis: 100%;
+  min-width: 0;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* 主题关键词（规则见 app.js 的 renderCatalogTopic）：动作用蓝灰色不加粗，话题用所属类别的颜色加粗，
+   How to / 连接词 / 冠词 / 序号弱化成灰色；颜色跟正文字色混一点，深色主题下自动变亮 */
+.catalog-kw-dim-small {
+  color: var(--color-muted);
+  font-size: 0.85em;
+  font-weight: 400;
+}
+
+.catalog-kw-dim {
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.catalog-kw-action { color: color-mix(in srgb, #3b5b8a 75%, var(--color-text)); }
+
+.catalog-kw-topic {
+  color: color-mix(in srgb, var(--cat-color) 80%, var(--color-text));
+  font-weight: 700;
+}
+
+/* 话题类别颜色（类别规则见 app.js 的 CATALOG_TOPIC_CATEGORIES），卡片、精简方块、筛选按钮的色点共用 */
+.catalog-cat--people { --cat-color: #9333ea; }
+.catalog-cat--work { --cat-color: #0e7490; }
+.catalog-cat--place { --cat-color: #16a34a; }
+.catalog-cat--transport { --cat-color: #4f46e5; }
+.catalog-cat--dining { --cat-color: #ea580c; }
+.catalog-cat--shopping { --cat-color: #ca8a04; }
+.catalog-cat--service { --cat-color: #0d9488; }
+.catalog-cat--health { --cat-color: #dc2626; }
+.catalog-cat--daily { --cat-color: #2563eb; }
+.catalog-cat--emotion { --cat-color: #db2777; }
+.catalog-cat--society { --cat-color: #92400e; }
+.catalog-cat--other { --cat-color: #6b7280; }
+
+.catalog-category-count {
+  flex: none;
+  color: var(--color-muted);
+  font-size: 0.9em;
+}
+
+/* 选中的类别跟「详细 / 精简」的选中按钮一样：强调色实心底、白字；数字也改成白字 */
+.catalog-category-btn.is-active {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.catalog-category-btn.is-active .catalog-category-count { color: inherit; }
+
+.catalog-card-progress {
+  flex: none;
+  margin-left: auto;
+  padding: 1px 7px;
+  color: var(--color-muted);
+  font-size: 0.8em;
+  white-space: nowrap;
+  border-radius: 999px;
+}
+
+.catalog-card-progress.is-partial {
+  color: var(--color-accent);
+  font-weight: 700;
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+
+.catalog-card-progress.is-done {
+  color: var(--color-on-accent);
+  font-weight: 700;
+  background: var(--color-accent);
+}
+
+.catalog-doc-list {
+  margin: 0;
+  padding: 2px 4px 6px;
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+/* 一课一行：篇名和「课 / 练」小按钮都按行内排，按钮跟在篇名最后一行后面，放不下才换行，不会把篇名提前挤断 */
+.catalog-doc-row {
+  padding: 3px 6px;
+  cursor: pointer;
+  font-size: 0.88em;
+  line-height: 1.45;
+  border-radius: 6px;
+}
+
+.catalog-doc-row:hover { background: color-mix(in srgb, var(--color-muted) 14%, transparent); }
+
+.catalog-doc {
+  display: inline;
+  padding: 0;
+  font: inherit;
+  color: var(--color-text);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.catalog-doc.is-active { font-weight: 700; }
+
+/* ✓ 只在整课看过时显示，没看过不占位置 */
+.catalog-doc-mark {
+  margin-right: 4px;
+  color: var(--color-accent);
+}
+
+.catalog-doc-tags {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 6px;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+/* 看过的那篇实心底色，正在读的那篇加粗描边 */
+.catalog-doc-tag {
+  padding: 1px 6px;
+  font: inherit;
+  font-size: 0.85em; /* 相对课程行的 0.88em，实际跟原来一样大 */
+  color: var(--color-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.catalog-doc-tag:hover { border-color: var(--color-accent); }
+
+.catalog-doc-tag.is-read {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.catalog-doc-tag.is-active {
+  font-weight: 700;
+  box-shadow: 0 0 0 1px var(--color-text);
+}
+
+/* ── 精简模式：每章一个小方块（动作 + 话题），点开后下面一整行显示详细卡片 ──
+   grid-auto-flow: dense 让同一行后面的方块补回详细卡片上方的空位，详细卡片就紧跟在被点的那一行下面 */
+.catalog-grid.is-compact {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-auto-flow: dense;
+  gap: 6px;
+}
+
+.catalog-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 0.88em;
+  line-height: 1.3;
+  color: var(--color-text);
+  text-align: left;
+  background: color-mix(in srgb, var(--level-color, var(--color-surface)) 5%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.catalog-chip:hover { border-color: var(--level-color, var(--color-accent)); }
+
+.catalog-chip.is-current { box-shadow: 0 0 0 1px var(--view-color); }
+
+.catalog-chip.is-open {
+  background: color-mix(in srgb, var(--level-color, var(--color-accent)) 22%, var(--color-surface));
+  border-color: var(--level-color, var(--color-accent));
+}
+
+.catalog-chip-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.catalog-chip-status {
+  flex: none;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.catalog-chip-detail { grid-column: 1 / -1; }
+
+/* 详细卡片的标题行点了是收起 */
+.catalog-chip-detail .catalog-card-summary { cursor: pointer; }
+
+/* 电脑端总览不受正文 760px 宽度限制，卡片墙铺开；手机端本来就是全宽，不受影响 */
+@media (min-width: 901px) {
+  body[data-view="catalog"] { --content-max: 1600px; }
+}
 
 .done-chapters ul {
   list-style: none;
@@ -2995,6 +3451,7 @@ body[data-view="training"] .doc-link.is-active,
   const STORAGE_FAVORITES_KEY = 'livenotes:favorites';
   const STORAGE_SIDEBAR_COLLAPSED_KEY = 'livenotes:sidebar-collapsed';
   const STORAGE_SIDEBAR_WIDTH_KEY = 'livenotes:sidebar-width';
+  const STORAGE_CATALOG_DENSITY_KEY = 'livenotes:catalog-density';
   const STORAGE_SYNC_TOKEN_KEY = 'livenotes:sync-token';
   const STORAGE_SYNC_GIST_ID_KEY = 'livenotes:sync-gist-id';
   const STORAGE_VOICE_KEY = 'livenotes:voice';
@@ -3044,6 +3501,45 @@ body[data-view="training"] .doc-link.is-active,
     quiz: '测验',
     listening: '听力练习',
     training: '句子训练',
+    catalog: '目录总览',
+  };
+  const CATALOG_SEARCH_DEBOUNCE_MS = 150;
+  const CATALOG_LEVEL_COLOR_COUNT = 6; // 跟 style.css 的 .catalog-level--c0～c5 对应
+
+  // 目录总览的话题类别，数组顺序就是筛选按钮的显示顺序；id 跟 style.css 的 .catalog-cat--<id> 颜色对应
+  const CATALOG_TOPIC_CATEGORIES = [
+    { id: 'people', label: '人物与关系', pattern: /\b(ourselves|someone|family|personalit(y|ies)|appearances?|personal information|date|dating|gender|birth rate)\b/i },
+    { id: 'work', label: '工作与学习', pattern: /\b(jobs?|side hustles?|abilities|languages|graduation|education|work-life)\b/i },
+    { id: 'place', label: '住所与地点', pattern: /\b(locations?|where (i|you) (live|grew up)|home|place|moving|urbanization)\b/i },
+    { id: 'transport', label: '交通出行', pattern: /\b(directions|taxi|drivers?|train|trip|holiday|travel)\b/i },
+    { id: 'dining', label: '餐饮', pattern: /\b(cafe|restaurant|food)\b/i },
+    { id: 'shopping', label: '购物', pattern: /\b(market|clothing store|refund|buy|tickets?|money)\b/i },
+    { id: 'service', label: '预约与服务', pattern: /\b(appointments?|haircut|hotel)\b/i },
+    { id: 'health', label: '健康', pattern: /\b(ill|illness|doctor|pharmacy|gym|health)\b/i },
+    { id: 'daily', label: '日常与娱乐', pattern: /\b(routine|time|weekend|plans|weather|hobbies|how often|night out|movies|tv shows|music|books|sports?|experiences|like)\b/i },
+    { id: 'emotion', label: '情感与表达', pattern: /\b(feel(ings)?|opinion|advice|requests|help|permission|deductions|compliments|regrets|hopes|wishes|annoy|scare|predictions|intentions|rules|obligations)\b/i },
+    { id: 'society', label: '社会话题', pattern: /\b(crime|recycling|climate|cultur(e|al)|globalization|ai|technology|space|social media|energy|political|ethical|literature|historical|sustainable|privacy|art|scientific|tourism|human rights|identity|international|society|journalism)\b/i },
+  ];
+
+  // 匹配顺序跟显示顺序不同：先认场景、后认泛词，先命中的算数。例如 "buy train tickets" 先归交通（不归购物），
+  // "how someone makes me feel" 先归情感（不归人物），"Sports & society" 先归社会（不归娱乐）
+  const CATALOG_CATEGORY_MATCH_ORDER = ['health', 'service', 'transport', 'dining', 'shopping', 'place', 'emotion', 'people', 'work', 'society', 'daily'];
+  const CATALOG_OTHER_CATEGORY = { id: 'other', label: '其它' };
+
+  // 目录总览篇名末尾的类型后缀 → 合并成一行后显示的小按钮文字；复习课后缀（级别名）只去掉不显示
+  const CATALOG_DOC_TAGS = {
+    lesson: '课',
+    '课程': '课',
+    'speaking drill': '练',
+    sd: '练',
+    '口语练习': '练',
+    practice: '练习',
+    '练习': '练习',
+    '复习课': '',
+    'pre-int': '',
+    beginner: '',
+    intermediate: '',
+    advanced: '',
   };
   const SPEECH_HIGHLIGHT_NAME = 'livenotes-speech';
 
@@ -3141,7 +3637,7 @@ body[data-view="training"] .doc-link.is-active,
   const state = {
     mode: DEFAULT_MODE,
     theme: DEFAULT_THEME,
-    view: 'doc',       // 'doc'：正常文档视图；'favorites'：我的收藏视图；'quiz'：测验模式；'listening'：听力；'training'：句子训练
+    view: 'doc',       // 'doc'：正常文档视图；'favorites'：我的收藏视图；'quiz'：测验模式；'listening'：听力；'training'：句子训练；'catalog'：目录总览
     allExpanded: false, // 当前文档是否处于"全部展开"状态，决定切换按钮图标 ➕ / ➖
     quizPool: null,    // 测验模式当前这一轮打乱后的条目池，null 表示需要重新洗牌
     quizBatchOffset: 0, // 当前显示的是池子里第几批（每批 QUIZ_BATCH_SIZE 条）
@@ -3172,6 +3668,14 @@ body[data-view="training"] .doc-link.is-active,
     favoritesTab: 'fav', // 收藏页当前标签：'fav' 收藏 | 'todo' 待看，只存内存
     isDoneChaptersOpen: false, // 侧边栏顶部"已看完的章节"列表是否展开，只存内存
     chapterLevelGroups: null, // 侧边栏按级别分的组（buildChapterLevelGroups），不分组时为 null
+
+    // 目录总览：搜索词只存内存；宽屏打开总览时临时收起了侧边栏就记一下，离开时恢复（不写进 localStorage）
+    catalogSearch: '',
+    catalogSearchTimer: null,
+    isSidebarCollapsedByCatalog: false,
+    catalogDensity: null, // 'full' | 'compact'，null 表示还没从 localStorage 读过（见 loadCatalogDensity）
+    catalogOpenChapter: null, // 精简模式下点开的那一章在章节树里的下标，null 表示都没点开
+    catalogCategory: null, // 目录总览只看哪一类话题（CATALOG_TOPIC_CATEGORIES 的 id），null 表示不筛选
 
     // 阅读进度：以下都只存内存，持久化的数据在收藏列表里的 read / position / course 记录
     resumeHint: null, // 打开页面时"上次看到"提示条要指向的位置记录，null 表示不显示
@@ -3916,6 +4420,12 @@ body[data-view="training"] .doc-link.is-active,
 
     if (state.view === 'quiz') {
       renderQuizView();
+
+      return;
+    }
+
+    if (state.view === 'catalog') {
+      renderCatalogBody();
 
       return;
     }
@@ -6598,12 +7108,31 @@ body[data-view="training"] .doc-link.is-active,
    */
   function renderChapterTitle(chapter, levelKey = '') {
 
-    const parts = chapter.split(' - ');
     const progressHtml = '<span class="chapter-progress"></span>';
+    const { head, topic, isSplit } = splitChapterTitle(chapter, levelKey);
+
+
+    if (!isSplit) {
+
+      return `${escapeHtml(chapter)}${progressHtml}`;
+    }
+
+    return `<span class="chapter-head">${escapeHtml(head)}</span>${progressHtml}<span class="chapter-topic">${escapeHtml(topic)}</span>`;
+  }
+
+  /**
+   * 把章节名拆成「编号 · 分组」和「主题」两部分（侧边栏和目录总览共用）
+   * @param {string} chapter - 章节文件夹名
+   * @param {string} [levelKey] - 所在级别分组名，章节名里重复的级别词会去掉
+   * @returns {{ head: string, topic: string, isSplit: boolean }} 两段式章节名 isSplit 为 false，head 就是原名
+   */
+  function splitChapterTitle(chapter, levelKey = '') {
+
+    const parts = chapter.split(' - ');
 
     if (parts.length < 3) {
 
-      return `${escapeHtml(chapter)}${progressHtml}`;
+      return { head: chapter, topic: '', isSplit: false };
     }
 
     // 在级别分组里，分组名已经写了级别，章节名里重复的级别词去掉："Beginner Unit 1" → "Unit 1"；"Grammar" → 只留编号
@@ -6623,7 +7152,7 @@ body[data-view="training"] .doc-link.is-active,
     const head = middle ? `${parts[0]} · ${middle}` : parts[0];
     const topic = parts.slice(2).join(' - ');
 
-    return `<span class="chapter-head">${escapeHtml(head)}</span>${progressHtml}<span class="chapter-topic">${escapeHtml(topic)}</span>`;
+    return { head, topic, isSplit: true };
   }
 
   /**
@@ -6789,6 +7318,7 @@ body[data-view="training"] .doc-link.is-active,
     // 顶部"已看 x / 总数"可以点开，列出整章都看完的章节
     const courseProgressHtml = `
       <div class="course-progress-wrap">
+        <button type="button" class="catalog-open-btn" data-action="toggle-catalog-view">▦ 目录总览</button>
         <button type="button" class="course-progress" data-role="course-progress" data-action="toggle-done-chapters"></button>
         <div class="done-chapters" data-role="done-chapters"${state.isDoneChaptersOpen ? '' : ' hidden'}></div>
       </div>`;
@@ -7028,6 +7558,7 @@ body[data-view="training"] .doc-link.is-active,
       quiz: toggleQuizView,
       listening: toggleListeningView,
       training: toggleTrainingView,
+      catalog: toggleCatalogView,
     };
 
     if (toggles[state.view]) {
@@ -7990,6 +8521,13 @@ body[data-view="training"] .doc-link.is-active,
       btn.classList.remove('is-active');
     });
 
+    document.querySelectorAll('[data-action="toggle-catalog-view"]').forEach((btn) => {
+      btn.classList.remove('is-active');
+    });
+
+    // 离开目录总览（不管去哪个视图）都要把它临时收起的侧边栏放回来
+    restoreSidebarAfterCatalog();
+
     // 每次切换视图都会走到这里，顺带停掉句子训练还在循环的朗读，不然离开后还会一直念
     stopTrainingPlayback();
   }
@@ -8070,6 +8608,627 @@ body[data-view="training"] .doc-link.is-active,
 
       itemEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
+  }
+
+  /**
+   * 切换到「目录总览」视图（全部章节按级别平铺成卡片，可按章节名 / 篇名搜索），或切回当前文档。
+   * 宽屏打开时临时收起侧边栏让卡片墙用满宽度，离开时由 clearViewToggleButtons 恢复
+   * @returns {void}
+   */
+  function toggleCatalogView() {
+
+    const isEntering = state.view !== 'catalog';
+
+
+    state.view = isEntering ? 'catalog' : 'doc';
+    clearViewToggleButtons();
+
+    if (!isEntering) {
+      const doc = findDoc(currentSlug());
+
+      if (doc) {
+        renderContent(doc);
+      }
+
+      return;
+    }
+
+    document.querySelectorAll('[data-action="toggle-catalog-view"]').forEach((btn) => {
+      btn.classList.add('is-active');
+    });
+
+    collapseSidebarForCatalog();
+    document.querySelector('.sidebar').classList.remove('is-open');
+
+    renderCatalogView();
+    updateAppTitle();
+    window.scrollTo(0, 0);
+
+    // 跟侧边栏"打开目录自动定位"一样，进来就把当前篇所在的章节卡片滚到中间
+    requestAnimationFrame(() => {
+      const currentCardEl = document.querySelector('.catalog-card.is-current, .catalog-chip.is-current');
+
+      if (currentCardEl && !state.catalogSearch.trim()) {
+        currentCardEl.scrollIntoView({ block: 'center' });
+      }
+    });
+  }
+
+  /**
+   * 宽屏下侧边栏是展开的就临时收起（不写 localStorage，刷新页面还是原来的状态）；窄屏本来就是抽屉，不用管
+   * @returns {void}
+   */
+  function collapseSidebarForCatalog() {
+
+    const sidebarEl = document.querySelector('.sidebar');
+
+    if (!sidebarEl || isNarrowViewport() || sidebarEl.classList.contains('is-collapsed')) {
+
+      return;
+    }
+
+    sidebarEl.classList.add('is-collapsed');
+    state.isSidebarCollapsedByCatalog = true;
+  }
+
+  /**
+   * 把目录总览临时收起的侧边栏放回来；用户在总览里自己点过 ☰ 就不再干预
+   * @returns {void}
+   */
+  function restoreSidebarAfterCatalog() {
+
+    if (!state.isSidebarCollapsedByCatalog) {
+
+      return;
+    }
+
+    state.isSidebarCollapsedByCatalog = false;
+    document.querySelector('.sidebar').classList.remove('is-collapsed');
+  }
+
+  /**
+   * 目录总览用的级别分组：课程分了级别就沿用侧边栏的分组，没分就整门课当一组
+   * @returns {{ level: string, chapterIndexes: number[] }[]}
+   */
+  function getCatalogLevelGroups() {
+
+    const tree = state.data.tree || [];
+
+    return state.chapterLevelGroups || [{ level: '', chapterIndexes: tree.map((_, index) => index) }];
+  }
+
+  /**
+   * 渲染目录总览整个视图：上方一个工具面板（搜索、详细 / 精简、级别跳转、类别筛选），下面是按级别分段的卡片墙。
+   * 卡片墙由 renderCatalogBody 单独刷新，搜索时输入框不重建，不会丢焦点
+   * @returns {void}
+   */
+  function renderCatalogView() {
+
+    const contentEl = document.querySelector('[data-role="content"]');
+    const levelGroups = getCatalogLevelGroups();
+    const density = loadCatalogDensity();
+    let colorIndex = -1;
+
+
+    syncBodyView();
+
+    // 级别按钮前的色点跟级别分段的颜色一致，编号规则跟 renderCatalogBody 一样
+    const jumpsHtml = levelGroups
+      .map((levelGroup, levelIndex) => {
+
+        if (!levelGroup.level) {
+
+          return '';
+        }
+
+        colorIndex += 1;
+
+        return `<button type="button" class="catalog-tool-btn catalog-level--c${colorIndex % CATALOG_LEVEL_COLOR_COUNT}" data-action="catalog-jump-level" data-level-index="${levelIndex}" title="${escapeAttr(levelGroup.level)}"><span class="catalog-tool-dot is-level" aria-hidden="true"></span><span class="catalog-tool-text">${escapeHtml(levelGroup.level)}</span></button>`;
+      })
+      .join('');
+
+    const densityHtml = [['full', '详细'], ['compact', '精简']]
+      .map(([value, label]) => `<button type="button" class="catalog-density-btn${density === value ? ' is-active' : ''}" data-action="catalog-density" data-density="${value}">${label}</button>`)
+      .join('');
+
+    const levelGroupHtml = jumpsHtml
+      ? `
+        <div class="catalog-tool-group">
+          <div class="catalog-tool-label">级别</div>
+          <div class="catalog-tool-list">${jumpsHtml}</div>
+        </div>`
+      : '';
+    const categoryButtonsHtml = renderCatalogCategoryButtons();
+    const categoryGroupHtml = categoryButtonsHtml
+      ? `
+        <div class="catalog-tool-group">
+          <div class="catalog-tool-label">类别</div>
+          <div class="catalog-tool-list">${categoryButtonsHtml}</div>
+        </div>`
+      : '';
+
+    contentEl.innerHTML = `
+      <div class="catalog-toolbar">
+        <div class="catalog-toolbar-row">
+          <input type="search" class="catalog-search" data-role="catalog-search" placeholder="搜章节名或篇名…" aria-label="搜索章节名或篇名" value="${escapeAttr(state.catalogSearch)}">
+          <div class="catalog-density" role="group" aria-label="显示方式">${densityHtml}</div>
+        </div>
+        ${levelGroupHtml}
+        ${categoryGroupHtml}
+      </div>
+      <div data-role="catalog-body"></div>`;
+
+    renderCatalogBody();
+
+    const inputEl = contentEl.querySelector('[data-role="catalog-search"]');
+
+    inputEl.addEventListener('input', () => {
+      clearTimeout(state.catalogSearchTimer);
+
+      state.catalogSearchTimer = setTimeout(() => {
+        state.catalogSearch = inputEl.value;
+        renderCatalogBody();
+      }, CATALOG_SEARCH_DEBOUNCE_MS);
+    });
+  }
+
+  /**
+   * 按当前搜索词和显示方式重绘目录总览的卡片墙：每个级别一段。
+   * 详细：每章一张卡片（章节标题 + 已看进度，展开列出各课）；精简：每章一个小方块，点开在下方显示整张卡片。
+   * 搜索时一律用详细卡片，才看得到是哪一篇匹配上了
+   * @returns {void}
+   */
+  function renderCatalogBody() {
+
+    const bodyEl = document.querySelector('[data-role="catalog-body"]');
+    const tree = state.data.tree || [];
+    const keyword = state.catalogSearch.trim().toLowerCase();
+    const isCompact = !keyword && loadCatalogDensity() === 'compact';
+    const context = { keyword, readSlugs: loadReadSlugs(), activeSlug: currentSlug() };
+    let matchedCount = 0;
+    let colorIndex = -1;
+
+
+    if (!bodyEl) {
+
+      return;
+    }
+
+    const sectionsHtml = getCatalogLevelGroups().map((levelGroup, levelIndex) => {
+
+      // 级别颜色按出现顺序分配，在筛选之前先占号，搜索时被筛掉的级别不会让后面的级别换颜色
+      if (levelGroup.level) {
+        colorIndex += 1;
+      }
+
+      const cardsHtml = levelGroup.chapterIndexes.map((index) => {
+
+        if (state.catalogCategory && getCatalogCategory(tree[index]).id !== state.catalogCategory) {
+
+          return '';
+        }
+
+        if (isCompact) {
+          matchedCount += 1;
+
+          return renderCatalogChip(tree[index], index, levelGroup.level, context);
+        }
+
+        const cardHtml = renderCatalogCard(tree[index], levelGroup.level, context);
+
+        if (cardHtml) {
+          matchedCount += 1;
+        }
+
+        return cardHtml;
+      }).join('');
+
+      if (!cardsHtml) {
+
+        return '';
+      }
+
+      const files = levelGroup.chapterIndexes.flatMap((index) => tree[index].files);
+      const readCount = files.filter((file) => context.readSlugs.has(file.slug)).length;
+      const colorClass = levelGroup.level ? ` catalog-level--c${colorIndex % CATALOG_LEVEL_COLOR_COUNT}` : '';
+
+      // 没有级别的章节（如 Introduction）不加段标题，直接排在最前面
+      const titleHtml = levelGroup.level
+        ? `<h2 class="catalog-level-title">${escapeHtml(levelGroup.level)}<span class="catalog-level-meta">${escapeHtml(formatChapterRange(tree, levelGroup.chapterIndexes))} · 已看 ${readCount}/${files.length}</span></h2>`
+        : '';
+
+      return `
+        <section class="catalog-level${colorClass}" data-level-index="${levelIndex}">
+          ${titleHtml}
+          <div class="catalog-grid${isCompact ? ' is-compact' : ''}">${cardsHtml}</div>
+        </section>`;
+    }).join('');
+
+    if (!keyword && !state.catalogCategory) {
+      bodyEl.innerHTML = sectionsHtml;
+
+      return;
+    }
+
+    bodyEl.innerHTML = matchedCount
+      ? `<p class="catalog-summary">找到 ${matchedCount} 章</p>${sectionsHtml}`
+      : '<p class="catalog-summary">没有找到匹配的章节或篇名</p>';
+  }
+
+  /**
+   * 精简模式里的一章：小方块只写「动作 + 话题」（如 greet someone），点开后紧跟一张占满整行的详细卡片
+   * （网格用 dense 排列，同一行后面的方块会补回详细卡片上方的空位，详细卡片就出现在被点的那一行下面）
+   * @param {{ chapter: string, files: object[] }} group
+   * @param {number} chapterIndex - 在章节树里的下标
+   * @param {string} level
+   * @param {{ keyword: string, readSlugs: Set<string>, activeSlug: string|null }} context
+   * @returns {string}
+   */
+  function renderCatalogChip(group, chapterIndex, level, context) {
+
+    const { head, topic } = splitChapterTitle(group.chapter, level);
+    const readCount = group.files.filter((file) => context.readSlugs.has(file.slug)).length;
+    const isDone = group.files.length > 0 && readCount === group.files.length;
+    const isCurrent = group.files.some((file) => file.slug === context.activeSlug);
+    const isOpen = state.catalogOpenChapter === chapterIndex;
+
+
+    // 读完打 ✓，读了一部分打一个小点，没读不显示
+    const statusHtml = isDone
+      ? '<span class="catalog-chip-status is-done">✓</span>'
+      : (readCount > 0 ? '<span class="catalog-chip-status is-partial">•</span>' : '');
+    const labelHtml = topic ? renderCatalogTopic(topic, { isCompact: true }) : escapeHtml(head);
+    const chipClass = ` catalog-cat--${getCatalogCategory(group).id}${isCurrent ? ' is-current' : ''}${isOpen ? ' is-open' : ''}`;
+
+    const chipHtml = `
+      <button type="button" class="catalog-chip${chipClass}" data-action="catalog-toggle-chip" data-chapter-index="${chapterIndex}" title="${escapeAttr(group.chapter)}">
+        <span class="catalog-chip-label">${labelHtml}</span>${statusHtml}
+      </button>`;
+
+    if (!isOpen) {
+
+      return chipHtml;
+    }
+
+    return chipHtml + renderCatalogCard(group, level, context, { isDetail: true, chapterIndex });
+  }
+
+  /**
+   * 渲染目录总览里的一张章节卡片；有搜索词时章节名和篇名都不匹配就不渲染
+   * @param {{ chapter: string, files: object[] }} group - 章节树里的一章
+   * @param {string} level - 所在级别（标题里去掉重复的级别词），没有级别传空串
+   * @param {{ keyword: string, readSlugs: Set<string>, activeSlug: string|null }} context
+   * @param {{ isDetail?: boolean, chapterIndex?: number }} [options] - isDetail：精简模式点开的详情，
+   *   一直展开、占满整行，点标题收起
+   * @returns {string} 不匹配时返回空串
+   */
+  function renderCatalogCard(group, level, { keyword, readSlugs, activeSlug }, { isDetail = false, chapterIndex } = {}) {
+
+    const isChapterMatched = !keyword || group.chapter.toLowerCase().includes(keyword);
+    const shownFiles = isChapterMatched
+      ? group.files
+      : group.files.filter((file) => `${file.title || ''} ${file.slug}`.toLowerCase().includes(keyword));
+
+
+    if (!isChapterMatched && shownFiles.length === 0) {
+
+      return '';
+    }
+
+    const { head, topic } = splitChapterTitle(group.chapter, level);
+    const readCount = group.files.filter((file) => readSlugs.has(file.slug)).length;
+    const isDone = group.files.length > 0 && readCount === group.files.length;
+    const isCurrent = group.files.some((file) => file.slug === activeSlug);
+    const categoryClass = ` catalog-cat--${getCatalogCategory(group).id}`;
+
+    // 只靠篇名匹配上的章节直接展开，一眼看到是哪一篇；不搜索时只展开当前篇所在的章节
+    const isOpen = keyword ? !isChapterMatched : isCurrent;
+
+    const progressClass = isDone ? ' is-done' : (readCount > 0 ? ' is-partial' : '');
+    const docsHtml = groupCatalogLessons(shownFiles)
+      .map((lesson) => renderCatalogLessonRow(lesson, readSlugs, activeSlug))
+      .join('');
+
+    // 两段式章节名（"01 - Introduction"）没有主题，整个名字放在主题那一格
+    const headHtml = topic ? `<span class="catalog-card-head">${escapeHtml(head)}</span>` : '';
+    const topicHtml = topic ? renderCatalogTopic(topic) : escapeHtml(head);
+    const summaryInnerHtml = `
+          ${headHtml}
+          <span class="catalog-card-topic">${topicHtml}</span>
+          <span class="catalog-card-progress${progressClass}">${isDone ? '✓ ' : ''}${readCount}/${group.files.length}</span>`;
+
+    if (isDetail) {
+
+      return `
+      <div class="catalog-card catalog-chip-detail${categoryClass}">
+        <div class="catalog-card-summary" data-action="catalog-toggle-chip" data-chapter-index="${chapterIndex}">${summaryInnerHtml}</div>
+        <ul class="catalog-doc-list">${docsHtml}</ul>
+      </div>`;
+    }
+
+    return `
+      <details class="catalog-card${categoryClass}${isCurrent ? ' is-current' : ''}"${isOpen ? ' open' : ''}>
+        <summary class="catalog-card-summary">${summaryInnerHtml}</summary>
+        <ul class="catalog-doc-list">${docsHtml}</ul>
+      </details>`;
+  }
+
+  /**
+   * 拆章节主题，给关键词上色用："How to talk about the weather" →
+   * { how: 'How to', action: 'talk', joint: 'about', lead: 'the', core: 'weather', tail: '' }；
+   * "At a clothing store 1" → { lead: 'At a', core: 'clothing store', tail: '1' }（不是 How to 开头，没有动作）
+   * @param {string} topic
+   * @returns {{ how: string, action: string, joint: string, lead: string, core: string, tail: string }}
+   */
+  function parseCatalogTopic(topic) {
+
+    const howMatch = topic.match(/^(how to)\s+(\S+)(?:\s+(about|for|at|in|on|to|with|from|into|of))?(?:\s+(.*))?$/i);
+    const [how, action, joint, phrase] = howMatch
+      ? [howMatch[1], howMatch[2], howMatch[3] || '', howMatch[4] || '']
+      : ['', '', '', topic];
+
+    // 话题开头的冠词（可带 At / In / On）和末尾的序号不算重点，单独拆出来弱化显示
+    const leadMatch = phrase.match(/^((?:(?:at|in|on)\s+)?(?:the|a|an))\s+(.+)$/i);
+    const [lead, rest] = leadMatch ? [leadMatch[1], leadMatch[2]] : ['', phrase];
+    const tailMatch = rest.match(/^(.+?)\s+(\d+)$/);
+    const [core, tail] = tailMatch ? [tailMatch[1], tailMatch[2]] : [rest, ''];
+
+
+    return { how, action, joint, lead, core, tail };
+  }
+
+  /**
+   * 章节主题关键词上色：动作加粗、话题用所在级别的颜色，How to / 连接词 / 冠词 / 序号弱化成灰色。
+   * 精简模式只留「动作 + 话题 + 序号」（"How to greet someone" → greet someone）
+   * @param {string} topic
+   * @param {{ isCompact?: boolean }} [options]
+   * @returns {string} HTML
+   */
+  function renderCatalogTopic(topic, { isCompact = false } = {}) {
+
+    const { how, action, joint, lead, core, tail } = parseCatalogTopic(topic);
+    const pieces = isCompact
+      ? [['action', action], ['topic', core], ['dim', tail]]
+      : [['dim-small', how], ['action', action], ['dim', joint], ['dim', lead], ['topic', core], ['dim', tail]];
+
+
+    return pieces
+      .filter(([, text]) => text)
+      .map(([kind, text]) => `<span class="catalog-kw-${kind}">${escapeHtml(text)}</span>`)
+      .join(' ');
+  }
+
+  /**
+   * 拆篇名：去掉"英语速查表"和末尾的类型后缀，返回给目录总览显示的短名 + 类型小标签。
+   * "1.1 How are you? (lesson)" → { base: "1.1 How are you?", tag: "课" }；
+   * "I met an old friend.（口语练习）英语速查表" → { base: "I met an old friend.", tag: "练" }；
+   * 标题只有"英语速查表"（源 md 没写课程标题）时改用文件名："_Codex__200. 2.2 Would it be possible to... _ (lesson)"
+   * → { base: "2.2 Would it be possible to...?", tag: "课" }
+   * @param {{ title?: string, slug: string }} file
+   * @returns {{ base: string, tag: string }} 认不出类型时 tag 为空串、base 保持原样（只去掉"英语速查表"）
+   */
+  function parseCatalogDocTitle(file) {
+
+    const titleText = (file.title || '').replace(/\s*英语速查表\s*$/, '').trim();
+
+    // 部分课程的 md 一级标题整句写成了中文（"30.1 我们已经等了一个多小时（课程）"），没有英文字母时也改用英文文件名；
+    // 中英混写的（"1. Simple Sentences Explained — 简单句英语速查表"）保持原样
+    const isChineseOnly = /[一-鿿]/.test(titleText) && !/[A-Za-z]/.test(titleText);
+
+    // 文件名里去掉 "_Codex__200. " 这类前缀；文件名不能有问号，原来的 ? 写成了 _，换回来
+    const trimmed = (!isChineseOnly && titleText) || file.slug
+      .replace(/^_[A-Za-z]+__\d+\.\s*/, '')
+      .replace(/\s*_(?=\s|$)/g, '?')
+      .trim();
+    const match = trimmed.match(/^(.*?)\s*[（(]([^（）()]+)[）)]\s*$/);
+
+    if (!match) {
+
+      return { base: trimmed, tag: '' };
+    }
+
+    const label = match[2].trim().toLowerCase();
+    const tag = CATALOG_DOC_TAGS[label];
+
+    // 只去掉认识的后缀，其它括号（可能是标题本身的内容）原样保留
+    if (tag === undefined) {
+
+      return { base: trimmed, tag: '' };
+    }
+
+    return { base: match[1].trim(), tag };
+  }
+
+  /**
+   * 把同一课的「课程」「口语练习」合成一行：相邻且短名相同的篇归为一组，顺序不变
+   * @param {object[]} files - 章节里的篇（{ slug, title }）
+   * @returns {{ base: string, files: { slug: string, tag: string }[] }[]}
+   */
+  function groupCatalogLessons(files) {
+
+    const lessons = [];
+
+
+    files.forEach((file) => {
+      const { base, tag } = parseCatalogDocTitle(file);
+      const lastLesson = lessons[lessons.length - 1];
+
+      if (lastLesson && lastLesson.base === base) {
+        lastLesson.files.push({ slug: file.slug, tag });
+
+        return;
+      }
+
+      lessons.push({ base, files: [{ slug: file.slug, tag }] });
+    });
+
+    return lessons;
+  }
+
+  /**
+   * 目录总览里的一课：篇名（看过才在前面打 ✓）后面跟「课 / 练」小按钮分别打开。
+   * 篇名用 span 不用 button：button 在浏览器里总是整块排版，篇名一换行按钮就只能挤到下一行
+   * @param {{ base: string, files: { slug: string, tag: string }[] }} lesson
+   * @param {Set<string>} readSlugs
+   * @param {string|null} activeSlug
+   * @returns {string}
+   */
+  function renderCatalogLessonRow(lesson, readSlugs, activeSlug) {
+
+    const isAllRead = lesson.files.every((file) => readSlugs.has(file.slug));
+    const isActive = lesson.files.some((file) => file.slug === activeSlug);
+    const firstSlug = lesson.files[0].slug;
+
+
+    const tagsHtml = lesson.files.length > 1
+      ? `<span class="catalog-doc-tags">${lesson.files.map((file, index) => {
+        const tagClass = `${readSlugs.has(file.slug) ? ' is-read' : ''}${file.slug === activeSlug ? ' is-active' : ''}`;
+
+        return `<button type="button" class="catalog-doc-tag${tagClass}" data-action="catalog-open-doc" data-slug="${escapeAttr(file.slug)}">${escapeHtml(file.tag || String(index + 1))}</button>`;
+      }).join('')}</span>`
+      : '';
+    const markHtml = isAllRead ? '<span class="catalog-doc-mark" aria-hidden="true">✓</span>' : '';
+
+    return `
+      <li class="catalog-doc-row" role="button" tabindex="0" data-action="catalog-open-doc" data-slug="${escapeAttr(firstSlug)}">
+        <span class="catalog-doc${isActive ? ' is-active' : ''}">${markHtml}${escapeHtml(lesson.base)}</span>${tagsHtml}
+      </li>`;
+  }
+
+  /**
+   * 章节的话题类别（关键词规则见 CATALOG_TOPIC_CATEGORIES），没有主题或都没命中归"其它"
+   * @param {{ chapter: string }} group
+   * @returns {{ id: string, label: string }}
+   */
+  function getCatalogCategory(group) {
+
+    const { topic } = splitChapterTitle(group.chapter);
+
+    if (!topic) {
+
+      return CATALOG_OTHER_CATEGORY;
+    }
+
+    const matchedId = CATALOG_CATEGORY_MATCH_ORDER.find((id) => (
+      CATALOG_TOPIC_CATEGORIES.find((category) => category.id === id).pattern.test(topic)
+    ));
+
+    return CATALOG_TOPIC_CATEGORIES.find((category) => category.id === matchedId) || CATALOG_OTHER_CATEGORY;
+  }
+
+  /**
+   * 工具条上的类别筛选按钮：色点兼当图例，后面是这一类的章节数
+   * @returns {string} 只有一种类别（小课程章节名不是 How to 格式，全归"其它"）时返回空串，整组不显示
+   */
+  function renderCatalogCategoryButtons() {
+
+    const counts = new Map();
+
+
+    (state.data.tree || []).forEach((group) => {
+      const { id } = getCatalogCategory(group);
+
+      counts.set(id, (counts.get(id) || 0) + 1);
+    });
+
+    if (counts.size < 2) {
+
+      return '';
+    }
+
+    return [...CATALOG_TOPIC_CATEGORIES, CATALOG_OTHER_CATEGORY]
+      .filter((category) => counts.get(category.id))
+      .map((category) => {
+        const activeClass = state.catalogCategory === category.id ? ' is-active' : '';
+
+        return `<button type="button" class="catalog-tool-btn catalog-category-btn catalog-cat--${category.id}${activeClass}" data-action="catalog-category" data-category="${category.id}" title="${escapeAttr(category.label)}"><span class="catalog-tool-dot" aria-hidden="true"></span><span class="catalog-tool-text">${escapeHtml(category.label)}</span><span class="catalog-category-count">${counts.get(category.id)}</span></button>`;
+      })
+      .join('');
+  }
+
+  /**
+   * 点类别按钮：只看这一类；再点同一个取消筛选
+   * @param {string} categoryId
+   * @returns {void}
+   */
+  function toggleCatalogCategory(categoryId) {
+
+    state.catalogCategory = state.catalogCategory === categoryId ? null : categoryId;
+    state.catalogOpenChapter = null;
+
+    document.querySelectorAll('.catalog-category-btn').forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.category === state.catalogCategory);
+    });
+
+    renderCatalogBody();
+  }
+
+  /**
+   * 精简模式点一个方块：打开它的详细卡片，再点同一个（或详细卡片的标题）收起
+   * @param {number} chapterIndex
+   * @returns {void}
+   */
+  function toggleCatalogChip(chapterIndex) {
+
+    state.catalogOpenChapter = state.catalogOpenChapter === chapterIndex ? null : chapterIndex;
+    renderCatalogBody();
+  }
+
+  /**
+   * 切换目录总览的显示方式（详细 / 精简），记在本机
+   * @param {string} density - 'full' | 'compact'
+   * @returns {void}
+   */
+  function setCatalogDensity(density) {
+
+    try {
+      localStorage.setItem(STORAGE_CATALOG_DENSITY_KEY, density);
+    } catch (err) {
+      // 静默降级：只是这次刷新后不记得
+    }
+
+    state.catalogDensity = density;
+    state.catalogOpenChapter = null;
+
+    document.querySelectorAll('.catalog-density-btn').forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.density === density);
+    });
+
+    renderCatalogBody();
+  }
+
+  /**
+   * 读取目录总览的显示方式，没存过 / 读不到默认详细
+   * @returns {string} 'full' | 'compact'
+   */
+  function loadCatalogDensity() {
+
+    if (state.catalogDensity) {
+
+      return state.catalogDensity;
+    }
+
+    try {
+      state.catalogDensity = localStorage.getItem(STORAGE_CATALOG_DENSITY_KEY) === 'compact' ? 'compact' : 'full';
+    } catch (err) {
+      state.catalogDensity = 'full';
+    }
+
+    return state.catalogDensity;
+  }
+
+  /**
+   * 目录总览顶部的级别按钮：滚到那一段（搜索时那一段可能被筛掉了，找不到就不动）
+   * @param {number} levelIndex
+   * @returns {void}
+   */
+  function jumpToCatalogLevel(levelIndex) {
+
+    const sectionEl = document.querySelector(`.catalog-level[data-level-index="${levelIndex}"]`);
+
+    if (sectionEl) {
+      sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   /**
@@ -10492,8 +11651,8 @@ body[data-view="training"] .doc-link.is-active,
    */
   function toggleMode() {
 
-    // 收藏 / 听力 / 句子训练视图下不响应模式切换（这几个视图没有 EN/CN 显示侧的概念）
-    if (state.view === 'favorites' || state.view === 'listening' || state.view === 'training') {
+    // 收藏 / 听力 / 句子训练 / 目录总览视图下不响应模式切换（这几个视图没有 EN/CN 显示侧的概念）
+    if (state.view === 'favorites' || state.view === 'listening' || state.view === 'training' || state.view === 'catalog') {
 
       return;
     }
@@ -10808,8 +11967,8 @@ body[data-view="training"] .doc-link.is-active,
    */
   function setAllExpanded(shouldExpand) {
 
-    // 收藏 / 句子训练视图下不响应全部展开/收起
-    if (state.view === 'favorites' || state.view === 'training') {
+    // 收藏 / 句子训练 / 目录总览视图下不响应全部展开/收起
+    if (state.view === 'favorites' || state.view === 'training' || state.view === 'catalog') {
 
       return;
     }
@@ -10869,8 +12028,8 @@ body[data-view="training"] .doc-link.is-active,
    */
   function toggleAllExpanded() {
 
-    // 收藏 / 句子训练视图下不响应，跟 setAllExpanded 的守卫保持一致，避免图标跟实际状态错位
-    if (state.view === 'favorites' || state.view === 'training') {
+    // 收藏 / 句子训练 / 目录总览视图下不响应，跟 setAllExpanded 的守卫保持一致，避免图标跟实际状态错位
+    if (state.view === 'favorites' || state.view === 'training' || state.view === 'catalog') {
 
       return;
     }
@@ -11092,6 +12251,9 @@ body[data-view="training"] .doc-link.is-active,
     const collapsed = sidebarEl.classList.toggle('is-collapsed');
     saveSidebarCollapsed(collapsed);
 
+    // 用户自己点了 ☰，离开目录总览时就不再自动恢复侧边栏
+    state.isSidebarCollapsedByCatalog = false;
+
     if (!collapsed) {
       revealCurrentDocInSidebar();
     }
@@ -11269,6 +12431,15 @@ body[data-view="training"] .doc-link.is-active,
         }
         if (action === 'toggle-sidebar') toggleSidebar();
         if (action === 'toggle-favorites-view') toggleFavoritesView();
+        if (action === 'toggle-catalog-view') toggleCatalogView();
+        if (action === 'catalog-jump-level') jumpToCatalogLevel(Number(actionEl.dataset.levelIndex));
+        if (action === 'catalog-density') setCatalogDensity(actionEl.dataset.density);
+        if (action === 'catalog-category') toggleCatalogCategory(actionEl.dataset.category);
+        if (action === 'catalog-toggle-chip') toggleCatalogChip(Number(actionEl.dataset.chapterIndex));
+        if (action === 'catalog-open-doc') {
+          selectDoc(actionEl.dataset.slug);
+          window.scrollTo(0, 0);
+        }
         if (action === 'toggle-favorite-doc') handleToggleFavoriteDoc(actionEl);
         if (action === 'toggle-favorite-item') handleToggleFavoriteItem(actionEl);
         if (action === 'remove-favorite') removeFavorite(actionEl.dataset.kind, actionEl.dataset.id);
