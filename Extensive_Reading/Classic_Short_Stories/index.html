@@ -3361,6 +3361,12 @@ body[data-view="catalog"] .doc-link.is-active,
 
   .training-player { margin: 32px 0 24px; }
 }
+
+/* 从目录总览点进课程时，正文最上方的「← 返回目录总览」 */
+.catalog-back-btn {
+  margin-bottom: 12px;
+  font-size: 0.9em;
+}
 </style>
 </head>
 <body>
@@ -3504,6 +3510,7 @@ body[data-view="catalog"] .doc-link.is-active,
     catalog: '目录总览',
   };
   const CATALOG_SEARCH_DEBOUNCE_MS = 150;
+  const CATALOG_HISTORY_MARK = 'doc-from-catalog'; // 从目录总览进课程时 pushState 的标记，后退时用来认出这一条
   const CATALOG_LEVEL_COLOR_COUNT = 6; // 跟 style.css 的 .catalog-level--c0～c5 对应
 
   // 目录总览的话题类别，数组顺序就是筛选按钮的显示顺序；id 跟 style.css 的 .catalog-cat--<id> 颜色对应
@@ -3676,6 +3683,7 @@ body[data-view="catalog"] .doc-link.is-active,
     catalogDensity: null, // 'full' | 'compact'，null 表示还没从 localStorage 读过（见 loadCatalogDensity）
     catalogOpenChapter: null, // 精简模式下点开的那一章在章节树里的下标，null 表示都没点开
     catalogCategory: null, // 目录总览只看哪一类话题（CATALOG_TOPIC_CATEGORIES 的 id），null 表示不筛选
+    catalogReturn: null, // 从目录总览点进课程时记下的总览状态 { scrollY, openCardIndexes }，null 表示不是从总览进来的
 
     // 阅读进度：以下都只存内存，持久化的数据在收藏列表里的 read / position / course 记录
     resumeHint: null, // 打开页面时"上次看到"提示条要指向的位置记录，null 表示不显示
@@ -7812,8 +7820,14 @@ body[data-view="catalog"] .doc-link.is-active,
 
     const headerHtml = `<header class="doc-header">${chapterLabelHtml}${titleRowHtml}</header>`;
 
+    // 从目录总览点进来的才有"返回目录总览"，从侧边栏进来的不显示
+    const catalogBackHtml = state.catalogReturn
+      ? '<button type="button" class="btn catalog-back-btn" data-action="back-to-catalog">← 返回目录总览</button>'
+      : '';
+
     contentEl.innerHTML = `
       ${renderResumeHint()}
+      ${catalogBackHtml}
       ${headerHtml}
       ${sectionsHtml}
       ${state.data.tree ? renderReadToggle(doc.slug) : ''}
@@ -8620,18 +8634,40 @@ body[data-view="catalog"] .doc-link.is-active,
     const isEntering = state.view !== 'catalog';
 
 
-    state.view = isEntering ? 'catalog' : 'doc';
-    clearViewToggleButtons();
-
-    if (!isEntering) {
-      const doc = findDoc(currentSlug());
-
-      if (doc) {
-        renderContent(doc);
-      }
+    // 从总览点进课程后再点总览入口，跟"返回目录总览"一样回到进去之前的样子
+    if (isEntering && state.catalogReturn) {
+      backToCatalog();
 
       return;
     }
+
+    if (isEntering) {
+      enterCatalogView();
+
+      return;
+    }
+
+    state.view = 'doc';
+    clearViewToggleButtons();
+
+    const doc = findDoc(currentSlug());
+
+    if (doc) {
+      renderContent(doc);
+    }
+  }
+
+  /**
+   * 进入目录总览视图
+   * @param {{ scrollY: number, openCardIndexes: number[] }|null} [savedState] - 从课程返回时传入进课程前记下的状态，
+   *   按它恢复展开的卡片和滚动位置；不传就是正常打开，把当前篇所在的章节卡片滚到中间
+   * @returns {void}
+   */
+  function enterCatalogView(savedState = null) {
+
+    state.view = 'catalog';
+    state.catalogReturn = null;
+    clearViewToggleButtons();
 
     document.querySelectorAll('[data-action="toggle-catalog-view"]').forEach((btn) => {
       btn.classList.add('is-active');
@@ -8642,6 +8678,18 @@ body[data-view="catalog"] .doc-link.is-active,
 
     renderCatalogView();
     updateAppTitle();
+
+    if (savedState) {
+      document.querySelectorAll('details.catalog-card').forEach((cardEl) => {
+        cardEl.open = savedState.openCardIndexes.includes(Number(cardEl.dataset.chapterIndex));
+      });
+
+      // 等卡片展开后的高度排好再滚，不然滚动位置会偏
+      requestAnimationFrame(() => window.scrollTo(0, savedState.scrollY));
+
+      return;
+    }
+
     window.scrollTo(0, 0);
 
     // 跟侧边栏"打开目录自动定位"一样，进来就把当前篇所在的章节卡片滚到中间
@@ -8652,6 +8700,55 @@ body[data-view="catalog"] .doc-link.is-active,
         currentCardEl.scrollIntoView({ block: 'center' });
       }
     });
+  }
+
+  /**
+   * 在目录总览里点课程：先记下总览当时的状态（滚动位置、展开了哪些卡片；搜索词 / 类别 / 精简模式点开的那一章本来就在 state 里），
+   * 再记一条浏览器历史，这样按浏览器 / 手机的后退键能回到总览，然后打开课程
+   * @param {string} slug
+   * @returns {void}
+   */
+  function openDocFromCatalog(slug) {
+
+    const openCardIndexes = [...document.querySelectorAll('details.catalog-card[open]')]
+      .map((cardEl) => Number(cardEl.dataset.chapterIndex));
+
+
+    state.catalogReturn = { scrollY: window.scrollY, openCardIndexes };
+    history.pushState({ livenotes: CATALOG_HISTORY_MARK }, '');
+
+    selectDoc(slug);
+    window.scrollTo(0, 0);
+  }
+
+  /**
+   * 「← 返回目录总览」：浏览器历史里还有总览那一条就走后退（由 popstate 恢复，历史不会越记越多），
+   * 没有了（比如刷新过）就直接恢复
+   * @returns {void}
+   */
+  function backToCatalog() {
+
+    if (history.state && history.state.livenotes === CATALOG_HISTORY_MARK) {
+      history.back();
+
+      return;
+    }
+
+    enterCatalogView(state.catalogReturn);
+  }
+
+  /**
+   * 浏览器 / 手机后退：从总览点进来的课程退回总览；其它情况（总览里再后退等）交给浏览器正常离开页面
+   * @returns {void}
+   */
+  function handleCatalogPopState() {
+
+    if (!state.catalogReturn || state.view === 'catalog') {
+
+      return;
+    }
+
+    enterCatalogView(state.catalogReturn);
   }
 
   /**
@@ -8814,7 +8911,7 @@ body[data-view="catalog"] .doc-link.is-active,
           return renderCatalogChip(tree[index], index, levelGroup.level, context);
         }
 
-        const cardHtml = renderCatalogCard(tree[index], levelGroup.level, context);
+        const cardHtml = renderCatalogCard(tree[index], levelGroup.level, context, { chapterIndex: index });
 
         if (cardHtml) {
           matchedCount += 1;
@@ -8947,7 +9044,7 @@ body[data-view="catalog"] .doc-link.is-active,
     }
 
     return `
-      <details class="catalog-card${categoryClass}${isCurrent ? ' is-current' : ''}"${isOpen ? ' open' : ''}>
+      <details class="catalog-card${categoryClass}${isCurrent ? ' is-current' : ''}" data-chapter-index="${chapterIndex}"${isOpen ? ' open' : ''}>
         <summary class="catalog-card-summary">${summaryInnerHtml}</summary>
         <ul class="catalog-doc-list">${docsHtml}</ul>
       </details>`;
@@ -12436,10 +12533,8 @@ body[data-view="catalog"] .doc-link.is-active,
         if (action === 'catalog-density') setCatalogDensity(actionEl.dataset.density);
         if (action === 'catalog-category') toggleCatalogCategory(actionEl.dataset.category);
         if (action === 'catalog-toggle-chip') toggleCatalogChip(Number(actionEl.dataset.chapterIndex));
-        if (action === 'catalog-open-doc') {
-          selectDoc(actionEl.dataset.slug);
-          window.scrollTo(0, 0);
-        }
+        if (action === 'catalog-open-doc') openDocFromCatalog(actionEl.dataset.slug);
+        if (action === 'back-to-catalog') backToCatalog();
         if (action === 'toggle-favorite-doc') handleToggleFavoriteDoc(actionEl);
         if (action === 'toggle-favorite-item') handleToggleFavoriteItem(actionEl);
         if (action === 'remove-favorite') removeFavorite(actionEl.dataset.kind, actionEl.dataset.id);
@@ -12574,6 +12669,7 @@ body[data-view="catalog"] .doc-link.is-active,
 
     document.addEventListener('keydown', handleTrainingKeydown);
     document.addEventListener('keydown', handleDocKeydown);
+    window.addEventListener('popstate', handleCatalogPopState);
 
     // 记住听写最近聚焦的空：点 💡 按钮时输入框已经失焦，靠这个知道提示该给哪个空
     document.addEventListener('focusin', (event) => {
