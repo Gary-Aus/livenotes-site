@@ -2318,8 +2318,9 @@ body[data-view="catalog"] .doc-link.is-active,
   touch-action: manipulation;
 }
 
-/* 「结构」最常用：宽约 1.5 倍，强调色边框和字，没选中时也比其它按钮显眼 */
-.analysis-tab-btn[data-tab="structure"] {
+/* 「结构」「拆解」最常用：宽约 1.5 倍，强调色边框和字，没选中时也比其它按钮显眼 */
+.analysis-tab-btn[data-tab="structure"],
+.analysis-tab-btn[data-tab="decomp"] {
   min-width: 96px;
   font-weight: 700;
   color: var(--color-accent);
@@ -2327,7 +2328,8 @@ body[data-view="catalog"] .doc-link.is-active,
 }
 
 .analysis-tab-btn.is-active,
-.analysis-tab-btn[data-tab="structure"].is-active {
+.analysis-tab-btn[data-tab="structure"].is-active,
+.analysis-tab-btn[data-tab="decomp"].is-active {
   color: var(--color-on-accent);
   background: var(--color-accent);
   border-color: var(--color-accent);
@@ -2345,6 +2347,7 @@ body[data-view="catalog"] .doc-link.is-active,
 
 /* 卡片上 data-analysis-tab 记着展开的是哪一块（app.js 的 toggleAnalysisTab），只显示对应的面板 */
 .item[data-analysis-tab="structure"] .analysis-panel[data-panel="structure"],
+.item[data-analysis-tab="decomp"] .analysis-panel[data-panel="decomp"],
 .item[data-analysis-tab="practice"] .analysis-panel[data-panel="practice"],
 .item[data-analysis-tab="chunks"] .analysis-panel[data-panel="chunks"],
 .item[data-analysis-tab="mistakes"] .analysis-panel[data-panel="mistakes"],
@@ -2554,7 +2557,8 @@ body[data-view="catalog"] .doc-link.is-active,
     padding: 4px 10px;
   }
 
-  .analysis-tab-btn[data-tab="structure"] { min-width: 72px; }
+  .analysis-tab-btn[data-tab="structure"],
+  .analysis-tab-btn[data-tab="decomp"] { min-width: 72px; }
 }
 
 .analysis-note-row--subject { --analysis-color: #2563eb; }
@@ -2579,6 +2583,137 @@ body[data-view="catalog"] .doc-link.is-active,
   color: var(--color-muted);
   border: 1px solid var(--color-border);
   border-radius: 999px;
+}
+
+/* 拆解：成分色块一块块遮住 / 揭开。块是按钮，去掉按钮自带的样式，排版跟「结构」里的色块完全一样 */
+.decomp-seg {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.decomp-seg:hover .analysis-seg-text { filter: brightness(0.96); }
+
+/* 遮住的文字：字照样排版占位、只是看不见，上面盖一块强调色色块，大小跟原词一样，揭开 / 遮住时整行不变长短 */
+.decomp-cover {
+  color: transparent;
+  background: color-mix(in srgb, var(--color-accent) 30%, var(--color-surface));
+  border-radius: 3px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* 遮住时下面那行小字写「＋主语」这类标签：原标签隐藏占位，新标签叠在上面居中，不撑宽这一块 */
+.decomp-seg .analysis-seg-role { position: relative; }
+
+.decomp-role-reserve { visibility: hidden; }
+
+.decomp-role-mask {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* 刚点的那块：框用 inset 阴影画在内侧，不占位置，旁边的块不会被推动 */
+.decomp-seg.is-new .analysis-seg-text {
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+  border-radius: 4px;
+}
+
+/* 下面的说明框按内容分组（句型和主干 / 成分说明 / 完整 / 换着说 / 按钮），组之间细分隔线 */
+.decomp-box {
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+  border-left: 3px solid var(--color-accent);
+  border-radius: 6px;
+}
+
+.decomp-group + .decomp-group,
+.decomp-group + .decomp-tools {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--color-accent) 20%, var(--color-border));
+}
+
+.decomp-title {
+  margin-right: 8px;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.decomp-muted {
+  margin-left: 8px;
+  font-size: 0.9em;
+  color: var(--color-muted);
+}
+
+/* 主干比别的行显眼：英文加大加粗 */
+.decomp-core { margin-top: 4px; }
+
+.decomp-core-en {
+  font-size: 1.12em;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* 成分说明：标签对齐成一列 */
+.decomp-notes {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  row-gap: 2px;
+}
+
+.decomp-note {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  border-radius: 4px;
+}
+
+.decomp-note.is-new { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
+
+/* 没显示的内容先占位隐藏，卡片高度和按钮位置不跟着跳 */
+.decomp .is-reserve { visibility: hidden; }
+
+.decomp-practice {
+  margin: 4px 0 0;
+  padding-left: 1.5em;
+  list-style: none;
+}
+
+.decomp-practice li { padding: 2px 0; }
+
+.decomp-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.decomp-switch-btn {
+  min-height: 34px;
+  padding: 4px 14px;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.decomp-switch-btn.is-on {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 /* 造句：句型框架 + 例句（每句前面一个小 ▶ 单独朗读） */
@@ -3495,6 +3630,20 @@ body[data-view="catalog"] .doc-link.is-active,
     clause: '从句',
     connector: '连接',
   };
+
+  // 分析每块底部放一个「收起」，内容长时不用滚回上面那排按钮再点一次
+  const ANALYSIS_CLOSE_HTML = '<div class="analysis-close"><button type="button" class="analysis-close-btn" data-action="analysis-close">收起 ▲</button></div>';
+
+  // 「拆解」：从句开头是这些词就自动拆成"引导词 + 从句内容"两层，句型状态时留引导词、遮内容
+  const DECOMP_CLAUSE_INTRODUCERS = ['that', 'what', 'how', 'where', 'when', 'why', 'who', 'whom', 'which', 'whose', 'whether', 'if',
+    'because', 'although', 'though', 'while', 'before', 'after', 'until', 'since', 'unless', 'as', 'so'];
+
+  // 「拆解」遮罩标签：从片段说明里认出具体类型（先认长的，免得"定语从句"被认成"定语"）
+  const DECOMP_SEG_TYPES = [
+    '非限定性定语从句', '定语从句', '宾语从句', '主语从句', '表语从句', '同位语从句',
+    '时间状语从句', '条件状语从句', '原因状语从句', '让步状语从句', '比较状语从句', '目的状语从句', '结果状语从句', '状语从句',
+    '时间状语', '地点状语', '频率副词', '程度副词', '方式状语', '目的状语', '同位语', '定语', '状语', '语气词',
+  ];
 
   // 句子分析「要点」的编号
   const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥'];
@@ -6230,6 +6379,7 @@ body[data-view="catalog"] .doc-link.is-active,
 
     const panels = [
       { tab: 'structure', label: '结构', html: renderAnalysisStructure(analysis) },
+      { tab: 'decomp', label: '拆解', html: renderAnalysisDecomp(item, buildDecompLevels(analysis, 'pattern'), null) },
       { tab: 'practice', label: '造句', html: renderAnalysisPractice(item.en.text_en, analysis) },
       { tab: 'chunks', label: '搭配', html: renderAnalysisChunks(analysis.chunks) },
       { tab: 'mistakes', label: '易错', html: renderAnalysisMistakes(analysis.mistakes) },
@@ -6240,10 +6390,8 @@ body[data-view="catalog"] .doc-link.is-active,
       `<button type="button" class="analysis-tab-btn" data-action="analysis-tab" data-tab="${panel.tab}">${panel.label}</button>`
     )).join('');
 
-    // 每块底部放一个「收起」，内容长时不用滚回上面那排按钮再点一次
-    const closeBtnHtml = '<div class="analysis-close"><button type="button" class="analysis-close-btn" data-action="analysis-close">收起 ▲</button></div>';
     const panelsHtml = panels.map((panel) => (
-      `<div class="analysis-panel" data-panel="${panel.tab}">${panel.html}${closeBtnHtml}</div>`
+      `<div class="analysis-panel" data-panel="${panel.tab}">${panel.html}${ANALYSIS_CLOSE_HTML}</div>`
     )).join('');
 
     return `
@@ -6366,6 +6514,300 @@ body[data-view="catalog"] .doc-link.is-active,
     }
 
     return ['subject', 'predicate', 'object', 'complement'].includes(segment.role);
+  }
+
+  /**
+   * 「拆解」里一块的内部分层：数据里有 parts 就用；没有的从句开头是引导词就自动拆两层；其余没有分层
+   * @param {{ role: string, text: string, parts?: object[] }} segment
+   * @returns {{ text: string, step: number, label?: string }[]|null}
+   */
+  function getDecompParts(segment) {
+
+    if (Array.isArray(segment.parts) && segment.parts.length > 0) {
+
+      return segment.parts;
+    }
+
+    const match = segment.role === 'clause' ? segment.text.match(/^(\S+)\s+([\s\S]+)$/) : null;
+
+    if (!match || !DECOMP_CLAUSE_INTRODUCERS.includes(match[1].toLowerCase().replace(/[^a-z]/g, ''))) {
+
+      return null;
+    }
+
+    return [{ text: match[1], step: 1 }, { text: match[2], step: 2, label: '从句内容' }];
+  }
+
+  function getDecompMaxLevel(segment) {
+
+    const parts = getDecompParts(segment);
+
+    return parts ? Math.max(...parts.map((part) => part.step)) : 1;
+  }
+
+  /**
+   * 名词性从句（主干从句或宾语 / 主语 / 表语 / 同位语从句）且第一层是引导词：句型状态时留引导词；定语、状语从句是修饰，整块遮住
+   * @param {object} segment
+   * @returns {boolean}
+   */
+  function isDecompNounClause(segment) {
+
+    const parts = getDecompParts(segment);
+    const isNounClause = segment.isCore === true || /宾语从句|主语从句|表语从句|同位语从句/.test(segment.note || '');
+
+
+    if (segment.role !== 'clause' || !isNounClause || !parts) {
+
+      return false;
+    }
+
+    return DECOMP_CLAUSE_INTRODUCERS.includes(parts[0].text.toLowerCase().replace(/[^a-z]/g, ''));
+  }
+
+  /**
+   * 遮罩标签：主干成分写角色（主语），枝叶和从句写说明里认出的类型（定语从句），省略了 that 的从句加 (that)
+   * @param {object} segment
+   * @returns {string}
+   */
+  function getDecompMaskLabel(segment) {
+
+    if (segment.role !== 'clause' && isCoreSegment(segment)) {
+
+      return ANALYSIS_ROLE_LABELS[segment.role] || '';
+    }
+
+    const found = DECOMP_SEG_TYPES.find((type) => (segment.note || '').includes(type));
+    const type = found ? found.replace('非限定性', '') : (segment.role === 'clause' ? '从句' : '修饰');
+
+    return segment.role === 'clause' && /省略了?\s*(连词\s*)?that/.test(segment.note || '') ? `(that) ${type}` : type;
+  }
+
+  /**
+   * 每块显示到第几层（0 = 遮住）。句型状态：留谓语、连接词、形式主语 it / there、名词性从句的引导词，其余遮住
+   * @param {object} analysis
+   * @param {'pattern'|'all'} preset
+   * @returns {number[]}
+   */
+  function buildDecompLevels(analysis, preset) {
+
+    return analysis.segments.map((segment) => {
+
+      const max = getDecompMaxLevel(segment);
+      const isKeep = segment.role === 'predicate' || segment.role === 'connector'
+        || (segment.role === 'subject' && /形式主语|引导词/.test(segment.note || ''));
+
+
+      if (preset === 'all' || isKeep) {
+
+        return max;
+      }
+
+      return isDecompNounClause(segment) ? 1 : 0;
+    });
+  }
+
+  function isDecompAllShown(analysis, levels) {
+
+    return analysis.segments.every((segment, index) => (levels[index] || 0) >= getDecompMaxLevel(segment));
+  }
+
+  /**
+   * 句型行：按句型状态的遮法，遮住的写 ___，连续的 ___ 合并；修饰可有可无，直接去掉（如 `___ tells ___ that ___`）
+   * @param {object} analysis
+   * @returns {string}
+   */
+  function buildDecompPatternLine(analysis) {
+
+    const levels = buildDecompLevels(analysis, 'pattern');
+
+    return analysis.segments.map((segment, index) => {
+
+      const level = levels[index];
+      const parts = getDecompParts(segment);
+      const isMinor = segment.role !== 'connector' && !isCoreSegment(segment);
+
+
+      if (isMinor && !isDecompNounClause(segment)) {
+
+        return '';
+      }
+
+      if (level >= getDecompMaxLevel(segment)) {
+
+        return segment.text;
+      }
+
+      if (!level || !parts) {
+
+        return '___';
+      }
+
+      return parts.map((part) => (part.step <= level ? part.text : '___')).join(' ');
+    }).join(' ').replace(/___(\s+___)+/g, '___').replace(/\s+/g, ' ').replace(/\s+(['’])/g, '$1').trim();
+  }
+
+  /**
+   * 「拆解」里的一块：跟「结构」一样输出原词，遮住的部分字透明、盖色块，宽度始终跟原词一致，揭开 / 遮住时整行不动；
+   * 遮住时下面那行小字换成「＋主语」「＋定语从句」，叠在原角色标签的位置上，不撑宽这一块
+   * @param {object} segment
+   * @param {number} index - 分段下标
+   * @param {number} level - 显示到第几层
+   * @param {boolean} isNew - 是不是刚揭开 / 遮住的那块
+   * @returns {string}
+   */
+  function renderDecompSegment(segment, index, level, isNew) {
+
+    const kindClass = isCoreSegment(segment) ? 'analysis-seg--core' : 'analysis-seg--minor';
+    const roleLabel = ANALYSIS_ROLE_LABELS[segment.role] || segment.role;
+    const parts = getDecompParts(segment);
+    const max = getDecompMaxLevel(segment);
+    let textHtml = escapeHtml(segment.text);
+    let maskLabel = '';
+
+
+    // 连接词（and、but）不参与遮挡，跟「结构」里一样显示
+    if (segment.role === 'connector') {
+
+      return `<span class="analysis-seg analysis-seg--${escapeAttr(segment.role)} ${kindClass}">`
+        + `<span class="analysis-seg-text">${textHtml}</span><span class="analysis-seg-role">${escapeHtml(roleLabel)}</span></span>`;
+    }
+
+    if (!level) {
+      textHtml = `<span class="decomp-cover">${textHtml}</span>`;
+      maskLabel = `＋${getDecompMaskLabel(segment)}`;
+    }
+
+    // 块内分层揭到一半：没到的那部分盖色块
+    if (level && parts && level < max) {
+      textHtml = parts.map((part) => (part.step <= level ? escapeHtml(part.text) : `<span class="decomp-cover">${escapeHtml(part.text)}</span>`)).join(' ');
+      maskLabel = `${roleLabel} · ＋${parts.find((part) => part.step > level).label || '修饰'}`;
+    }
+
+    const roleHtml = maskLabel
+      ? `<span class="decomp-role-reserve">${escapeHtml(roleLabel)}</span><span class="decomp-role-mask">${escapeHtml(maskLabel)}</span>`
+      : escapeHtml(roleLabel);
+    const title = !level ? '点一下显示' : `再点${level < max ? '显示更多' : '遮住'}`;
+
+    return `<button type="button" class="analysis-seg analysis-seg--${escapeAttr(segment.role)} ${kindClass} decomp-seg${isNew ? ' is-new' : ''}" data-action="decomp-toggle" data-seg="${index}" title="${title}">`
+      + `<span class="analysis-seg-text">${textHtml}</span><span class="analysis-seg-role">${roleHtml}</span></button>`;
+  }
+
+  /**
+   * 「拆解」：成分色块可以一块块遮住 / 揭开，「句型 ⇄ 全文」在句型状态和全部显示之间切换。
+   * 下面分组：句型 + 主干（一直显示）/ 成分说明（这块全露出来才显示，按句子顺序累加）/ 完整中文 / 换着说（全开才显示）；
+   * 没显示的内容先占位隐藏，卡片高度和按钮位置不随揭开变化。当前遮法记在面板的 data-decomp-levels 上，点一下就重画这一块
+   * @param {object} item - 句型表的 item（取整句中文、算换着说的框架）
+   * @param {number[]} levels - 每块显示到第几层
+   * @param {number|null} lastIndex - 刚点的那块，加高亮
+   * @returns {string}
+   */
+  function renderAnalysisDecomp(item, levels, lastIndex) {
+
+    const analysis = item.analysis;
+    const isAllShown = isDecompAllShown(analysis, levels);
+    const reserveClass = isAllShown ? '' : ' is-reserve';
+    const cnText = (item.cn && item.cn.text_cn) || '';
+    const practice = analysis.practice || [];
+    const frame = analysis.frame || String(item.en.text_en || '').replace(/\([^)]*\)/g, '___');
+    const groups = [];
+
+
+    const segmentsHtml = analysis.segments.map((segment, index) => renderDecompSegment(segment, index, levels[index] || 0, index === lastIndex)).join('');
+
+    // 结构：句型在上，主干在下，进拆解就一直显示
+    groups.push(`<div><span class="decomp-title">句型</span>${escapeHtml(buildDecompPatternLine(analysis))}</div>`
+      + (analysis.skeleton ? `<div class="decomp-core"><span class="decomp-title">主干</span><span class="decomp-core-en">${escapeHtml(analysis.skeleton)}</span>${analysis.explain ? `<span class="decomp-muted">${escapeHtml(analysis.explain)}</span>` : ''}</div>` : ''));
+
+    // 成分说明：从句只揭到引导词时不显示，免得提前露出从句内容
+    const notesHtml = analysis.segments.map((segment, index) => {
+
+      if (!segment.note) {
+
+        return '';
+      }
+
+      const isShown = segment.role === 'connector' || (levels[index] || 0) >= getDecompMaxLevel(segment);
+      const stateClass = !isShown ? ' is-reserve' : (index === lastIndex ? ' is-new' : '');
+
+      return `<div class="decomp-note${stateClass}"><span class="decomp-title">＋${escapeHtml(getDecompMaskLabel(segment))}</span><span>${escapeHtml(segment.note)}</span></div>`;
+    }).join('');
+
+    if (notesHtml) {
+      groups.push(`<div class="decomp-notes">${notesHtml}</div>`);
+    }
+
+    // 意思、换着说：分隔线照常画，只把内容占位隐藏
+    if (cnText) {
+      groups.push(`<div class="decomp-reserve-box${reserveClass}"><span class="decomp-title">完整</span>${escapeHtml(cnText)}</div>`);
+    }
+
+    if (practice.length > 0) {
+      const practiceHtml = practice.map((example) => (
+        `<li>${escapeHtml(example.en)}<span class="decomp-muted">${escapeHtml(example.cn)}</span></li>`
+      )).join('');
+
+      groups.push(`<div class="decomp-reserve-box${reserveClass}"><div class="decomp-title">换着说</div>`
+        + `<ul class="decomp-practice"><li><b>套用</b>　${escapeHtml(frame)}</li>${practiceHtml}</ul></div>`);
+    }
+
+    const groupsHtml = groups.map((html) => `<div class="decomp-group">${html}</div>`).join('');
+
+    return `
+      <div class="decomp" data-decomp-levels="${escapeAttr(JSON.stringify(levels))}">
+        <div class="analysis-segments decomp-segments">${segmentsHtml}</div>
+        <div class="decomp-box">
+          ${groupsHtml}
+          <div class="decomp-tools">
+            <button type="button" class="decomp-switch-btn${isAllShown ? '' : ' is-on'}" data-action="decomp-switch">句型 ⇄ 全文</button>
+            <span class="decomp-muted">每块都能点：遮住 ↔ 显示</span>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  /**
+   * 「拆解」里点了某一块或「句型 ⇄ 全文」：算出新的遮法，只重画这张卡片的拆解面板
+   * @param {HTMLElement} actionEl - 被点的按钮（.decomp-seg 或 .decomp-switch-btn）
+   * @returns {void}
+   */
+  function handleDecompAction(actionEl) {
+
+    const itemEl = actionEl.closest('.item');
+    const decompEl = actionEl.closest('.decomp');
+    const panelEl = actionEl.closest('.analysis-panel');
+    const doc = findDoc(currentSlug());
+
+    if (!itemEl || !decompEl || !panelEl || !doc) {
+
+      return;
+    }
+
+    const [sectionType, indexStr] = itemEl.dataset.key.split(':');
+    const section = doc.sections.find((sec) => sec.type === sectionType);
+    const item = section && section.items[Number(indexStr)];
+
+    if (!item || !item.analysis) {
+
+      return;
+    }
+
+    const analysis = item.analysis;
+    let levels = JSON.parse(decompEl.dataset.decompLevels);
+    let lastIndex = null;
+
+
+    // 全开时回到句型状态，否则（句型状态或揭到一半）直接全开
+    if (actionEl.dataset.action === 'decomp-switch') {
+      levels = buildDecompLevels(analysis, isDecompAllShown(analysis, levels) ? 'pattern' : 'all');
+    }
+
+    // 一块循环：遮 → 一层层显示 → 全显示 → 遮
+    if (actionEl.dataset.action === 'decomp-toggle') {
+      lastIndex = Number(actionEl.dataset.seg);
+      levels[lastIndex] = ((levels[lastIndex] || 0) + 1) % (getDecompMaxLevel(analysis.segments[lastIndex]) + 1);
+    }
+
+    panelEl.innerHTML = renderAnalysisDecomp(item, levels, lastIndex) + ANALYSIS_CLOSE_HTML;
   }
 
   /**
@@ -12540,6 +12982,7 @@ body[data-view="catalog"] .doc-link.is-active,
         if (action === 'back-to-doc') backToDoc();
         if (action === 'analysis-tab') toggleAnalysisTab(actionEl);
         if (action === 'analysis-close') closeAnalysisPanel(actionEl);
+        if (action === 'decomp-toggle' || action === 'decomp-switch') handleDecompAction(actionEl);
         if (action === 'speak-plain') {
           stopCardSpeak();
           speakText(actionEl.dataset.text);
